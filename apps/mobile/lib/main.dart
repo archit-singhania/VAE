@@ -218,7 +218,7 @@ class _MobileShellState extends State<MobileShell> {
     showCommandPalette(context, [
       CommandAction(
         label: 'Go to Home',
-        hint: 'Workspace summary and recent campaigns',
+        hint: 'Media, channel, and publishing summary',
         icon: Icons.space_dashboard_outlined,
         run: () => _go(0),
       ),
@@ -236,12 +236,12 @@ class _MobileShellState extends State<MobileShell> {
       ),
       CommandAction(
         label: 'Go to Analytics',
-        hint: 'Approval rate and workspace signal',
+        hint: 'Publishing and engagement signal',
         icon: Icons.insights_outlined,
         run: () => _go(3),
       ),
       CommandAction(
-        label: 'Refresh workspace',
+        label: 'Refresh VAE',
         hint: 'Re-fetch everything from the API',
         icon: Icons.refresh_outlined,
         run: () {
@@ -295,7 +295,7 @@ class _MobileShellState extends State<MobileShell> {
       transitionDuration: const Duration(milliseconds: 220),
       pageBuilder: (dialogContext, _, __) => AlertDialog(
         title: const Text('Sign out of VAE?'),
-        content: const Text('Your workspace is safe. You can sign back in at any time.'),
+        content: const Text('Your account is safe. You can sign back in at any time.'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Cancel')),
           FilledButton.icon(
@@ -391,7 +391,7 @@ class _MobileShellState extends State<MobileShell> {
               backgroundColor: Colors.transparent,
               destinations: const [
                 NavigationDestination(icon: Icon(Icons.space_dashboard_outlined), label: 'Overview'),
-                NavigationDestination(icon: Icon(Icons.auto_awesome_outlined), label: 'Campaigns'),
+                NavigationDestination(icon: Icon(Icons.auto_awesome_outlined), label: 'Create media'),
                 NavigationDestination(icon: Icon(Icons.schedule_outlined), label: 'Schedule'),
                 NavigationDestination(icon: Icon(Icons.insights_outlined), label: 'Analytics'),
               ],
@@ -402,7 +402,7 @@ class _MobileShellState extends State<MobileShell> {
     );
   }
 
-  static const _titles = ['Home', 'Create', 'Calendar', 'Analytics'];
+  static const _titles = ['Home', 'Create media', 'Calendar & publishing', 'Analytics'];
 }
 
 /// Custom glass top bar — the mobile equivalent of the web app's `.topbar`.

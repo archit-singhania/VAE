@@ -64,6 +64,7 @@ class AppState extends ChangeNotifier {
     required String displayName,
     required String organizationName,
     required String workspaceName,
+    required String accountType,
     required String timezone,
   }) async {
     loading = true;
@@ -76,6 +77,7 @@ class AppState extends ChangeNotifier {
         displayName: displayName,
         organizationName: organizationName,
         workspaceName: workspaceName,
+        accountType: accountType,
         timezone: timezone,
       );
       if (registration.accessToken == null) {

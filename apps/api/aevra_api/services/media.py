@@ -175,17 +175,28 @@ class MediaService:
         return asset
 
     @staticmethod
-    def _brand_style(brand: BrandProfile, request: ImageGenerateRequest) -> BrandVisualStyle | None:
+    def _brand_style(
+        brand: BrandProfile | None, request: ImageGenerateRequest
+    ) -> BrandVisualStyle | None:
         if not request.brand_overlay:
             return None
-        return BrandVisualStyle(label=(request.brand_text or brand.name)[:80])
+        label = request.brand_text or (brand.name if brand else None)
+        return BrandVisualStyle(label=label[:80]) if label else None
 
     def generate_images(
         self, user_id: uuid.UUID, workspace_id: uuid.UUID, request: ImageGenerateRequest
     ) -> list[MediaAsset]:
         self._require_editor(user_id, workspace_id)
-        campaign = self._campaign(user_id, workspace_id, request.campaign_id)
-        brand = BrandService(self.session).get_brand(user_id, workspace_id, campaign.brand_id)
+        campaign = (
+            self._campaign(user_id, workspace_id, request.campaign_id)
+            if request.campaign_id
+            else None
+        )
+        brand = (
+            BrandService(self.session).get_brand(user_id, workspace_id, campaign.brand_id)
+            if campaign
+            else None
+        )
         provider_request = ProviderImageRequest(
             prompt=request.prompt,
             width=1024,
@@ -210,7 +221,7 @@ class MediaService:
         source = MediaAsset(
             id=source_id,
             workspace_id=workspace_id,
-            campaign_id=campaign.id,
+            campaign_id=campaign.id if campaign else None,
             created_by_user_id=user_id,
             media_type="image",
             asset_role="generated",
@@ -240,7 +251,7 @@ class MediaService:
                     MediaAsset(
                         id=asset_id,
                         workspace_id=workspace_id,
-                        campaign_id=campaign.id,
+                        campaign_id=campaign.id if campaign else None,
                         created_by_user_id=user_id,
                         parent_asset_id=source_id,
                         media_type="image",
@@ -299,12 +310,16 @@ class MediaService:
         self, user_id: uuid.UUID, workspace_id: uuid.UUID, request: VideoComposeRequest
     ) -> list[MediaAsset]:
         self._require_editor(user_id, workspace_id)
-        campaign = self._campaign(user_id, workspace_id, request.campaign_id)
+        campaign = (
+            self._campaign(user_id, workspace_id, request.campaign_id)
+            if request.campaign_id
+            else None
+        )
         source_assets = [
             self.get_asset(user_id, workspace_id, asset_id) for asset_id in request.source_asset_ids
         ]
         if any(
-            asset.campaign_id != campaign.id
+            (campaign is not None and asset.campaign_id not in {None, campaign.id})
             or asset.media_type != "image"
             or asset.status != "ready"
             for asset in source_assets
@@ -337,7 +352,10 @@ class MediaService:
                         slides=tuple(VideoSlide(path, per_slide) for path in source_paths),
                         aspect_ratio=VideoAspectRatio(aspect_ratio),
                         fps=self.settings.video_fps,
-                        output_stem=f"campaign-{campaign.id}-{aspect_ratio.replace(':', '-')}",
+                        output_stem=(
+                            f"media-{campaign.id if campaign else uuid.uuid4()}-"
+                            f"{aspect_ratio.replace(':', '-')}"
+                        ),
                     )
                     try:
                         result = composer.compose(video_request)
@@ -359,7 +377,7 @@ class MediaService:
                     MediaAsset(
                         id=asset_id,
                         workspace_id=workspace_id,
-                        campaign_id=campaign.id,
+                        campaign_id=campaign.id if campaign else None,
                         created_by_user_id=user_id,
                         parent_asset_id=source_assets[0].id,
                         media_type="video",

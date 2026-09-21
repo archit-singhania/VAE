@@ -12,6 +12,8 @@ class RegisterRequest(BaseModel):
     display_name: str = Field(min_length=1, max_length=120)
     organization_name: str = Field(min_length=2, max_length=160)
     workspace_name: str = Field(min_length=2, max_length=160)
+    account_type: str = Field(default="creator", pattern="^(creator|business)$")
+    brand_name: str | None = Field(default=None, max_length=160)
     timezone: str = Field(default="UTC", min_length=1, max_length=64)
 
     @field_validator("email")
@@ -43,7 +45,31 @@ class UserResponse(BaseModel):
     is_active: bool
     is_admin: bool = False
     account_status: str = "approved"
+    account_type: str = "creator"
+    brand_name: str | None = None
+    avatar_url: str | None = None
     created_at: datetime
+
+
+class ProfileUpdateRequest(BaseModel):
+    display_name: str = Field(min_length=1, max_length=120)
+    email: str = Field(min_length=3, max_length=320)
+    account_type: str = Field(pattern="^(creator|business)$")
+    brand_name: str | None = Field(default=None, max_length=160)
+    avatar_url: str | None = Field(default=None, max_length=2048)
+
+    @field_validator("email")
+    @classmethod
+    def normalize_profile_email(cls, value: str) -> str:
+        normalized = value.strip().lower()
+        if normalized.count("@") != 1 or "." not in normalized.rsplit("@", 1)[1]:
+            raise ValueError("Enter a valid email address")
+        return normalized
+
+
+class PasswordChangeRequest(BaseModel):
+    current_password: str = Field(min_length=1, max_length=128)
+    new_password: str = Field(min_length=8, max_length=128)
 
 
 class OrganizationResponse(BaseModel):

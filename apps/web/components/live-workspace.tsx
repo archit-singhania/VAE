@@ -8,6 +8,8 @@ import {
   CalendarDays,
   Check,
   CircleAlert,
+  Eye,
+  EyeOff,
   FileText,
   Image,
   LogOut,
@@ -19,6 +21,7 @@ import {
   ShieldCheck,
   Sparkles,
   Upload,
+  UserRound,
   X,
 } from "lucide-react";
 import { AnimatePresence, MotionConfig, motion } from "motion/react";
@@ -82,6 +85,7 @@ import {
 import { Reveal3D } from "@/components/depth";
 import { Button } from "@/components/ui/button";
 import {
+  type AdminOverview,
   api,
   type Brand,
   type Campaign,
@@ -202,9 +206,17 @@ export function LiveWorkspace() {
   >([]);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [name, setName] = useState("");
   const [org, setOrg] = useState("");
-  const [workspaceName, setWorkspaceName] = useState("");
+  const [accountType, setAccountType] = useState<"creator" | "business">("creator");
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [profileName, setProfileName] = useState("");
+  const [profileEmail, setProfileEmail] = useState("");
+  const [profileBrand, setProfileBrand] = useState("");
+  const [profileAvatar, setProfileAvatar] = useState("");
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
   const [brandName, setBrandName] = useState("VAE");
   const [brandDescription, setBrandDescription] = useState(
     "Evidence-led GenAI content operations.",
@@ -219,7 +231,8 @@ export function LiveWorkspace() {
   const [instructions, setInstructions] = useState("");
   const [selectedPlatforms, setSelectedPlatforms] = useState<Platform[]>(["linkedin"]);
   const [mediaPrompt, setMediaPrompt] = useState("");
-  const [mediaCampaign, setMediaCampaign] = useState("");
+  const [generatedText, setGeneratedText] = useState("");
+  const [videoSources, setVideoSources] = useState<string[]>([]);
   const [uploadingMedia, setUploadingMedia] = useState(false);
   const [publishCampaign, setPublishCampaign] = useState("");
   const [publishAccounts, setPublishAccounts] = useState<string[]>([]);
@@ -246,15 +259,36 @@ export function LiveWorkspace() {
     admin_note: string | null;
   } | null>(null);
   const [paymentSubmissions, setPaymentSubmissions] = useState<PaymentSubmission[]>([]);
+  const [adminOverview, setAdminOverview] = useState<AdminOverview | null>(null);
   const [theme, setTheme] = useState<"dark" | "light">(() => {
     if (typeof window === "undefined") return "dark";
     return window.localStorage.getItem("vae.theme") === "light" ? "light" : "dark";
   });
+
+  useEffect(() => {
+    if (!notice) return;
+    const timer = window.setTimeout(() => setNotice(null), 5000);
+    return () => window.clearTimeout(timer);
+  }, [notice]);
+
+  useEffect(() => {
+    if (!error) return;
+    const timer = window.setTimeout(() => setError(null), 7000);
+    return () => window.clearTimeout(timer);
+  }, [error]);
+
+  useEffect(() => {
+    if (!user) return;
+    setProfileName(user.display_name);
+    setProfileEmail(user.email);
+    setProfileBrand(user.brand_name ?? "");
+    setProfileAvatar(user.avatar_url ?? "");
+  }, [user]);
   const [themeWipe, setThemeWipe] = useState<"dark" | "light" | null>(null);
   const [soundEnabled, setSoundEnabled] = useState(false);
   const [pulse, setPulse] = useState(0);
   const [scrolled, setScrolled] = useState(false);
-  const [metricOrder, setMetricOrder] = useState(["sources", "campaigns", "approval", "assets"]);
+  const [metricOrder, setMetricOrder] = useState(["assets", "channels", "scheduled", "engagement"]);
   const [dragMetric, setDragMetric] = useState<string | null>(null);
   // The dashboard scrolls inside `.live-content`, not the window.
   const contentRef = useRef<HTMLDivElement>(null);
@@ -354,16 +388,45 @@ export function LiveWorkspace() {
           withFallback(api.scheduled(accessToken, nextWorkspace.id), []),
           withFallback(api.metrics(accessToken, nextWorkspace.id), []),
         ]);
-        setBrands(nextBrands);
-        setCampaigns(nextCampaigns);
+        let resolvedBrands = nextBrands;
+        let resolvedCampaigns = nextCampaigns;
+        if (!me.is_admin && resolvedCampaigns.length === 0) {
+          const foundationBrand =
+            resolvedBrands[0] ??
+            (await api.createBrand(accessToken, nextWorkspace.id, {
+              name: me.brand_name || me.display_name,
+              description: "Private publishing profile managed by VAE.",
+              website_url: null,
+              industry: null,
+              tone_attributes: [],
+              target_audiences: [],
+              preferred_ctas: [],
+              preferred_hashtags: [],
+              status: "active",
+            }));
+          const publishingContext = await api.createCampaign(accessToken, nextWorkspace.id, {
+            brand_id: foundationBrand.id,
+            name: "Media publishing",
+            goal: "Create and publish media",
+            product_service: me.brand_name || me.display_name,
+            audience: "Social audience",
+            instructions: "Internal publishing context",
+            platforms: ["instagram"],
+            media_types: ["text", "image", "video"],
+            publishing_mode: "manual",
+          });
+          resolvedBrands = [foundationBrand];
+          resolvedCampaigns = [publishingContext];
+        }
+        setBrands(resolvedBrands);
+        setCampaigns(resolvedCampaigns);
         setDocuments(nextDocuments);
         setAssets(nextAssets);
         setAccounts(nextAccounts);
         setScheduled(nextScheduled);
         setMetrics(nextMetrics);
-        setSelected((value) => value || nextCampaigns[0]?.id || "");
-        setMediaCampaign((value) => value || nextCampaigns[0]?.id || "");
-        setPublishCampaign((value) => value || nextCampaigns[0]?.id || "");
+        setSelected((value) => value || resolvedCampaigns[0]?.id || "");
+        setPublishCampaign((value) => value || resolvedCampaigns[0]?.id || "");
         setPublishAccounts((value) =>
           value.length ? value : nextAccounts[0]?.id ? [nextAccounts[0].id] : [],
         );
@@ -412,7 +475,10 @@ export function LiveWorkspace() {
     if (savedOrder) {
       try {
         const parsed = JSON.parse(savedOrder) as string[];
-        if (parsed.length === 4) setMetricOrder(parsed);
+        const allowed = new Set(["assets", "channels", "scheduled", "engagement"]);
+        if (parsed.length === 4 && parsed.every((item) => allowed.has(item))) {
+          setMetricOrder(parsed);
+        }
       } catch {
         // Ignore stale local preferences.
       }
@@ -469,7 +535,9 @@ export function LiveWorkspace() {
               password,
               display_name: name,
               organization_name: org,
-              workspace_name: workspaceName,
+              workspace_name: "Content Studio",
+              account_type: accountType,
+              brand_name: org,
               timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
             });
       if (
@@ -527,7 +595,40 @@ export function LiveWorkspace() {
   };
   const loadPaymentSubmissions = async () => {
     if (!token || !user?.is_admin) return;
-    await run("admin-payments", async () => setPaymentSubmissions(await api.adminPayments(token)));
+    await run("admin-payments", async () => {
+      const [payments, overview] = await Promise.all([
+        api.adminPayments(token),
+        api.adminOverview(token),
+      ]);
+      setPaymentSubmissions(payments);
+      setAdminOverview(overview);
+    });
+  };
+  const saveProfile = async (event: FormEvent) => {
+    event.preventDefault();
+    if (!token || !user) return;
+    await run("profile", async () => {
+      const updated = await api.updateProfile(token, {
+        display_name: profileName,
+        email: profileEmail,
+        account_type: user.account_type,
+        brand_name: profileBrand || null,
+        avatar_url: profileAvatar || null,
+      });
+      if (currentPassword || newPassword) {
+        if (!currentPassword || newPassword.length < 8) {
+          throw new Error(
+            "Enter your current password and a new password of at least 8 characters.",
+          );
+        }
+        await api.changePassword(token, currentPassword, newPassword);
+      }
+      setUser(updated);
+      setCurrentPassword("");
+      setNewPassword("");
+      setProfileOpen(false);
+      setNotice("Profile updated successfully.");
+    });
   };
   const reviewPayment = async (item: PaymentSubmission, decision: "approve" | "reject") => {
     if (!token) return;
@@ -579,7 +680,6 @@ export function LiveWorkspace() {
       ]);
       setCampaigns((items) => [generated.campaign, ...items]);
       setSelected(campaign.id);
-      setMediaCampaign(campaign.id);
       setPublishCampaign(campaign.id);
       setVariants(generated.variants);
       setNotice("Review-ready variants generated.");
@@ -652,7 +752,7 @@ export function LiveWorkspace() {
     if (!token || !workspace) return;
     await run("image", async () => {
       const result = await api.generateImage(token, workspace.id, {
-        campaign_id: mediaCampaign,
+        campaign_id: null,
         prompt: mediaPrompt,
         platforms: ["instagram"],
         aspect_ratio: "1:1",
@@ -666,13 +766,48 @@ export function LiveWorkspace() {
       playTone();
     });
   };
+  const createText = async () => {
+    if (!token || !workspace || mediaPrompt.trim().length < 3) return;
+    setGeneratedText("");
+    await run("text", async () => {
+      const content = await api.streamModel(
+        token,
+        workspace.id,
+        {
+          prompt: mediaPrompt,
+          system_prompt:
+            "Create polished social-media copy. Return only the publish-ready copy and relevant hashtags.",
+          max_tokens: 700,
+        },
+        setGeneratedText,
+      );
+      setGeneratedText(content);
+      setPublishText(content);
+      setNotice("Text generated and copied into publishing.");
+    });
+  };
+  const createVideo = async () => {
+    if (!token || !workspace || videoSources.length === 0) return;
+    await run("video", async () => {
+      const result = await api.composeVideo(token, workspace.id, {
+        campaign_id: null,
+        source_asset_ids: videoSources,
+        aspect_ratios: ["9:16", "1:1", "16:9"],
+        duration_seconds: 12,
+        caption: mediaPrompt || null,
+      });
+      setAssets((items) => [...result.assets, ...items]);
+      setVideoSources([]);
+      setNotice("Video variants created in your asset library.");
+    });
+  };
   const uploadMedia = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file || !token || !workspace) return;
     setUploadingMedia(true);
     setError(null);
     try {
-      const asset = await api.uploadMedia(token, workspace.id, mediaCampaign, file);
+      const asset = await api.uploadMedia(token, workspace.id, "", file);
       setAssets((items) => [asset, ...items]);
       setNotice(`${file.name} uploaded to the media library.`);
     } catch (caught) {
@@ -681,14 +816,6 @@ export function LiveWorkspace() {
       setUploadingMedia(false);
       event.target.value = "";
     }
-  };
-  const attachMedia = async (asset: MediaAsset) => {
-    if (!token || !workspace || !mediaCampaign) return;
-    await run(`attach-${asset.id}`, async () => {
-      const attached = await api.attachMedia(token, workspace.id, asset.id, mediaCampaign);
-      setAssets((items) => items.map((item) => (item.id === attached.id ? attached : item)));
-      setNotice(`${asset.filename} attached to the selected campaign.`);
-    });
   };
   const downloadAsset = async (asset: MediaAsset) => {
     if (!token || !asset.download_url) return;
@@ -863,7 +990,7 @@ export function LiveWorkspace() {
                       <Check size={26} />
                     </span>
                     <p className="live-kicker">Payment approved</p>
-                    <h2>Your VAE workspace is ready.</h2>
+                    <h2>Your VAE account is ready.</h2>
                     <p>Your payment has been verified. You can now sign in to your account.</p>
                     <Button
                       type="button"
@@ -876,7 +1003,7 @@ export function LiveWorkspace() {
                         setPaymentNote("");
                         setPaymentProof(null);
                         setMode("login");
-                        setNotice("Payment approved. Sign in to enter your workspace.");
+                        setNotice("Payment approved. You can sign in now.");
                       }}
                     >
                       <ArrowRight size={15} /> Continue to sign in
@@ -970,7 +1097,7 @@ export function LiveWorkspace() {
                     Get started
                   </button>
                 </div>
-                <h2>{mode === "login" ? "Welcome back" : "Start your VAE workspace"}</h2>
+                <h2>{mode === "login" ? "Welcome back" : "Create your VAE account"}</h2>
                 {notice && mode === "login" && (
                   <div className="live-alert success">
                     <Check size={15} /> {notice}
@@ -991,21 +1118,24 @@ export function LiveWorkspace() {
                         placeholder="Jane Smith"
                       />
                     </Field>
-                    <Field label="Organization">
+                    <Field label="Product or brand name">
                       <input
                         required
                         value={org}
                         onChange={(e) => setOrg(e.target.value)}
-                        placeholder="VAE Studio"
+                        placeholder="Acme Studio"
                       />
                     </Field>
-                    <Field label="Workspace">
-                      <input
-                        required
-                        value={workspaceName}
-                        onChange={(e) => setWorkspaceName(e.target.value)}
-                        placeholder="Marketing"
-                      />
+                    <Field label="Account type">
+                      <select
+                        value={accountType}
+                        onChange={(event) =>
+                          setAccountType(event.target.value as "creator" | "business")
+                        }
+                      >
+                        <option value="creator">Creator</option>
+                        <option value="business">Business</option>
+                      </select>
                     </Field>
                   </>
                 )}
@@ -1019,22 +1149,27 @@ export function LiveWorkspace() {
                   />
                 </Field>
                 <Field label="Password">
-                  <input
-                    required
-                    type="password"
-                    minLength={1}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Your password"
-                  />
+                  <span className="password-control">
+                    <input
+                      required
+                      type={showPassword ? "text" : "password"}
+                      minLength={1}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Your password"
+                    />
+                    <button
+                      type="button"
+                      aria-label={showPassword ? "Hide password" : "Show password"}
+                      onClick={() => setShowPassword((visible) => !visible)}
+                    >
+                      {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
+                    </button>
+                  </span>
                 </Field>
                 <Button type="submit" className="live-full-button" disabled={busy === "auth"}>
                   <ArrowRight className={cn(busy === "auth" && "live-spin")} size={15} />
-                  {busy === "auth"
-                    ? "Opening workspace…"
-                    : mode === "login"
-                      ? "Enter workspace"
-                      : "Get started"}
+                  {busy === "auth" ? "Signing in…" : mode === "login" ? "Sign in" : "Get started"}
                 </Button>
               </>
             )}
@@ -1049,9 +1184,8 @@ export function LiveWorkspace() {
     );
   const nav = [
     { id: "overview" as View, label: "Home", icon: BrainCircuit },
-    { id: "campaigns" as View, label: "Create", icon: Sparkles },
-    { id: "media" as View, label: "Media", icon: Image },
-    { id: "publishing" as View, label: "Channels & calendar", icon: CalendarDays },
+    { id: "media" as View, label: "Create media", icon: Sparkles },
+    { id: "publishing" as View, label: "Calendar & publishing", icon: CalendarDays },
     { id: "analytics" as View, label: "Analytics", icon: BrainCircuit },
     ...(user?.is_admin
       ? [{ id: "admin" as View, label: "Payment review", icon: ShieldCheck }]
@@ -1062,10 +1196,10 @@ export function LiveWorkspace() {
       <Reveal className="live-hero live-glow" onMouseMove={handleGlow}>
         <ParticleField pulse={pulse} />
         <div>
-          <p className="live-kicker">Live workspace</p>
+          <p className="live-kicker">Your content home</p>
           <h1>Good to see you, {user?.display_name?.split(" ")[0] ?? "there"}.</h1>
           <p>
-            <TypewriterText text="Your VAE control room is connected to the FastAPI workspace." />
+            <TypewriterText text="Create media, connect channels, and publish from one place." />
           </p>
         </div>
         <div className="live-hero-tools">
@@ -1079,15 +1213,15 @@ export function LiveWorkspace() {
       <Reveal className="live-stats bento-grid">
         {metricOrder.map((metric) => {
           const metricData = {
-            sources: [BrainCircuit, "Knowledge base", documents.length, "indexed sources"],
-            campaigns: [Sparkles, "Campaigns", campaigns.length, "in workspace"],
-            approval: [
-              ShieldCheck,
-              "Approval queue",
-              campaigns.filter((item) => item.status === "awaiting_approval").length,
-              "human decisions",
+            assets: [Image, "Media assets", assets.length, "in your library"],
+            channels: [Send, "Connected channels", accounts.length, "ready to publish"],
+            scheduled: [CalendarDays, "Scheduled", scheduled.length, "upcoming posts"],
+            engagement: [
+              Sparkles,
+              "Engagement",
+              metrics.reduce((sum, item) => sum + item.engagements, 0),
+              "recorded interactions",
             ],
-            assets: [Image, "Media assets", assets.length, "generated assets"],
           }[metric] ?? [Sparkles, "Signals", 0, "awaiting data"];
           const Icon = metricData[0] as typeof BrainCircuit;
           return (
@@ -1519,16 +1653,6 @@ export function LiveWorkspace() {
           <h2>Generate a visual</h2>
         </Reveal3D>
         <form className="live-form" onSubmit={createImage}>
-          <Field label="Campaign">
-            <select value={mediaCampaign} onChange={(e) => setMediaCampaign(e.target.value)}>
-              <option value="">Media library only</option>
-              {campaigns.map((item) => (
-                <option value={item.id} key={item.id}>
-                  {item.name}
-                </option>
-              ))}
-            </select>
-          </Field>
           <Field label="Visual direction">
             <textarea
               required
@@ -1541,12 +1665,26 @@ export function LiveWorkspace() {
           <Button type="submit" disabled={busy === "image"}>
             <Sparkles size={14} /> Generate visual
           </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            disabled={busy === "text" || mediaPrompt.trim().length < 3}
+            onClick={() => void createText()}
+          >
+            <FileText size={14} /> Generate text
+          </Button>
+          {generatedText && (
+            <div className="generated-copy" aria-live="polite">
+              <p>{generatedText}</p>
+              <button type="button" onClick={() => setPublishText(generatedText)}>
+                Use for publishing <ArrowRight size={12} />
+              </button>
+            </div>
+          )}
           <label className="upload-dropzone">
             <Upload size={16} />
             <span>{uploadingMedia ? "Uploading…" : "Upload image or video"}</span>
-            <small>
-              {mediaCampaign ? "Attach it to the selected campaign" : "Attach to a campaign later"}
-            </small>
+            <small>Add your own asset to this private library</small>
             <input
               type="file"
               accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime"
@@ -1554,6 +1692,39 @@ export function LiveWorkspace() {
               onChange={uploadMedia}
             />
           </label>
+          {assets.some((asset) => asset.media_type === "image" && asset.status === "ready") && (
+            <div className="video-source-picker">
+              <strong>Create a video from images</strong>
+              <small>Select up to eight ready images, then render three social formats.</small>
+              {assets
+                .filter((asset) => asset.media_type === "image" && asset.status === "ready")
+                .slice(0, 12)
+                .map((asset) => (
+                  <label key={asset.id}>
+                    <input
+                      type="checkbox"
+                      checked={videoSources.includes(asset.id)}
+                      disabled={!videoSources.includes(asset.id) && videoSources.length >= 8}
+                      onChange={() =>
+                        setVideoSources((items) =>
+                          items.includes(asset.id)
+                            ? items.filter((id) => id !== asset.id)
+                            : [...items, asset.id],
+                        )
+                      }
+                    />
+                    <span>{asset.filename}</span>
+                  </label>
+                ))}
+              <Button
+                type="button"
+                disabled={busy === "video" || videoSources.length === 0}
+                onClick={() => void createVideo()}
+              >
+                Generate video
+              </Button>
+            </div>
+          )}
         </form>
       </section>
       <section className="live-panel">
@@ -1564,6 +1735,22 @@ export function LiveWorkspace() {
         {assets.length ? (
           assets.map((asset) => (
             <article className="live-asset" key={asset.id}>
+              {asset.download_url && asset.media_type === "image" ? (
+                // biome-ignore lint/performance/noImgElement: authenticated media is served by the API route.
+                <img
+                  className="asset-preview"
+                  src={asset.download_url}
+                  alt={asset.prompt || asset.filename}
+                />
+              ) : asset.download_url && asset.media_type === "video" ? (
+                // biome-ignore lint/a11y/useMediaCaption: generated preview videos are silent compositions.
+                <video
+                  className="asset-preview"
+                  src={asset.download_url}
+                  controls
+                  preload="metadata"
+                />
+              ) : null}
               <Image size={22} />
               <Status value={asset.status} />
               <b>{asset.filename}</b>
@@ -1575,22 +1762,13 @@ export function LiveWorkspace() {
                   Open asset <ArrowRight size={12} />
                 </button>
               )}
-              {!asset.campaign_id && mediaCampaign && (
-                <button
-                  type="button"
-                  disabled={busy === `attach-${asset.id}`}
-                  onClick={() => void attachMedia(asset)}
-                >
-                  Attach to campaign <ArrowRight size={12} />
-                </button>
-              )}
             </article>
           ))
         ) : (
           <Empty
             icon={Image}
             title="Your library is empty"
-            body="Generate the first visual from a campaign brief."
+            body="Describe a visual above or upload your own media."
           />
         )}
       </section>
@@ -2096,8 +2274,22 @@ export function LiveWorkspace() {
     <div className="live-columns">
       <section className="live-panel">
         <p className="live-kicker">Administrator</p>
-        <h2>Payment review</h2>
-        <p>Verify UPI payments manually before activating tenant workspaces.</p>
+        <h2>Customer operations</h2>
+        <p>Monitor non-sensitive customer adoption, media usage, channels, and approvals.</p>
+        <div className="admin-kpis">
+          <span>
+            <b>{adminOverview?.users_total ?? 0}</b> users
+          </span>
+          <span>
+            <b>{adminOverview?.users_approved ?? 0}</b> approved
+          </span>
+          <span>
+            <b>{adminOverview?.assets_total ?? 0}</b> assets
+          </span>
+          <span>
+            <b>{adminOverview?.channels_total ?? 0}</b> channels
+          </span>
+        </div>
         <Button
           size="sm"
           onClick={() => void loadPaymentSubmissions()}
@@ -2105,6 +2297,31 @@ export function LiveWorkspace() {
         >
           <RefreshCw size={14} /> Refresh submissions
         </Button>
+      </section>
+      <section className="live-panel span-2">
+        <h2>User usage</h2>
+        {adminOverview?.users.length ? (
+          adminOverview.users.map((item) => (
+            <article className="admin-user-row" key={item.user_id}>
+              <span>
+                <b>{item.display_name}</b>
+                <small>{item.brand_name || item.account_type}</small>
+              </span>
+              <Status value={item.account_status} />
+              <small>{item.assets} assets</small>
+              <small>{item.channels} channels</small>
+              <small>{item.scheduled} scheduled</small>
+              <small>{item.published} published</small>
+              <small>{item.engagements} engagements</small>
+            </article>
+          ))
+        ) : (
+          <Empty
+            icon={UserRound}
+            title="No customer activity yet"
+            body="Approved customers and usage KPIs will appear here."
+          />
+        )}
       </section>
       <section className="live-panel">
         <h2>{paymentSubmissions.length} submissions</h2>
@@ -2165,7 +2382,7 @@ export function LiveWorkspace() {
       hint: "View",
       onSelect: () => setView(item.id),
     })),
-    { label: "New campaign", hint: "Create", onSelect: () => setView("campaigns") },
+    { label: "Create media", hint: "Create", onSelect: () => setView("media") },
     {
       label: theme === "dark" ? "Use light theme" : "Use dark theme",
       hint: "Appearance",
@@ -2230,7 +2447,7 @@ export function LiveWorkspace() {
                 </button>
                 <p className="live-kicker">Account</p>
                 <h2 id="sign-out-title">Sign out of VAE?</h2>
-                <p>Your workspace is safe. You can return and sign in again at any time.</p>
+                <p>Your account is safe. You can return and sign in again at any time.</p>
                 <div className="confirm-actions">
                   <Button
                     type="button"
@@ -2261,6 +2478,89 @@ export function LiveWorkspace() {
             </motion.div>
           )}
         </AnimatePresence>
+        <AnimatePresence>
+          {profileOpen && user && (
+            <motion.div
+              className="confirm-layer"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onMouseDown={() => setProfileOpen(false)}
+            >
+              <motion.form
+                className="confirm-dialog profile-dialog"
+                onSubmit={saveProfile}
+                initial={{ opacity: 0, y: 16, scale: 0.97 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 10, scale: 0.98 }}
+                onMouseDown={(event) => event.stopPropagation()}
+              >
+                <button
+                  className="confirm-close"
+                  type="button"
+                  onClick={() => setProfileOpen(false)}
+                >
+                  <X size={16} />
+                </button>
+                <p className="live-kicker">Profile</p>
+                <h2>Edit your account</h2>
+                <div className="profile-avatar-preview">
+                  {profileAvatar ? (
+                    // biome-ignore lint/performance/noImgElement: user-provided remote avatar URLs are not known at build time.
+                    <img src={profileAvatar} alt="Profile preview" />
+                  ) : (
+                    <UserRound size={24} />
+                  )}
+                </div>
+                <Field label="Display name">
+                  <input
+                    required
+                    value={profileName}
+                    onChange={(e) => setProfileName(e.target.value)}
+                  />
+                </Field>
+                <Field label="Email">
+                  <input
+                    required
+                    type="email"
+                    value={profileEmail}
+                    onChange={(e) => setProfileEmail(e.target.value)}
+                  />
+                </Field>
+                <Field label="Product or brand">
+                  <input value={profileBrand} onChange={(e) => setProfileBrand(e.target.value)} />
+                </Field>
+                <Field label="Profile photo URL">
+                  <input
+                    type="url"
+                    value={profileAvatar}
+                    onChange={(e) => setProfileAvatar(e.target.value)}
+                    placeholder="https://…"
+                  />
+                </Field>
+                <div className="live-divider" />
+                <Field label="Current password (only to change it)">
+                  <input
+                    type="password"
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                  />
+                </Field>
+                <Field label="New password">
+                  <input
+                    type="password"
+                    minLength={8}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                  />
+                </Field>
+                <Button type="submit" className="live-full-button" disabled={busy === "profile"}>
+                  {busy === "profile" ? "Saving…" : "Save profile"}
+                </Button>
+              </motion.form>
+            </motion.div>
+          )}
+        </AnimatePresence>
         <aside className={cn("live-sidebar", sidebar && "open")}>
           <div className="live-logo">
             <span />
@@ -2270,10 +2570,10 @@ export function LiveWorkspace() {
             </button>
           </div>
           <div className="live-workspace">
-            <div>{initial(workspace?.name)}</div>
+            <div>{initial(user?.brand_name || user?.display_name)}</div>
             <span>
-              <b>{workspace?.name}</b>
-              <small>{workspace?.timezone}</small>
+              <b>{user?.brand_name || user?.display_name}</b>
+              <small>{user?.account_type === "business" ? "Business" : "Creator"}</small>
             </span>
           </div>
           <nav>
@@ -2293,13 +2593,20 @@ export function LiveWorkspace() {
             ))}
           </nav>
           <div className="live-sidebar-foot">
-            <div className="live-user">
-              <div>{initial(user?.display_name)}</div>
+            <button className="live-user profile-trigger" onClick={() => setProfileOpen(true)}>
+              <div>
+                {user?.avatar_url ? (
+                  // biome-ignore lint/performance/noImgElement: user-provided remote avatar URLs are dynamic.
+                  <img src={user.avatar_url} alt="" />
+                ) : (
+                  initial(user?.display_name)
+                )}
+              </div>
               <span>
                 <b>{user?.display_name}</b>
                 <small>{user?.email}</small>
               </span>
-            </div>
+            </button>
             <button onClick={() => setSignOutOpen(true)}>
               <LogOut size={15} /> Sign out
             </button>
@@ -2318,7 +2625,7 @@ export function LiveWorkspace() {
               <Menu size={19} />
             </button>
             <span>
-              <i /> Workspace online
+              <i /> VAE online
             </span>
             <div>
               <button className="live-command-trigger" onClick={() => setPaletteOpen(true)}>
@@ -2331,8 +2638,8 @@ export function LiveWorkspace() {
               <button className="live-refresh" onClick={() => token && void load(token)}>
                 <RefreshCw size={15} /> Refresh
               </button>
-              <Button size="sm" onClick={() => setView("campaigns")}>
-                <Plus size={14} /> New campaign
+              <Button size="sm" onClick={() => setView("media")}>
+                <Plus size={14} /> Create media
               </Button>
             </div>
           </header>

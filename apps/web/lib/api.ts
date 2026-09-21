@@ -7,6 +7,9 @@ export type User = {
   is_active: boolean;
   is_admin: boolean;
   account_status: string;
+  account_type: "creator" | "business";
+  brand_name: string | null;
+  avatar_url: string | null;
   created_at: string;
 };
 
@@ -23,6 +26,26 @@ export type PaymentSubmission = {
   status: string;
   admin_note: string | null;
   submitted_at: string | null;
+};
+
+export type AdminOverview = {
+  users_total: number;
+  users_approved: number;
+  assets_total: number;
+  channels_total: number;
+  users: Array<{
+    user_id: string;
+    display_name: string;
+    brand_name: string | null;
+    account_type: string;
+    account_status: string;
+    created_at: string;
+    assets: number;
+    channels: number;
+    scheduled: number;
+    published: number;
+    engagements: number;
+  }>;
 };
 
 export type Workspace = {
@@ -241,6 +264,8 @@ export const api = {
     organization_name: string;
     workspace_name: string;
     timezone: string;
+    account_type: "creator" | "business";
+    brand_name: string;
   }) =>
     request<{
       user: User;
@@ -296,12 +321,22 @@ export const api = {
   },
   adminPayments: (token: string) =>
     request<PaymentSubmission[]>("/auth/admin/payment-submissions", token),
+  adminOverview: (token: string) => request<AdminOverview>("/auth/admin/overview", token),
   reviewPayment: (token: string, id: string, decision: "approve" | "reject", note?: string) =>
     request<{ status: string }>(`/auth/admin/payment-submissions/${id}/${decision}`, token, {
       method: "POST",
       body: JSON.stringify({ note: note || null }),
     }),
   me: (token: string) => request<User>("/auth/me", token),
+  updateProfile: (
+    token: string,
+    payload: Pick<User, "display_name" | "email" | "account_type" | "brand_name" | "avatar_url">,
+  ) => request<User>("/auth/me", token, { method: "PATCH", body: JSON.stringify(payload) }),
+  changePassword: (token: string, currentPassword: string, newPassword: string) =>
+    request<void>("/auth/change-password", token, {
+      method: "POST",
+      body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
+    }),
   logout: () => request<void>("/auth/logout", undefined, { method: "POST" }),
   workspaces: (token: string) => request<Workspace[]>("/workspaces", token),
   brands: (token: string, workspaceId: string) =>
@@ -444,6 +479,11 @@ export const api = {
     }),
   generateImage: (token: string, workspaceId: string, payload: Record<string, unknown>) =>
     request<{ assets: MediaAsset[] }>(`/workspaces/${workspaceId}/media/images/generate`, token, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  composeVideo: (token: string, workspaceId: string, payload: Record<string, unknown>) =>
+    request<{ assets: MediaAsset[] }>(`/workspaces/${workspaceId}/media/videos/compose`, token, {
       method: "POST",
       body: JSON.stringify(payload),
     }),

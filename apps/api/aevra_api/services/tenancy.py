@@ -60,6 +60,8 @@ class TenancyService:
         user = User(
             email=request.email,
             display_name=request.display_name.strip(),
+            account_type=request.account_type,
+            brand_name=(request.brand_name or request.organization_name).strip(),
             password_hash=hash_password(request.password),
             account_status="pending_payment",
             payment_required=True,

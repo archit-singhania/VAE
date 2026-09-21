@@ -2,10 +2,21 @@ import uuid
 from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, File, Form, Response, UploadFile, status
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from aevra_api.api.dependencies import CurrentUser, SessionDep, SettingsDep
-from aevra_api.db.models import AccountDeletionRequest, PaymentSubmission, User
+from aevra_api.db.models import (
+    AccountDeletionRequest,
+    MediaAsset,
+    OrganizationMember,
+    PaymentSubmission,
+    PostMetric,
+    PublishJob,
+    ScheduledPost,
+    SocialAccount,
+    User,
+    Workspace,
+)
 from aevra_api.domain.errors import ConflictError
 from aevra_api.repositories.tenancy import TenancyRepository
 from aevra_api.schemas.tenancy import (
@@ -15,17 +26,25 @@ from aevra_api.schemas.tenancy import (
     LoginRequest,
     OnboardingStatusRequest,
     OrganizationResponse,
+    PasswordChangeRequest,
     PaymentInstructionsResponse,
     PaymentReviewRequest,
     PaymentStatusResponse,
     PaymentSubmissionRequest,
+    ProfileUpdateRequest,
     RegisterRequest,
     RegistrationResponse,
     TokenResponse,
     UserResponse,
     WorkspaceResponse,
 )
-from aevra_api.security import create_access_token, create_onboarding_token, decode_onboarding_token
+from aevra_api.security import (
+    create_access_token,
+    create_onboarding_token,
+    decode_onboarding_token,
+    hash_password,
+    verify_password,
+)
 from aevra_api.services.media import MediaService
 from aevra_api.services.tenancy import TenancyService
 
@@ -345,6 +364,74 @@ def list_payment_submissions(
     ]
 
 
+@router.get("/admin/overview", response_model=dict[str, object])
+def admin_overview(current_user: CurrentUser, session: SessionDep) -> dict[str, object]:
+    """Return non-sensitive tenant and usage KPIs for the sole administrator."""
+    _require_admin(current_user)
+    users = session.scalars(select(User).where(User.is_admin.is_(False))).all()
+    rows: list[dict[str, object]] = []
+    for user in users:
+        membership = session.scalar(
+            select(OrganizationMember).where(OrganizationMember.user_id == user.id)
+        )
+        workspace = (
+            session.scalar(
+                select(Workspace).where(Workspace.organization_id == membership.organization_id)
+            )
+            if membership
+            else None
+        )
+        workspace_id = workspace.id if workspace else None
+
+        def count(model, workspace_key=workspace_id) -> int:
+            if workspace_key is None:
+                return 0
+            return int(
+                session.scalar(
+                    select(func.count())
+                    .select_from(model)
+                    .where(model.workspace_id == workspace_key)
+                )
+                or 0
+            )
+
+        engagement = 0
+        if workspace_id is not None:
+            engagement = int(
+                session.scalar(
+                    select(func.coalesce(func.sum(PostMetric.engagements), 0)).where(
+                        PostMetric.workspace_id == workspace_id
+                    )
+                )
+                or 0
+            )
+        rows.append(
+            {
+                "user_id": str(user.id),
+                "display_name": user.display_name,
+                "brand_name": user.brand_name,
+                "account_type": user.account_type,
+                "account_status": user.account_status,
+                "created_at": user.created_at.isoformat(),
+                "assets": count(MediaAsset),
+                "channels": count(SocialAccount),
+                "scheduled": count(ScheduledPost),
+                "published": count(PublishJob),
+                "engagements": engagement,
+            }
+        )
+    approved_total = sum(1 for user in users if user.account_status == "approved")
+    assets_total = sum(row["assets"] for row in rows if isinstance(row["assets"], int))
+    channels_total = sum(row["channels"] for row in rows if isinstance(row["channels"], int))
+    return {
+        "users_total": len(rows),
+        "users_approved": approved_total,
+        "assets_total": assets_total,
+        "channels_total": channels_total,
+        "users": rows,
+    }
+
+
 @router.post(
     "/admin/payment-submissions/{submission_id}/approve", response_model=PaymentStatusResponse
 )
@@ -427,6 +514,36 @@ def reject_payment(
 @router.get("/me", response_model=UserResponse)
 def me(current_user: CurrentUser) -> UserResponse:
     return UserResponse.model_validate(current_user)
+
+
+@router.patch("/me", response_model=UserResponse)
+def update_profile(
+    request: ProfileUpdateRequest, current_user: CurrentUser, session: SessionDep
+) -> UserResponse:
+    duplicate = session.scalar(
+        select(User).where(User.email == request.email, User.id != current_user.id)
+    )
+    if duplicate is not None:
+        raise ConflictError("An account with this email already exists")
+    current_user.display_name = request.display_name.strip()
+    current_user.email = request.email
+    current_user.account_type = request.account_type
+    current_user.brand_name = request.brand_name.strip() if request.brand_name else None
+    current_user.avatar_url = request.avatar_url.strip() if request.avatar_url else None
+    session.commit()
+    session.refresh(current_user)
+    return UserResponse.model_validate(current_user)
+
+
+@router.post("/change-password", status_code=status.HTTP_204_NO_CONTENT)
+def change_password(
+    request: PasswordChangeRequest, current_user: CurrentUser, session: SessionDep
+) -> Response:
+    if not verify_password(request.current_password, current_user.password_hash):
+        raise ConflictError("Current password is incorrect")
+    current_user.password_hash = hash_password(request.new_password)
+    session.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)

@@ -24,7 +24,7 @@ class _AuthScreenState extends State<AuthScreen> {
   final _password = TextEditingController();
   final _name = TextEditingController();
   final _org = TextEditingController();
-  final _workspaceName = TextEditingController();
+  String _accountType = 'creator';
   final _utr = TextEditingController();
 
   @override
@@ -33,7 +33,6 @@ class _AuthScreenState extends State<AuthScreen> {
     _password.dispose();
     _name.dispose();
     _org.dispose();
-    _workspaceName.dispose();
     _utr.dispose();
     super.dispose();
   }
@@ -47,7 +46,8 @@ class _AuthScreenState extends State<AuthScreen> {
         password: _password.text,
         displayName: _name.text.trim(),
         organizationName: _org.text.trim(),
-        workspaceName: _workspaceName.text.trim(),
+        workspaceName: 'Content Studio',
+        accountType: _accountType,
         timezone: DateTime.now().timeZoneName,
       );
     }
@@ -93,7 +93,7 @@ class _AuthScreenState extends State<AuthScreen> {
                       ...[
                         'Grounded in your own sources',
                         'Human approval on every variant',
-                        'One workspace, every channel',
+                        'One account, every channel',
                       ].map(
                         (point) => Padding(
                           padding: const EdgeInsets.only(bottom: AevraSpace.xs),
@@ -137,12 +137,12 @@ class _AuthScreenState extends State<AuthScreen> {
                               children: [
                                 _Tab(label: 'Sign in', active: isLogin, onTap: () => setState(() => isLogin = true)),
                                 const SizedBox(width: AevraSpace.lg),
-                                _Tab(label: 'Create workspace', active: !isLogin, onTap: () => setState(() => isLogin = false)),
+                                _Tab(label: 'Get started', active: !isLogin, onTap: () => setState(() => isLogin = false)),
                               ],
                             ),
                             const SizedBox(height: AevraSpace.lg),
                             Text(
-                              isLogin ? 'Welcome back' : 'Start your workspace',
+                              isLogin ? 'Welcome back' : 'Create your VAE account',
                               style: AevraType.display(21),
                             ),
                             const SizedBox(height: AevraSpace.md),
@@ -164,9 +164,17 @@ class _AuthScreenState extends State<AuthScreen> {
                             ] else if (!isLogin) ...[
                               _Field(label: 'Your name', controller: _name),
                               const SizedBox(height: AevraSpace.sm),
-                              _Field(label: 'Organization', controller: _org),
+                              _Field(label: 'Product or brand name', controller: _org),
                               const SizedBox(height: AevraSpace.sm),
-                              _Field(label: 'Workspace', controller: _workspaceName),
+                              DropdownButtonFormField<String>(
+                                initialValue: _accountType,
+                                decoration: const InputDecoration(labelText: 'Account type'),
+                                items: const [
+                                  DropdownMenuItem(value: 'creator', child: Text('Creator')),
+                                  DropdownMenuItem(value: 'business', child: Text('Business')),
+                                ],
+                                onChanged: (value) => setState(() => _accountType = value ?? 'creator'),
+                              ),
                               const SizedBox(height: AevraSpace.sm),
                             ],
                             _Field(label: 'Email', controller: _email, keyboardType: TextInputType.emailAddress),
@@ -184,7 +192,7 @@ class _AuthScreenState extends State<AuthScreen> {
                                         child: CircularProgressIndicator(
                                             strokeWidth: 2, color: AevraColors.accentInk),
                                       )
-                                    : Text(isLogin ? 'Enter workspace' : 'Create workspace'),
+                                    : Text(isLogin ? 'Sign in' : 'Get started'),
                               ),
                             ),
                           ],
@@ -245,7 +253,7 @@ class _Tab extends StatelessWidget {
   }
 }
 
-class _Field extends StatelessWidget {
+class _Field extends StatefulWidget {
   const _Field({
     required this.label,
     required this.controller,
@@ -259,6 +267,13 @@ class _Field extends StatelessWidget {
   final TextInputType? keyboardType;
 
   @override
+  State<_Field> createState() => _FieldState();
+}
+
+class _FieldState extends State<_Field> {
+  late bool hidden = widget.obscure;
+
+  @override
   Widget build(BuildContext context) {
     // Field chrome now comes entirely from `inputDecorationTheme`, so a
     // change to field radius, fill or focus colour lands here and in the
@@ -266,12 +281,21 @@ class _Field extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label.toUpperCase(), style: AevraType.eyebrow(color: AevraColors.muted2)),
+        Text(widget.label.toUpperCase(), style: AevraType.eyebrow(color: AevraColors.muted2)),
         const SizedBox(height: AevraSpace.xs),
         TextField(
-          controller: controller,
-          obscureText: obscure,
-          keyboardType: keyboardType,
+          controller: widget.controller,
+          obscureText: hidden,
+          keyboardType: widget.keyboardType,
+          decoration: InputDecoration(
+            suffixIcon: widget.obscure
+                ? IconButton(
+                    tooltip: hidden ? 'Show password' : 'Hide password',
+                    icon: Icon(hidden ? Icons.visibility_outlined : Icons.visibility_off_outlined),
+                    onPressed: () => setState(() => hidden = !hidden),
+                  )
+                : null,
+          ),
           cursorColor: AevraColors.accent,
           style: const TextStyle(fontSize: 13.5, color: AevraColors.text),
         ),

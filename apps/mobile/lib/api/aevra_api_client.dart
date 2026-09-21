@@ -104,6 +104,7 @@ class AevraApiClient {
     required String displayName,
     required String organizationName,
     required String workspaceName,
+    required String accountType,
     required String timezone,
   }) =>
       _request<RegistrationResult>(
@@ -115,6 +116,8 @@ class AevraApiClient {
           'display_name': displayName,
           'organization_name': organizationName,
           'workspace_name': workspaceName,
+          'account_type': accountType,
+          'brand_name': organizationName,
           'timezone': timezone,
         },
         parse: (json) => RegistrationResult(

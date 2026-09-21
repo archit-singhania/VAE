@@ -22,7 +22,7 @@ def default_video_ratios() -> list[VideoAspectRatio]:
 
 
 class ImageGenerateRequest(BaseModel):
-    campaign_id: uuid.UUID
+    campaign_id: uuid.UUID | None = None
     prompt: str = Field(min_length=3, max_length=4000)
     platforms: list[Platform] = Field(
         default_factory=default_image_platforms, min_length=1, max_length=6
@@ -40,7 +40,7 @@ class ImageGenerateRequest(BaseModel):
 
 
 class VideoComposeRequest(BaseModel):
-    campaign_id: uuid.UUID
+    campaign_id: uuid.UUID | None = None
     source_asset_ids: list[uuid.UUID] = Field(min_length=1, max_length=8)
     aspect_ratios: list[VideoAspectRatio] = Field(
         default_factory=default_video_ratios, min_length=1, max_length=3
