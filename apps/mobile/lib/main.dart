@@ -4,7 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:ui' show ImageFilter;
 import 'screens/analytics_screen.dart';
 import 'screens/auth_screen.dart';
-import 'screens/campaigns_screen.dart';
+import 'screens/media_screen.dart';
 import 'screens/overview_screen.dart';
 import 'screens/schedule_screen.dart';
 import 'state/app_state.dart';
@@ -322,7 +322,7 @@ class _MobileShellState extends State<MobileShell> {
   Widget build(BuildContext context) {
     final pages = [
       OverviewScreen(state: widget.state),
-      CampaignsScreen(state: widget.state),
+      MediaScreen(state: widget.state),
       ScheduleScreen(state: widget.state),
       AnalyticsScreen(state: widget.state),
     ];

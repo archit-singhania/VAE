@@ -619,3 +619,41 @@ def cancel_account_deletion(
     session.commit()
     response.status_code = status.HTTP_204_NO_CONTENT
     return response
+
+
+@router.post("/admin/process-deletions", response_model=dict[str, int])
+def process_due_deletions(current_user: CurrentUser, session: SessionDep) -> dict[str, int]:
+    """Execute due deletion requests without breaking historical media/audit FKs.
+
+    Customer records are irreversibly anonymized and deactivated; immutable
+    aggregate usage records remain for accounting and audit integrity.
+    """
+    _require_admin(current_user)
+    now = datetime.now(UTC)
+    items = session.scalars(
+        select(AccountDeletionRequest).where(
+            AccountDeletionRequest.status == "requested",
+            AccountDeletionRequest.scheduled_for <= now,
+        )
+    ).all()
+    processed = 0
+    for item in items:
+        user = session.get(User, item.user_id)
+        if user is None:
+            item.status = "completed"
+            item.completed_at = now
+            processed += 1
+            continue
+        item.status = "processing"
+        user.is_active = False
+        user.account_status = "deleted"
+        user.email = f"deleted+{user.id}@invalid.vae"
+        user.display_name = "Deleted account"
+        user.brand_name = None
+        user.avatar_url = None
+        user.password_hash = hash_password(str(uuid.uuid4()))
+        item.status = "completed"
+        item.completed_at = now
+        processed += 1
+    session.commit()
+    return {"processed": processed}

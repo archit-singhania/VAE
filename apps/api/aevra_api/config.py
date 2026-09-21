@@ -79,6 +79,8 @@ class Settings(BaseSettings):
     oauth_frontend_url: str = "http://localhost:3000"
     meta_oauth_client_id: str | None = None
     meta_oauth_client_secret: str | None = None
+    instagram_oauth_client_id: str | None = None
+    instagram_oauth_client_secret: str | None = None
     threads_oauth_client_id: str | None = None
     threads_oauth_client_secret: str | None = None
     linkedin_oauth_client_id: str | None = None

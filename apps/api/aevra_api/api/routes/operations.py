@@ -2,7 +2,7 @@ import uuid
 
 from fastapi import APIRouter, status
 
-from aevra_api.api.dependencies import CurrentUser, SessionDep
+from aevra_api.api.dependencies import CurrentUser, SessionDep, SettingsDep
 from aevra_api.schemas.operations import (
     AuditLogResponse,
     MetricsCreateRequest,
@@ -11,6 +11,7 @@ from aevra_api.schemas.operations import (
     ScheduledPostResponse,
     ScheduleRescheduleRequest,
 )
+from aevra_api.services.analytics_polling import AnalyticsPoller
 from aevra_api.services.operations import OperationsService
 
 router = APIRouter(prefix="/workspaces/{workspace_id}/operations", tags=["operations"])
@@ -94,3 +95,15 @@ def audit(
 ) -> list[AuditLogResponse]:
     items = OperationsService(session).audit(current_user.id, workspace_id)
     return [AuditLogResponse.model_validate(item) for item in items]
+
+
+@router.post("/analytics/poll", response_model=dict[str, int])
+def poll_analytics(
+    workspace_id: uuid.UUID,
+    current_user: CurrentUser,
+    session: SessionDep,
+    settings: SettingsDep,
+) -> dict[str, int]:
+    """Run an on-demand provider poll; Celery can call the same service later."""
+    OperationsService(session)._access(current_user.id, workspace_id)
+    return AnalyticsPoller(session, settings).collect(limit=100)

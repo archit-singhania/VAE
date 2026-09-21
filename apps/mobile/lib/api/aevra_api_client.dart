@@ -205,6 +205,28 @@ class AevraApiClient {
         parse: (json) => (json as List).map((e) => MediaAsset.fromJson(e as Map<String, dynamic>)).toList(),
       );
 
+  Future<List<MediaAsset>> generateImage(
+    String token,
+    String workspaceId,
+    String prompt,
+  ) =>
+      _request<List<MediaAsset>>(
+        '/workspaces/$workspaceId/media/images/generate',
+        token: token,
+        method: 'POST',
+        body: {
+          'campaign_id': null,
+          'prompt': prompt,
+          'platforms': ['instagram'],
+          'aspect_ratio': '1:1',
+          'brand_overlay': true,
+          'brand_text': 'VAE',
+        },
+        parse: (json) => ((json as Map<String, dynamic>)['assets'] as List)
+            .map((e) => MediaAsset.fromJson(e as Map<String, dynamic>))
+            .toList(),
+      );
+
   Future<List<SocialAccount>> accounts(String token, String workspaceId) =>
       _request<List<SocialAccount>>(
         '/workspaces/$workspaceId/publishing/accounts',

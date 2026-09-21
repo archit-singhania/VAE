@@ -56,8 +56,16 @@ class OAuthAuthorizeResponse(BaseModel):
 def provider_config(provider: str, settings: Settings) -> ProviderConfig:
     if provider in {"facebook", "instagram"}:
         return ProviderConfig(
-            settings.meta_oauth_client_id,
-            settings.meta_oauth_client_secret,
+            (
+                settings.instagram_oauth_client_id
+                if provider == "instagram" and settings.instagram_oauth_client_id
+                else settings.meta_oauth_client_id
+            ),
+            (
+                settings.instagram_oauth_client_secret
+                if provider == "instagram" and settings.instagram_oauth_client_secret
+                else settings.meta_oauth_client_secret
+            ),
             "https://www.facebook.com/v23.0/dialog/oauth",
             "https://graph.facebook.com/v23.0/oauth/access_token",
             "https://graph.facebook.com/v23.0/me?fields=id,name,username",
@@ -80,7 +88,7 @@ def provider_config(provider: str, settings: Settings) -> ProviderConfig:
             "https://graph.threads.net/oauth/access_token",
             "https://graph.threads.net/v1.0/me?fields=id,name,username",
             ("threads_basic", "threads_content_publish"),
-            False,
+            True,
             "https://graph.threads.net/v1.0/me/permissions",
         )
     if provider == "linkedin":
@@ -380,19 +388,27 @@ async def refresh(
     account = service.account(current_user.id, workspace_id, account_id)
     if account.platform != provider:
         raise ConflictError("Provider does not match the connected account")
-    _, refresh_token = service.token_pair(account)
+    access_token, refresh_token = service.token_pair(account)
+    if provider == "threads":
+        refresh_token = access_token
     if not refresh_token:
         raise ConflictError("No refresh token is stored for this account")
     async with httpx.AsyncClient(timeout=20) as client:
-        response = await client.post(
-            config.token_url,
-            data={
-                "client_id": config.client_id,
-                "client_secret": config.client_secret,
-                "grant_type": "refresh_token",
-                "refresh_token": refresh_token,
-            },
-        )
+        if provider == "threads":
+            response = await client.get(
+                "https://graph.threads.net/refresh_access_token",
+                params={"grant_type": "th_refresh_token", "access_token": refresh_token},
+            )
+        else:
+            response = await client.post(
+                config.token_url,
+                data={
+                    "client_id": config.client_id,
+                    "client_secret": config.client_secret,
+                    "grant_type": "refresh_token",
+                    "refresh_token": refresh_token,
+                },
+            )
         response.raise_for_status()
         payload = response.json()
     access_token = str(payload.get("access_token", ""))
