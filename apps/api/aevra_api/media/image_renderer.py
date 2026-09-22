@@ -83,7 +83,71 @@ class DeterministicImageProvider:
                 width=max(1, min(request.width, request.height) // 280),
             )
         blurred = shapes.filter(ImageFilter.GaussianBlur(radius=max(4, request.width // 100)))
-        return Image.alpha_composite(canvas, blurred)
+        result = Image.alpha_composite(canvas, blurred)
+        prompt = request.prompt.lower()
+        if any(word in prompt for word in ("cartoon", "character", "running", "runner")):
+            result = self._render_stylized_character(result, digest, seed)
+        return result
+
+    def _render_stylized_character(
+        self, canvas: Image.Image, digest: bytes, seed: int
+    ) -> Image.Image:
+        """Add a legible, deterministic editorial character scene for free previews."""
+        draw = ImageDraw.Draw(canvas, "RGBA")
+        width, height = canvas.size
+        scale = min(width, height) / 1024
+        ground = int(height * 0.78)
+        accent = (*self._colour(digest, 4, floor=100), 235)
+        ink = (*self._colour(digest, 12, floor=35), 245)
+        highlight = (*self._colour(digest, 21, floor=120), 220)
+        draw.rounded_rectangle(
+            (int(width * 0.08), ground, int(width * 0.92), ground + max(4, int(8 * scale))),
+            radius=max(2, int(4 * scale)),
+            fill=(*ink[:3], 160),
+        )
+        cx, cy = int(width * 0.52), int(height * 0.45)
+        head_radius = max(18, int(42 * scale))
+        stroke = max(5, int(18 * scale))
+        draw.ellipse(
+            (cx - head_radius, cy - int(170 * scale) - head_radius,
+             cx + head_radius, cy - int(170 * scale) + head_radius),
+            fill=accent,
+            outline=ink,
+            width=max(2, int(5 * scale)),
+        )
+        shoulder = (cx, cy - int(105 * scale))
+        hip = (cx - int(15 * scale), cy + int(80 * scale))
+        draw.line((shoulder[0], shoulder[1], hip[0], hip[1]), fill=ink, width=stroke, joint="curve")
+        draw.line(
+            (shoulder[0], shoulder[1], cx - int(145 * scale), cy - int(30 * scale)),
+            fill=highlight,
+            width=stroke,
+        )
+        draw.line(
+            (shoulder[0], shoulder[1], cx + int(125 * scale), cy - int(5 * scale)),
+            fill=highlight,
+            width=stroke,
+        )
+        draw.line((hip[0], hip[1], cx - int(135 * scale), ground), fill=ink, width=stroke)
+        draw.line(
+            (hip[0], hip[1], cx + int(115 * scale), ground - int(80 * scale)),
+            fill=ink,
+            width=stroke,
+        )
+        for offset in (0.0, 0.08, 0.16):
+            y = int(height * (0.25 + offset))
+            draw.line(
+                (int(width * (0.12 + offset)), y, int(width * (0.30 + offset)), y),
+                fill=(*highlight[:3], 130),
+                width=max(2, int(7 * scale)),
+            )
+        randomizer = random.Random(seed + 17)
+        for _ in range(6):
+            x = randomizer.randint(int(width * 0.08), int(width * 0.9))
+            y = randomizer.randint(int(height * 0.12), int(height * 0.65))
+            radius = randomizer.randint(max(3, int(4 * scale)), max(6, int(12 * scale)))
+            draw.ellipse((x - radius, y - radius, x + radius, y + radius), fill=(*accent[:3], 110))
+        return canvas
 
     def generate(
         self,

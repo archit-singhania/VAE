@@ -56,6 +56,10 @@ class Settings(BaseSettings):
     ollama_base_url: str = "http://localhost:11434"
     ollama_model: str = "qwen3:8b"
     ollama_timeout_seconds: float = Field(default=120.0, ge=1, le=600)
+    groq_api_key: str | None = None
+    groq_base_url: str = "https://api.groq.com/openai/v1"
+    groq_model: str = "llama-3.1-8b-instant"
+    groq_timeout_seconds: float = Field(default=60.0, ge=1, le=600)
     media_root: str = "./media"
     image_provider: str = "deterministic"
     flux_base_url: str = "http://localhost:8188"

@@ -233,7 +233,6 @@ export function LiveWorkspace() {
   const [mediaPrompt, setMediaPrompt] = useState("");
   const [mediaMode, setMediaMode] = useState<"image" | "text">("image");
   const [generatedText, setGeneratedText] = useState("");
-  const [videoSources, setVideoSources] = useState<string[]>([]);
   const [uploadingMedia, setUploadingMedia] = useState(false);
   const [publishCampaign, setPublishCampaign] = useState("");
   const [publishAccounts, setPublishAccounts] = useState<string[]>([]);
@@ -785,21 +784,6 @@ export function LiveWorkspace() {
       setGeneratedText(content);
       setPublishText(content);
       setNotice("Text generated and copied into publishing.");
-    });
-  };
-  const createVideo = async () => {
-    if (!token || !workspace || videoSources.length === 0) return;
-    await run("video", async () => {
-      const result = await api.composeVideo(token, workspace.id, {
-        campaign_id: null,
-        source_asset_ids: videoSources,
-        aspect_ratios: ["9:16", "1:1", "16:9"],
-        duration_seconds: 12,
-        caption: mediaPrompt || null,
-      });
-      setAssets((items) => [...result.assets, ...items]);
-      setVideoSources([]);
-      setNotice("Video variants created in your asset library.");
     });
   };
   const uploadMedia = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -1702,50 +1686,17 @@ export function LiveWorkspace() {
           )}
           <label className="upload-dropzone">
             <Upload size={16} />
-            <span>{uploadingMedia ? "Uploading…" : "Upload a reference or finished asset"}</span>
+            <span>{uploadingMedia ? "Uploading…" : "Upload an image reference or asset"}</span>
             <small>
-              Use an image as your creative reference, or upload video for the composer.
+              Keep your visual references and finished images together in the private library.
             </small>
             <input
               type="file"
-              accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime"
+              accept="image/jpeg,image/png,image/webp"
               disabled={uploadingMedia}
               onChange={uploadMedia}
             />
           </label>
-          {assets.some((asset) => asset.media_type === "image" && asset.status === "ready") && (
-            <div className="video-source-picker">
-              <strong>Create a video from images</strong>
-              <small>Select up to eight ready images, then render three social formats.</small>
-              {assets
-                .filter((asset) => asset.media_type === "image" && asset.status === "ready")
-                .slice(0, 12)
-                .map((asset) => (
-                  <label key={asset.id}>
-                    <input
-                      type="checkbox"
-                      checked={videoSources.includes(asset.id)}
-                      disabled={!videoSources.includes(asset.id) && videoSources.length >= 8}
-                      onChange={() =>
-                        setVideoSources((items) =>
-                          items.includes(asset.id)
-                            ? items.filter((id) => id !== asset.id)
-                            : [...items, asset.id],
-                        )
-                      }
-                    />
-                    <span>{asset.filename}</span>
-                  </label>
-                ))}
-              <Button
-                type="button"
-                disabled={busy === "video" || videoSources.length === 0}
-                onClick={() => void createVideo()}
-              >
-                Generate video
-              </Button>
-            </div>
-          )}
         </form>
       </section>
       <section className="live-panel">

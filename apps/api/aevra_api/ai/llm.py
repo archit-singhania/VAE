@@ -1,3 +1,4 @@
+import json
 from collections.abc import Iterator
 
 import httpx
@@ -99,5 +100,116 @@ class OllamaLLMProvider:
             raise ProviderUnavailableError("Local language model streaming is unavailable") from exc
 
 
+class GroqLLMProvider:
+    """OpenAI-compatible Groq provider; enabled only when a server-side key exists."""
+
+    def __init__(self, settings: Settings, client: httpx.Client | None = None) -> None:
+        if not settings.groq_api_key:
+            raise ValueError("Groq API key is not configured")
+        self.settings = settings
+        self.client = client or httpx.Client(
+            base_url=settings.groq_base_url.rstrip("/"),
+            timeout=settings.groq_timeout_seconds,
+            headers={"Authorization": f"Bearer {settings.groq_api_key}"},
+        )
+
+    @property
+    def model_name(self) -> str:
+        return self.settings.groq_model
+
+    def status(self) -> ProviderStatus:
+        return ProviderStatus(
+            bool(self.settings.groq_api_key), "groq", self.model_name, "Groq configured"
+        )
+
+    def _payload(self, request: GenerationRequest, *, stream: bool) -> dict[str, object]:
+        payload: dict[str, object] = {
+            "model": self.model_name,
+            "stream": stream,
+            "messages": [{"role": m.role, "content": m.content} for m in request.messages],
+            "temperature": request.temperature,
+            "max_tokens": request.max_tokens,
+        }
+        if request.response_format == "json":
+            payload["response_format"] = {"type": "json_object"}
+        return payload
+
+    def generate(self, request: GenerationRequest) -> GenerationResult:
+        try:
+            response = self.client.post(
+                "/chat/completions", json=self._payload(request, stream=False)
+            )
+            response.raise_for_status()
+            body = response.json()
+            content = body["choices"][0]["message"]["content"]
+        except (httpx.HTTPError, ValueError, KeyError, TypeError, IndexError) as exc:
+            raise ProviderUnavailableError("Groq language model is unavailable") from exc
+        if not isinstance(content, str) or not content.strip():
+            raise ProviderUnavailableError("Groq language model returned an empty response")
+        usage = body.get("usage", {}) if isinstance(body, dict) else {}
+        return GenerationResult(
+            content=content,
+            model=str(body.get("model", self.model_name)),
+            provider="groq",
+            prompt_tokens=usage.get("prompt_tokens") if isinstance(usage, dict) else None,
+            completion_tokens=usage.get("completion_tokens") if isinstance(usage, dict) else None,
+            metadata={"done": True},
+        )
+
+    def stream(self, request: GenerationRequest) -> Iterator[str]:
+        try:
+            with self.client.stream(
+                "POST", "/chat/completions", json=self._payload(request, stream=True)
+            ) as response:
+                response.raise_for_status()
+                for line in response.iter_lines():
+                    if not line or not line.startswith("data:"):
+                        continue
+                    raw = line.removeprefix("data:").strip()
+                    if raw == "[DONE]":
+                        break
+                    chunk = (
+                        json.loads(raw)
+                        .get("choices", [{}])[0]
+                        .get("delta", {})
+                        .get("content", "")
+                    )
+                    if isinstance(chunk, str) and chunk:
+                        yield chunk
+        except (httpx.HTTPError, ValueError, TypeError, KeyError, IndexError) as exc:
+            raise ProviderUnavailableError("Groq language model streaming is unavailable") from exc
+
+
+class FallbackLLMProvider:
+    """Use local Ollama first and Groq as an opt-in server-side fallback."""
+
+    def __init__(self, primary: OllamaLLMProvider, fallback: GroqLLMProvider) -> None:
+        self.primary = primary
+        self.fallback = fallback
+
+    @property
+    def model_name(self) -> str:
+        return f"{self.primary.model_name} → {self.fallback.model_name}"
+
+    def status(self) -> ProviderStatus:
+        primary = self.primary.status()
+        return primary if primary.available else self.fallback.status()
+
+    def generate(self, request: GenerationRequest) -> GenerationResult:
+        try:
+            return self.primary.generate(request)
+        except ProviderUnavailableError:
+            return self.fallback.generate(request)
+
+    def stream(self, request: GenerationRequest) -> Iterator[str]:
+        try:
+            yield from self.primary.stream(request)
+        except ProviderUnavailableError:
+            yield from self.fallback.stream(request)
+
+
 def build_llm_provider(settings: Settings) -> LLMProvider:
-    return OllamaLLMProvider(settings)
+    primary = OllamaLLMProvider(settings)
+    if settings.groq_api_key:
+        return FallbackLLMProvider(primary, GroqLLMProvider(settings))
+    return primary
