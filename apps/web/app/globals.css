@@ -5516,6 +5516,54 @@ html[data-theme="light"] .live-theme-toggle {
   opacity: 0;
   pointer-events: none;
 }
+
+/* Keep workspace surfaces steady while hovering. The old pointer-tilt and
+   lift made the composer jump under the cursor and wasted usable space. */
+.live-panel,
+.chart-card,
+.depth-card,
+.panel,
+[data-depth-enabled] .live-panel,
+[data-depth-enabled] .chart-card {
+  transform: none !important;
+  transition:
+    box-shadow 180ms ease,
+    border-color 180ms ease;
+}
+.live-panel:hover,
+.chart-card:hover,
+.depth-card:hover,
+.panel:hover,
+[data-depth-enabled] .live-panel:hover {
+  transform: none !important;
+}
+
+/* Dense media workspace: keep the prompt and library visible together while
+   retaining a generous preview area for generated artwork. */
+.live-content {
+  padding-top: 18px;
+  padding-bottom: 22px;
+}
+.live-columns {
+  grid-template-columns: minmax(330px, 0.78fr) minmax(0, 1.22fr);
+  gap: 12px;
+}
+.live-panel {
+  padding: 15px 16px;
+}
+.live-form {
+  gap: 10px;
+}
+.live-tall {
+  min-height: 132px !important;
+}
+.live-asset {
+  gap: 6px;
+  padding: 10px;
+}
+.asset-preview {
+  max-height: 190px;
+}
 .confirm-close {
   position: absolute;
   top: 16px;

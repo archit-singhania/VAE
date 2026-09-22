@@ -197,6 +197,19 @@ class MediaService:
         self, user_id: uuid.UUID, workspace_id: uuid.UUID, request: ImageGenerateRequest
     ) -> list[MediaAsset]:
         self._require_editor(user_id, workspace_id)
+        # One output is the default. Multiple outputs are explicit and use a
+        # different seed so the provider returns genuine variations.
+        if request.output_count > 1:
+            generated: list[MediaAsset] = []
+            for index in range(request.output_count):
+                variation = request.model_copy(
+                    update={
+                        "output_count": 1,
+                        "seed": (request.seed + index) if request.seed is not None else None,
+                    }
+                )
+                generated.extend(self.generate_images(user_id, workspace_id, variation))
+            return generated
         campaign = (
             self._campaign(user_id, workspace_id, request.campaign_id)
             if request.campaign_id
@@ -250,7 +263,7 @@ class MediaService:
         assets = [source]
         with Image.open(io.BytesIO(result.image.data)) as opened:
             image = opened.convert("RGBA")
-            for platform in request.platforms:
+            for platform in request.platforms if request.include_platform_variants else []:
                 width, height, ratio = PLATFORM_SIZES[platform]
                 transformed = resize_cover(image, width, height)
                 encoded = encode_image(transformed, "png")

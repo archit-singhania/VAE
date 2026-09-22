@@ -54,7 +54,18 @@ class OAuthAuthorizeResponse(BaseModel):
 
 
 def provider_config(provider: str, settings: Settings) -> ProviderConfig:
-    if provider in {"facebook", "instagram"}:
+    if provider == "instagram":
+        return ProviderConfig(
+            settings.instagram_oauth_client_id or settings.meta_oauth_client_id,
+            settings.instagram_oauth_client_secret or settings.meta_oauth_client_secret,
+            "https://www.instagram.com/oauth/authorize",
+            "https://api.instagram.com/oauth/access_token",
+            "https://graph.instagram.com/me?fields=user_id,username",
+            ("instagram_business_basic", "instagram_business_content_publish"),
+            False,
+            "https://graph.instagram.com/me/permissions",
+        )
+    if provider == "facebook":
         return ProviderConfig(
             (
                 settings.instagram_oauth_client_id
@@ -183,7 +194,7 @@ async def _resolve_meta_account(
     profile: dict[str, object],
 ) -> tuple[str, str, str, dict[str, object]]:
     """Resolve a publishable Page/Instagram identity from a Meta user token."""
-    if provider not in {"facebook", "instagram"}:
+    if provider != "facebook":
         external_id, display_name = profile_identity(provider, profile)
         return external_id, display_name, access_token, {}
     response = await client.get(
@@ -265,7 +276,9 @@ def authorize(
         "client_id": config.client_id,
         "redirect_uri": uri,
         "response_type": "code",
-        "scope": " ".join(config.scopes),
+        "scope": (
+            ",".join(config.scopes) if provider == "instagram" else " ".join(config.scopes)
+        ),
         "state": state,
     }
     if provider == "youtube":
@@ -473,6 +486,12 @@ async def revoke(
 
 
 def profile_identity(provider: str, profile: dict[str, object]) -> tuple[str, str]:
+    if provider == "instagram":
+        external_id = str(profile.get("user_id") or profile.get("id") or "")
+        display_name = str(profile.get("username") or "Instagram account")
+        if not external_id:
+            raise ProviderUnavailableError("Instagram did not return a business account id")
+        return external_id, display_name
     if provider == "youtube":
         items = profile.get("items")
         if isinstance(items, list) and items and isinstance(items[0], dict):

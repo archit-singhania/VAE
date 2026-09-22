@@ -32,6 +32,8 @@ class ImageGenerateRequest(BaseModel):
     brand_text: str | None = Field(default=None, max_length=120)
     negative_prompt: str | None = Field(default=None, max_length=2000)
     seed: int | None = Field(default=None, ge=0, le=4_294_967_295)
+    output_count: int = Field(default=1, ge=1, le=3)
+    include_platform_variants: bool = False
 
     @field_validator("platforms")
     @classmethod
