@@ -231,6 +231,7 @@ export function LiveWorkspace() {
   const [instructions, setInstructions] = useState("");
   const [selectedPlatforms, setSelectedPlatforms] = useState<Platform[]>(["linkedin"]);
   const [mediaPrompt, setMediaPrompt] = useState("");
+  const [mediaMode, setMediaMode] = useState<"image" | "text">("image");
   const [generatedText, setGeneratedText] = useState("");
   const [videoSources, setVideoSources] = useState<string[]>([]);
   const [uploadingMedia, setUploadingMedia] = useState(false);
@@ -954,7 +955,7 @@ export function LiveWorkspace() {
               <b>VAE</b>
             </div>
             <p className="live-kicker">Campaign intelligence, grounded</p>
-            <h1>Make every campaign feel like your sharpest team member made it.</h1>
+            <h1>Make every piece of content feel like your sharpest team made it.</h1>
             <p>
               Turn approved brand knowledge into evidence-backed, human-approved content operations.
             </p>
@@ -1301,40 +1302,37 @@ export function LiveWorkspace() {
       <section className="live-panel">
         <div className="live-panel-head">
           <div>
-            <p className="live-kicker">Pipeline</p>
-            <h2>Recent campaigns</h2>
+            <p className="live-kicker">Your library</p>
+            <h2>Recent media</h2>
           </div>
-          <Button size="sm" onClick={() => setView("campaigns")}>
-            <Plus size={14} /> New campaign
+          <Button size="sm" onClick={() => setView("media")}>
+            <Plus size={14} /> Create media
           </Button>
         </div>
-        {campaigns.length ? (
-          campaigns.map((item) => (
-            <motion.button
-              layoutId={`campaign-card-${item.id}`}
+        {assets.length ? (
+          assets.slice(0, 4).map((asset) => (
+            <button
+              type="button"
               className="live-list-row"
-              key={item.id}
-              onClick={() => {
-                setSelected(item.id);
-                setView("campaigns");
-              }}
+              key={asset.id}
+              onClick={() => setView("media")}
             >
-              <Sparkles size={16} />
+              <Image size={16} />
               <span>
-                <b>{item.name}</b>
+                <b>{asset.filename}</b>
                 <small>
-                  {item.platforms.join(" · ")} · {date(item.updated_at)}
+                  {asset.media_type} · {date(asset.created_at)}
                 </small>
               </span>
-              <Status value={item.status} />
+              <Status value={asset.status} />
               <ArrowRight size={15} />
-            </motion.button>
+            </button>
           ))
         ) : (
           <Empty
-            icon={Sparkles}
-            title="Your campaign runway is clear"
-            body="Create a campaign brief to start generating grounded content."
+            icon={Image}
+            title="Your media library is ready"
+            body="Create an image, caption, or video to see it here."
           />
         )}
       </section>
@@ -1343,7 +1341,7 @@ export function LiveWorkspace() {
           <div className="live-panel-head">
             <div>
               <p className="live-kicker">Live model stream</p>
-              <h2>Campaign direction</h2>
+              <h2>Live writing preview</h2>
             </div>
             <span className="live-helper">SSE connected</span>
           </div>
@@ -1359,21 +1357,11 @@ export function LiveWorkspace() {
           <span className="live-helper">Everything stays reviewable</span>
         </div>
         <div className="overview-actions">
-          <button type="button" className="overview-action" onClick={() => setView("campaigns")}>
+          <button type="button" className="overview-action" onClick={() => setView("media")}>
             <Sparkles size={18} />
             <span>
               <strong>Start creating</strong>
-              <small>Turn a brief into review-ready content for your channels.</small>
-            </span>
-            <ArrowRight size={15} />
-          </button>
-          <button type="button" className="overview-action" onClick={() => setView("campaigns")}>
-            <Sparkles size={18} />
-            <span>
-              <strong>
-                {campaigns.length ? "Create another campaign" : "Draft your first campaign"}
-              </strong>
-              <small>Turn a brief into platform-ready variants with a review gate.</small>
+              <small>Generate an image or publish-ready caption from a prompt.</small>
             </span>
             <ArrowRight size={15} />
           </button>
@@ -1649,29 +1637,60 @@ export function LiveWorkspace() {
     <div className="live-columns">
       <section className="live-panel">
         <Reveal3D>
-          <p className="live-kicker">Image studio</p>
-          <h2>Generate a visual</h2>
+          <p className="live-kicker">Free creator studio</p>
+          <h2>Create from a prompt</h2>
         </Reveal3D>
-        <form className="live-form" onSubmit={createImage}>
-          <Field label="Visual direction">
+        <div className="live-tabs media-mode-tabs" role="tablist" aria-label="Media type">
+          <button
+            type="button"
+            className={cn(mediaMode === "image" && "active")}
+            onClick={() => setMediaMode("image")}
+          >
+            <Image size={14} /> Image
+          </button>
+          <button
+            type="button"
+            className={cn(mediaMode === "text" && "active")}
+            onClick={() => setMediaMode("text")}
+          >
+            <FileText size={14} /> Caption / text
+          </button>
+        </div>
+        <form
+          className="live-form"
+          onSubmit={
+            mediaMode === "image"
+              ? createImage
+              : (event) => {
+                  event.preventDefault();
+                  void createText();
+                }
+          }
+        >
+          <Field label={mediaMode === "image" ? "Describe the image" : "What should VAE write?"}>
             <textarea
               required
               className="live-tall"
               value={mediaPrompt}
               onChange={(e) => setMediaPrompt(e.target.value)}
-              placeholder="Premium editorial composition with chartreuse energy…"
+              placeholder={
+                mediaMode === "image"
+                  ? "A cinematic product launch image with warm studio light…"
+                  : "Write an Instagram caption for a calm, premium product launch…"
+              }
             />
           </Field>
-          <Button type="submit" disabled={busy === "image"}>
-            <Sparkles size={14} /> Generate visual
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            disabled={busy === "text" || mediaPrompt.trim().length < 3}
-            onClick={() => void createText()}
-          >
-            <FileText size={14} /> Generate text
+          <p className="live-helper">
+            Powered by the configured local model when available, with a free deterministic fallback
+            for images.
+          </p>
+          <Button type="submit" disabled={busy === mediaMode}>
+            {mediaMode === "image" ? <Sparkles size={14} /> : <FileText size={14} />}
+            {busy === mediaMode
+              ? "Creating…"
+              : mediaMode === "image"
+                ? "Generate image"
+                : "Generate caption"}
           </Button>
           {generatedText && (
             <div className="generated-copy" aria-live="polite">
@@ -1683,8 +1702,10 @@ export function LiveWorkspace() {
           )}
           <label className="upload-dropzone">
             <Upload size={16} />
-            <span>{uploadingMedia ? "Uploading…" : "Upload image or video"}</span>
-            <small>Add your own asset to this private library</small>
+            <span>{uploadingMedia ? "Uploading…" : "Upload a reference or finished asset"}</span>
+            <small>
+              Use an image as your creative reference, or upload video for the composer.
+            </small>
             <input
               type="file"
               accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime"
