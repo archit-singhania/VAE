@@ -30,15 +30,27 @@ const _specs = <GlassElevation, _GlassSpec>{
   GlassElevation.flat: _GlassSpec(5, 0.30, []),
   GlassElevation.raised: _GlassSpec(9, 0.46, [
     BoxShadow(color: Color(0x6E000000), blurRadius: 3, offset: Offset(0, 1)),
-    BoxShadow(color: Color(0x8C000000), blurRadius: 28, spreadRadius: -14, offset: Offset(0, 10)),
+    BoxShadow(
+        color: Color(0x8C000000),
+        blurRadius: 28,
+        spreadRadius: -14,
+        offset: Offset(0, 10)),
   ]),
   GlassElevation.floating: _GlassSpec(14, 0.60, [
     BoxShadow(color: Color(0x78000000), blurRadius: 5, offset: Offset(0, 2)),
-    BoxShadow(color: Color(0xB8000000), blurRadius: 54, spreadRadius: -20, offset: Offset(0, 20)),
+    BoxShadow(
+        color: Color(0xB8000000),
+        blurRadius: 54,
+        spreadRadius: -20,
+        offset: Offset(0, 20)),
   ]),
   GlassElevation.lifted: _GlassSpec(20, 0.74, [
     BoxShadow(color: Color(0x85000000), blurRadius: 7, offset: Offset(0, 3)),
-    BoxShadow(color: Color(0xD6000000), blurRadius: 92, spreadRadius: -26, offset: Offset(0, 38)),
+    BoxShadow(
+        color: Color(0xD6000000),
+        blurRadius: 92,
+        spreadRadius: -26,
+        offset: Offset(0, 38)),
   ]),
 };
 
@@ -160,7 +172,8 @@ class DepthCard extends StatefulWidget {
   State<DepthCard> createState() => _DepthCardState();
 }
 
-class _DepthCardState extends State<DepthCard> with SingleTickerProviderStateMixin {
+class _DepthCardState extends State<DepthCard>
+    with SingleTickerProviderStateMixin {
   late final AnimationController _settle = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 420),
@@ -224,7 +237,9 @@ class _DepthCardState extends State<DepthCard> with SingleTickerProviderStateMix
         builder: (context, child) {
           // `_settle` runs 0 (fully tilted) → 1 (flat) on release, so the
           // card springs back rather than snapping.
-          final relax = _pressed ? 0.0 : Curves.easeOutBack.transform(_settle.value).clamp(0.0, 1.0);
+          final relax = _pressed
+              ? 0.0
+              : Curves.easeOutBack.transform(_settle.value).clamp(0.0, 1.0);
           final amount = (1 - relax) * widget.intensity;
 
           final rotX = (-_local.dy * 7 * math.pi / 180) * amount;
@@ -232,7 +247,8 @@ class _DepthCardState extends State<DepthCard> with SingleTickerProviderStateMix
 
           final shrink = 1 - 0.012 * amount;
           final matrix = Matrix4.identity()
-            ..setEntry(3, 2, 1 / 1100) // perspective, matching --depth-perspective
+            ..setEntry(
+                3, 2, 1 / 1100) // perspective, matching --depth-perspective
             ..rotateX(rotX)
             ..rotateY(rotY)
             // `scale` is deprecated in favour of the explicit per-axis form.
@@ -254,11 +270,14 @@ class _DepthCardState extends State<DepthCard> with SingleTickerProviderStateMix
                         child: DecoratedBox(
                           decoration: BoxDecoration(
                             gradient: RadialGradient(
-                              center: Alignment(_local.dx * 1.8, _local.dy * 1.8),
+                              center:
+                                  Alignment(_local.dx * 1.8, _local.dy * 1.8),
                               radius: 0.85,
                               colors: [
-                                AevraColors.sheen.withValues(alpha: 0.14 * amount),
-                                AevraColors.sheen.withValues(alpha: 0.04 * amount),
+                                AevraColors.sheen
+                                    .withValues(alpha: 0.14 * amount),
+                                AevraColors.sheen
+                                    .withValues(alpha: 0.04 * amount),
                                 Colors.transparent,
                               ],
                               stops: const [0.0, 0.32, 0.62],

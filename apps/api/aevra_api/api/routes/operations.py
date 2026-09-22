@@ -106,4 +106,4 @@ def poll_analytics(
 ) -> dict[str, int]:
     """Run an on-demand provider poll; Celery can call the same service later."""
     OperationsService(session)._access(current_user.id, workspace_id)
-    return AnalyticsPoller(session, settings).collect(limit=100)
+    return AnalyticsPoller(session, settings).collect(workspace_id=workspace_id, limit=100)

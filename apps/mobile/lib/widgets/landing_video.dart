@@ -24,7 +24,8 @@ class _LandingVideoState extends State<LandingVideo> {
   @override
   void initState() {
     super.initState();
-    final controller = VideoPlayerController.asset('assets/video/video_loop.MOV');
+    final controller =
+        VideoPlayerController.asset('assets/video/video_loop.MOV');
     _controller = controller;
     _initialization = controller.initialize().then((_) async {
       await controller.setLooping(true);
@@ -46,7 +47,9 @@ class _LandingVideoState extends State<LandingVideo> {
   Widget build(BuildContext context) {
     final controller = _controller;
     final initialization = _initialization;
-    if (controller == null || initialization == null) return const SizedBox.shrink();
+    if (controller == null || initialization == null) {
+      return const SizedBox.shrink();
+    }
 
     return FutureBuilder<void>(
       future: initialization,
@@ -67,7 +70,8 @@ class _LandingVideoState extends State<LandingVideo> {
             curve: Curves.easeOutCubic,
             child: LayoutBuilder(
               builder: (context, constraints) {
-                final viewport = Size(constraints.maxWidth, constraints.maxHeight);
+                final viewport =
+                    Size(constraints.maxWidth, constraints.maxHeight);
                 final source = controller.value.size;
                 final scale = math.max(
                   viewport.width / source.width,

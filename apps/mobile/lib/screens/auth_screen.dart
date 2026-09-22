@@ -59,7 +59,8 @@ class _AuthScreenState extends State<AuthScreen> {
       backgroundColor: AevraColors.bg,
       body: Stack(
         children: [
-          const Positioned.fill(child: RepaintBoundary(child: ShaderBackground())),
+          const Positioned.fill(
+              child: RepaintBoundary(child: ShaderBackground())),
           // The original MOV artwork is optional and never blocks the first
           // frame. LandingVideo fades in only after local codec support is
           // confirmed; ShaderBackground remains the free fallback.
@@ -69,8 +70,8 @@ class _AuthScreenState extends State<AuthScreen> {
               animation: widget.state,
               builder: (context, _) {
                 return SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(
-                      AevraSpace.lg, AevraSpace.xxl, AevraSpace.lg, AevraSpace.xl),
+                  padding: const EdgeInsets.fromLTRB(AevraSpace.lg,
+                      AevraSpace.xxl, AevraSpace.lg, AevraSpace.xl),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -85,7 +86,10 @@ class _AuthScreenState extends State<AuthScreen> {
                       const SizedBox(height: AevraSpace.md),
                       const Text(
                         'Approved brand knowledge in. Evidence-backed, human-approved content out. Nothing publishes without a person saying yes.',
-                        style: TextStyle(fontSize: 13.5, height: 1.6, color: AevraColors.textSoft),
+                        style: TextStyle(
+                            fontSize: 13.5,
+                            height: 1.6,
+                            color: AevraColors.textSoft),
                       ),
                       const SizedBox(height: AevraSpace.lg),
                       // Three proof points, set as a mono rail. On a phone
@@ -103,7 +107,8 @@ class _AuthScreenState extends State<AuthScreen> {
                               Container(
                                 width: 4,
                                 height: 4,
-                                margin: const EdgeInsets.only(top: 6, right: AevraSpace.sm),
+                                margin: const EdgeInsets.only(
+                                    top: 6, right: AevraSpace.sm),
                                 decoration: const BoxDecoration(
                                   shape: BoxShape.circle,
                                   color: AevraColors.accent,
@@ -112,7 +117,8 @@ class _AuthScreenState extends State<AuthScreen> {
                               Expanded(
                                 child: Text(
                                   point,
-                                  style: const TextStyle(fontSize: 12, color: AevraColors.muted),
+                                  style: const TextStyle(
+                                      fontSize: 12, color: AevraColors.muted),
                                 ),
                               ),
                             ],
@@ -135,14 +141,24 @@ class _AuthScreenState extends State<AuthScreen> {
                           children: [
                             Row(
                               children: [
-                                _Tab(label: 'Sign in', active: isLogin, onTap: () => setState(() => isLogin = true)),
+                                _Tab(
+                                    label: 'Sign in',
+                                    active: isLogin,
+                                    onTap: () =>
+                                        setState(() => isLogin = true)),
                                 const SizedBox(width: AevraSpace.lg),
-                                _Tab(label: 'Get started', active: !isLogin, onTap: () => setState(() => isLogin = false)),
+                                _Tab(
+                                    label: 'Get started',
+                                    active: !isLogin,
+                                    onTap: () =>
+                                        setState(() => isLogin = false)),
                               ],
                             ),
                             const SizedBox(height: AevraSpace.lg),
                             Text(
-                              isLogin ? 'Welcome back' : 'Create your VAE account',
+                              isLogin
+                                  ? 'Welcome back'
+                                  : 'Create your VAE account',
                               style: AevraType.display(21),
                             ),
                             const SizedBox(height: AevraSpace.md),
@@ -150,47 +166,80 @@ class _AuthScreenState extends State<AuthScreen> {
                               _ErrorBanner(message: widget.state.error!),
                               const SizedBox(height: AevraSpace.sm),
                             ],
-                            if (widget.state.paymentPending && widget.state.paymentInfo != null) ...[
-                              Text('Payment verification', style: AevraType.eyebrow()),
+                            if (widget.state.paymentPending &&
+                                widget.state.paymentInfo != null) ...[
+                              Text('Payment verification',
+                                  style: AevraType.eyebrow()),
                               const SizedBox(height: AevraSpace.sm),
-                              Text('Scan with GPay, Paytm, BHIM, or any UPI app.', style: const TextStyle(color: AevraColors.textSoft)),
-                              if (widget.state.paymentInfo!.qrUrl.isNotEmpty) Image.network(widget.state.paymentInfo!.qrUrl, width: 160, height: 160),
-                              Text('${widget.state.paymentInfo!.amount} ${widget.state.paymentInfo!.currency}'),
+                              Text(
+                                  'Scan with GPay, Paytm, BHIM, or any UPI app.',
+                                  style: const TextStyle(
+                                      color: AevraColors.textSoft)),
+                              if (widget.state.paymentInfo!.qrUrl.isNotEmpty)
+                                Image.network(widget.state.paymentInfo!.qrUrl,
+                                    width: 160, height: 160),
+                              Text(
+                                  '${widget.state.paymentInfo!.amount} ${widget.state.paymentInfo!.currency}'),
                               Text(widget.state.paymentInfo!.upiId),
-                              _Field(label: 'UTR / transaction reference', controller: _utr),
+                              _Field(
+                                  label: 'UTR / transaction reference',
+                                  controller: _utr),
                               const SizedBox(height: AevraSpace.sm),
-                              SizedBox(width: double.infinity, child: FilledButton(onPressed: widget.state.loading ? null : () => widget.state.submitPayment(_utr.text.trim()), child: const Text('Submit payment proof'))),
+                              SizedBox(
+                                  width: double.infinity,
+                                  child: FilledButton(
+                                      onPressed: widget.state.loading
+                                          ? null
+                                          : () => widget.state
+                                              .submitPayment(_utr.text.trim()),
+                                      child:
+                                          const Text('Submit payment proof'))),
                               const SizedBox(height: AevraSpace.md),
                             ] else if (!isLogin) ...[
                               _Field(label: 'Your name', controller: _name),
                               const SizedBox(height: AevraSpace.sm),
-                              _Field(label: 'Product or brand name', controller: _org),
+                              _Field(
+                                  label: 'Product or brand name',
+                                  controller: _org),
                               const SizedBox(height: AevraSpace.sm),
                               DropdownButtonFormField<String>(
                                 initialValue: _accountType,
-                                decoration: const InputDecoration(labelText: 'Account type'),
+                                decoration: const InputDecoration(
+                                    labelText: 'Account type'),
                                 items: const [
-                                  DropdownMenuItem(value: 'creator', child: Text('Creator')),
-                                  DropdownMenuItem(value: 'business', child: Text('Business')),
+                                  DropdownMenuItem(
+                                      value: 'creator', child: Text('Creator')),
+                                  DropdownMenuItem(
+                                      value: 'business',
+                                      child: Text('Business')),
                                 ],
-                                onChanged: (value) => setState(() => _accountType = value ?? 'creator'),
+                                onChanged: (value) => setState(
+                                    () => _accountType = value ?? 'creator'),
                               ),
                               const SizedBox(height: AevraSpace.sm),
                             ],
-                            _Field(label: 'Email', controller: _email, keyboardType: TextInputType.emailAddress),
+                            _Field(
+                                label: 'Email',
+                                controller: _email,
+                                keyboardType: TextInputType.emailAddress),
                             const SizedBox(height: AevraSpace.sm),
-                            _Field(label: 'Password', controller: _password, obscure: true),
+                            _Field(
+                                label: 'Password',
+                                controller: _password,
+                                obscure: true),
                             const SizedBox(height: AevraSpace.lg),
                             SizedBox(
                               width: double.infinity,
                               child: FilledButton(
-                                onPressed: widget.state.loading ? null : _submit,
+                                onPressed:
+                                    widget.state.loading ? null : _submit,
                                 child: widget.state.loading
                                     ? const SizedBox(
                                         width: 18,
                                         height: 18,
                                         child: CircularProgressIndicator(
-                                            strokeWidth: 2, color: AevraColors.accentInk),
+                                            strokeWidth: 2,
+                                            color: AevraColors.accentInk),
                                       )
                                     : Text(isLogin ? 'Sign in' : 'Get started'),
                               ),
@@ -281,7 +330,8 @@ class _FieldState extends State<_Field> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(widget.label.toUpperCase(), style: AevraType.eyebrow(color: AevraColors.muted2)),
+        Text(widget.label.toUpperCase(),
+            style: AevraType.eyebrow(color: AevraColors.muted2)),
         const SizedBox(height: AevraSpace.xs),
         TextField(
           controller: widget.controller,
@@ -291,7 +341,9 @@ class _FieldState extends State<_Field> {
             suffixIcon: widget.obscure
                 ? IconButton(
                     tooltip: hidden ? 'Show password' : 'Hide password',
-                    icon: Icon(hidden ? Icons.visibility_outlined : Icons.visibility_off_outlined),
+                    icon: Icon(hidden
+                        ? Icons.visibility_outlined
+                        : Icons.visibility_off_outlined),
                     onPressed: () => setState(() => hidden = !hidden),
                   )
                 : null,
@@ -312,7 +364,8 @@ class _ErrorBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AevraSpace.sm, vertical: 10),
+      padding:
+          const EdgeInsets.symmetric(horizontal: AevraSpace.sm, vertical: 10),
       decoration: BoxDecoration(
         color: AevraColors.rose.withValues(alpha: 0.09),
         border: Border.all(color: AevraColors.rose.withValues(alpha: 0.22)),
@@ -321,12 +374,14 @@ class _ErrorBanner extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.error_outline_rounded, size: 15, color: AevraColors.rose),
+          const Icon(Icons.error_outline_rounded,
+              size: 15, color: AevraColors.rose),
           const SizedBox(width: AevraSpace.xs),
           Expanded(
             child: Text(
               message,
-              style: const TextStyle(fontSize: 11.5, height: 1.45, color: AevraColors.rose),
+              style: const TextStyle(
+                  fontSize: 11.5, height: 1.45, color: AevraColors.rose),
             ),
           ),
         ],

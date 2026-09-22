@@ -1,7 +1,6 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../theme/aevra_theme.dart';
 
@@ -148,7 +147,8 @@ class AevraWordmark extends StatelessWidget {
         SizedBox(width: markSize * 0.42),
         Text(
           'VAE',
-          style: GoogleFonts.playfairDisplay(
+          style: TextStyle(
+            fontFamily: 'PlayfairDisplay',
             fontSize: fontSize,
             fontWeight: FontWeight.w600,
             letterSpacing: fontSize * 0.26,

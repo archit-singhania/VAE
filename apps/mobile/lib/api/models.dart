@@ -63,7 +63,9 @@ class Campaign {
         id: json['id'] as String,
         name: json['name'] as String? ?? '',
         status: json['status'] as String? ?? 'draft',
-        platforms: (json['platforms'] as List?)?.map((e) => e.toString()).toList() ?? const [],
+        platforms:
+            (json['platforms'] as List?)?.map((e) => e.toString()).toList() ??
+                const [],
         updatedAt: json['updated_at'] as String? ?? '',
       );
 }
@@ -107,7 +109,8 @@ class KnowledgeDocument {
     required this.status,
   });
 
-  factory KnowledgeDocument.fromJson(Map<String, dynamic> json) => KnowledgeDocument(
+  factory KnowledgeDocument.fromJson(Map<String, dynamic> json) =>
+      KnowledgeDocument(
         id: json['id'] as String,
         title: json['title'] as String? ?? '',
         sourceType: json['source_type'] as String? ?? '',

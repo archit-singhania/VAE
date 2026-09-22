@@ -176,12 +176,6 @@
       "languageVersion": "3.11"
     },
     {
-      "name": "google_fonts",
-      "rootUri": "file:///C:/Users/dell/AppData/Local/Pub/Cache/hosted/pub.dev/google_fonts-6.3.3",
-      "packageUri": "lib/",
-      "languageVersion": "3.9"
-    },
-    {
       "name": "hooks",
       "rootUri": "file:///C:/Users/dell/AppData/Local/Pub/Cache/hosted/pub.dev/hooks-2.0.2",
       "packageUri": "lib/",

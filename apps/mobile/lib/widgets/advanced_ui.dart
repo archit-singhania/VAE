@@ -12,13 +12,18 @@ import 'aevra_logo.dart';
 /// so a single OS-level "reduce motion" setting disables the lot, the same
 /// way `prefers-reduced-motion` does on web.
 /// ---------------------------------------------------------------------
-bool reduceMotion(BuildContext context) => MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+bool reduceMotion(BuildContext context) =>
+    MediaQuery.maybeOf(context)?.disableAnimations ?? false;
 
 /// ---------------------------------------------------------------------
 /// #4 — Skeleton shimmer. Mirrors web's `.live-skeleton` gradient sweep.
 /// ---------------------------------------------------------------------
 class ShimmerBox extends StatefulWidget {
-  const ShimmerBox({super.key, this.width = double.infinity, this.height = 12, this.radius = 6});
+  const ShimmerBox(
+      {super.key,
+      this.width = double.infinity,
+      this.height = 12,
+      this.radius = 6});
 
   final double width;
   final double height;
@@ -28,9 +33,10 @@ class ShimmerBox extends StatefulWidget {
   State<ShimmerBox> createState() => _ShimmerBoxState();
 }
 
-class _ShimmerBoxState extends State<ShimmerBox> with SingleTickerProviderStateMixin {
-  late final AnimationController _controller =
-      AnimationController(vsync: this, duration: const Duration(milliseconds: 1600));
+class _ShimmerBoxState extends State<ShimmerBox>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+      vsync: this, duration: const Duration(milliseconds: 1600));
 
   @override
   void didChangeDependencies() {
@@ -62,7 +68,11 @@ class _ShimmerBoxState extends State<ShimmerBox> with SingleTickerProviderStateM
             gradient: LinearGradient(
               begin: Alignment(-1 + t * 3, 0),
               end: Alignment(0 + t * 3, 0),
-              colors: const [AevraColors.line, AevraColors.lineStrong, AevraColors.line],
+              colors: const [
+                AevraColors.line,
+                AevraColors.lineStrong,
+                AevraColors.line
+              ],
             ),
           ),
         );
@@ -128,7 +138,8 @@ class ShimmerList extends StatelessWidget {
     return Column(
       children: [
         for (var i = 0; i < count; i++) ...[
-          const Padding(padding: EdgeInsets.symmetric(vertical: 12), child: ShimmerRow()),
+          const Padding(
+              padding: EdgeInsets.symmetric(vertical: 12), child: ShimmerRow()),
           if (i != count - 1) const Divider(height: 1, color: AevraColors.line),
         ],
       ],
@@ -152,10 +163,10 @@ class AiOrb extends StatefulWidget {
 }
 
 class _AiOrbState extends State<AiOrb> with TickerProviderStateMixin {
-  late final AnimationController _pulse =
-      AnimationController(vsync: this, duration: const Duration(milliseconds: 2200));
-  late final AnimationController _spin =
-      AnimationController(vsync: this, duration: const Duration(milliseconds: 1100));
+  late final AnimationController _pulse = AnimationController(
+      vsync: this, duration: const Duration(milliseconds: 2200));
+  late final AnimationController _spin = AnimationController(
+      vsync: this, duration: const Duration(milliseconds: 1100));
 
   @override
   void didChangeDependencies() {
@@ -206,7 +217,8 @@ class _AiOrbState extends State<AiOrb> with TickerProviderStateMixin {
     return AnimatedBuilder(
       animation: Listenable.merge([_pulse, _spin]),
       builder: (context, _) {
-        final pulseValue = widget.state == AiOrbState.thinking ? 1.0 : _pulse.value;
+        final pulseValue =
+            widget.state == AiOrbState.thinking ? 1.0 : _pulse.value;
         return Transform.rotate(
           angle: _spin.value * math.pi * 2,
           child: AnimatedContainer(
@@ -221,7 +233,9 @@ class _AiOrbState extends State<AiOrb> with TickerProviderStateMixin {
               // everything else is restrained specifically so this reads as
               // the single live thing on screen.
               boxShadow: [
-                BoxShadow(color: color.withValues(alpha: 0.20), blurRadius: 22 + pulseValue * 10),
+                BoxShadow(
+                    color: color.withValues(alpha: 0.20),
+                    blurRadius: 22 + pulseValue * 10),
               ],
             ),
             child: Icon(icon, size: widget.size * 0.42, color: color),
@@ -238,7 +252,11 @@ class _AiOrbState extends State<AiOrb> with TickerProviderStateMixin {
 /// IntersectionObserver approach) by keying the delay to list index.
 /// ---------------------------------------------------------------------
 class Reveal extends StatefulWidget {
-  const Reveal({super.key, required this.child, this.index = 0, this.stagger = const Duration(milliseconds: 55)});
+  const Reveal(
+      {super.key,
+      required this.child,
+      this.index = 0,
+      this.stagger = const Duration(milliseconds: 55)});
 
   final Widget child;
   final int index;
@@ -249,8 +267,8 @@ class Reveal extends StatefulWidget {
 }
 
 class _RevealState extends State<Reveal> with SingleTickerProviderStateMixin {
-  late final AnimationController _controller =
-      AnimationController(vsync: this, duration: const Duration(milliseconds: 420));
+  late final AnimationController _controller = AnimationController(
+      vsync: this, duration: const Duration(milliseconds: 420));
   bool _started = false;
 
   @override
@@ -278,12 +296,14 @@ class _RevealState extends State<Reveal> with SingleTickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    final curve = CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic);
+    final curve =
+        CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic);
     return AnimatedBuilder(
       animation: curve,
       builder: (context, child) => Opacity(
         opacity: curve.value.clamp(0.0, 1.0),
-        child: Transform.translate(offset: Offset(0, (1 - curve.value) * 14), child: child),
+        child: Transform.translate(
+            offset: Offset(0, (1 - curve.value) * 14), child: child),
       ),
       child: widget.child,
     );
@@ -296,7 +316,11 @@ class _RevealState extends State<Reveal> with SingleTickerProviderStateMixin {
 /// view in [AdaptiveGlassScroll] to drive it.
 /// ---------------------------------------------------------------------
 class GlassScope extends InheritedWidget {
-  const GlassScope({super.key, required this.intensity, required this.offset, required super.child});
+  const GlassScope(
+      {super.key,
+      required this.intensity,
+      required this.offset,
+      required super.child});
 
   /// 0→1 densification ramp, consumed by glass surfaces.
   final double intensity;
@@ -346,7 +370,8 @@ class _AdaptiveGlassScrollState extends State<AdaptiveGlassScroll> {
         }
         return false;
       },
-      child: GlassScope(intensity: _intensity, offset: _offset, child: widget.child),
+      child: GlassScope(
+          intensity: _intensity, offset: _offset, child: widget.child),
     );
   }
 }
@@ -383,9 +408,10 @@ class _Particle {
   final Color color;
 }
 
-class _ParticleFieldState extends State<ParticleField> with SingleTickerProviderStateMixin {
-  late final AnimationController _controller =
-      AnimationController(vsync: this, duration: const Duration(milliseconds: 1200));
+class _ParticleFieldState extends State<ParticleField>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+      vsync: this, duration: const Duration(milliseconds: 1200));
   final _rng = math.Random();
   List<_Particle> _particles = const [];
 
@@ -402,7 +428,8 @@ class _ParticleFieldState extends State<ParticleField> with SingleTickerProvider
         final angle = _rng.nextDouble() * math.pi * 2;
         final speed = 40 + _rng.nextDouble() * 120;
         return _Particle(
-          Offset(0.5 + (_rng.nextDouble() - 0.5) * 0.1, 0.32 + (_rng.nextDouble() - 0.5) * 0.1),
+          Offset(0.5 + (_rng.nextDouble() - 0.5) * 0.1,
+              0.32 + (_rng.nextDouble() - 0.5) * 0.1),
           Offset(math.cos(angle) * speed, math.sin(angle) * speed - 30),
           1 + _rng.nextDouble() * 2,
           _rng.nextBool() ? AevraColors.accent : AevraColors.frost,
@@ -456,7 +483,8 @@ class _ParticlePainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _ParticlePainter old) => old.t != t || old.particles != particles;
+  bool shouldRepaint(covariant _ParticlePainter old) =>
+      old.t != t || old.particles != particles;
 }
 
 /// ---------------------------------------------------------------------
@@ -499,7 +527,11 @@ class AevraSound extends ChangeNotifier {
 /// Ambient services (sound + particle pulse) made available to any screen
 /// without threading constructor params through every widget.
 class AevraServices extends InheritedWidget {
-  const AevraServices({super.key, required this.sound, required this.pulse, required super.child});
+  const AevraServices(
+      {super.key,
+      required this.sound,
+      required this.pulse,
+      required super.child});
 
   final AevraSound sound;
   final ParticlePulse pulse;
@@ -525,7 +557,11 @@ class AevraServices extends InheritedWidget {
 /// a search icon in the top bar. Same action vocabulary either way.
 /// ---------------------------------------------------------------------
 class CommandAction {
-  const CommandAction({required this.label, required this.hint, required this.icon, required this.run});
+  const CommandAction(
+      {required this.label,
+      required this.hint,
+      required this.icon,
+      required this.run});
 
   final String label;
   final String hint;
@@ -533,7 +569,8 @@ class CommandAction {
   final VoidCallback run;
 }
 
-Future<void> showCommandPalette(BuildContext context, List<CommandAction> actions) {
+Future<void> showCommandPalette(
+    BuildContext context, List<CommandAction> actions) {
   return showGeneralDialog<void>(
     context: context,
     barrierDismissible: true,
@@ -542,10 +579,12 @@ Future<void> showCommandPalette(BuildContext context, List<CommandAction> action
     transitionDuration: const Duration(milliseconds: 220),
     pageBuilder: (context, _, __) => _CommandPalette(actions: actions),
     transitionBuilder: (context, animation, _, child) {
-      final curve = CurvedAnimation(parent: animation, curve: Curves.easeOutCubic);
+      final curve =
+          CurvedAnimation(parent: animation, curve: Curves.easeOutCubic);
       return FadeTransition(
         opacity: curve,
-        child: Transform.translate(offset: Offset(0, (1 - curve.value) * 16), child: child),
+        child: Transform.translate(
+            offset: Offset(0, (1 - curve.value) * 16), child: child),
       );
     },
   );
@@ -576,7 +615,9 @@ class _CommandPaletteState extends State<_CommandPalette> {
     final results = q.isEmpty
         ? widget.actions
         : widget.actions
-            .where((a) => a.label.toLowerCase().contains(q) || a.hint.toLowerCase().contains(q))
+            .where((a) =>
+                a.label.toLowerCase().contains(q) ||
+                a.hint.toLowerCase().contains(q))
             .toList();
 
     return Align(
@@ -611,7 +652,8 @@ class _CommandPaletteState extends State<_CommandPalette> {
                   child: TextField(
                     controller: _controller,
                     autofocus: true,
-                    style: const TextStyle(fontSize: 14, color: AevraColors.text),
+                    style:
+                        const TextStyle(fontSize: 14, color: AevraColors.text),
                     cursorColor: AevraColors.accent,
                     decoration: const InputDecoration(
                       isDense: true,
@@ -620,8 +662,10 @@ class _CommandPaletteState extends State<_CommandPalette> {
                       enabledBorder: InputBorder.none,
                       focusedBorder: InputBorder.none,
                       hintText: 'Type a command…',
-                      hintStyle: TextStyle(color: AevraColors.muted2, fontSize: 14),
-                      prefixIcon: Icon(Icons.search_rounded, size: 18, color: AevraColors.muted),
+                      hintStyle:
+                          TextStyle(color: AevraColors.muted2, fontSize: 14),
+                      prefixIcon: Icon(Icons.search_rounded,
+                          size: 18, color: AevraColors.muted),
                       prefixIconConstraints: BoxConstraints(minWidth: 30),
                     ),
                     onChanged: (value) => setState(() => _query = value),
@@ -634,7 +678,8 @@ class _CommandPaletteState extends State<_CommandPalette> {
                       ? const Padding(
                           padding: EdgeInsets.symmetric(vertical: 26),
                           child: Text('No matching commands',
-                              style: TextStyle(fontSize: 12, color: AevraColors.muted2)),
+                              style: TextStyle(
+                                  fontSize: 12, color: AevraColors.muted2)),
                         )
                       : ListView.builder(
                           shrinkWrap: true,
@@ -644,11 +689,15 @@ class _CommandPaletteState extends State<_CommandPalette> {
                             final action = results[i];
                             return ListTile(
                               dense: true,
-                              leading: Icon(action.icon, size: 18, color: AevraColors.accent),
+                              leading: Icon(action.icon,
+                                  size: 18, color: AevraColors.accent),
                               title: Text(action.label,
-                                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+                                  style: const TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w500)),
                               subtitle: Text(action.hint,
-                                  style: const TextStyle(fontSize: 10, color: AevraColors.muted2)),
+                                  style: const TextStyle(
+                                      fontSize: 10, color: AevraColors.muted2)),
                               onTap: () {
                                 Navigator.of(context).pop();
                                 action.run();
@@ -745,7 +794,8 @@ class _OnboardingSheetState extends State<OnboardingSheet> {
           children: [
             Row(
               children: [
-                Text('STEP ${step + 1} / ${_steps.length}', style: AevraType.eyebrow()),
+                Text('STEP ${step + 1} / ${_steps.length}',
+                    style: AevraType.eyebrow()),
                 const Spacer(),
                 const AiOrb(size: 34),
               ],
@@ -755,7 +805,8 @@ class _OnboardingSheetState extends State<OnboardingSheet> {
             const SizedBox(height: AevraSpace.xs),
             Text(
               _steps[step].body,
-              style: const TextStyle(fontSize: 13.5, height: 1.55, color: AevraColors.textSoft),
+              style: const TextStyle(
+                  fontSize: 13.5, height: 1.55, color: AevraColors.textSoft),
             ),
             const SizedBox(height: 22),
             Row(
@@ -765,7 +816,8 @@ class _OnboardingSheetState extends State<OnboardingSheet> {
                     await markTourComplete();
                     widget.onDone();
                   },
-                  child: const Text('Skip', style: TextStyle(color: AevraColors.muted2)),
+                  child: const Text('Skip',
+                      style: TextStyle(color: AevraColors.muted2)),
                 ),
                 const Spacer(),
                 Row(
@@ -777,7 +829,9 @@ class _OnboardingSheetState extends State<OnboardingSheet> {
                       height: 6,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: i == step ? AevraColors.accent : AevraColors.lineStrong,
+                        color: i == step
+                            ? AevraColors.accent
+                            : AevraColors.lineStrong,
                       ),
                     ),
                   ),
@@ -828,9 +882,10 @@ class ThemeWipeOverlay extends StatefulWidget {
   State<ThemeWipeOverlay> createState() => _ThemeWipeOverlayState();
 }
 
-class _ThemeWipeOverlayState extends State<ThemeWipeOverlay> with SingleTickerProviderStateMixin {
-  late final AnimationController _controller =
-      AnimationController(vsync: this, duration: const Duration(milliseconds: 900));
+class _ThemeWipeOverlayState extends State<ThemeWipeOverlay>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+      vsync: this, duration: const Duration(milliseconds: 900));
   bool _flipped = false;
 
   @override
@@ -868,7 +923,8 @@ class _ThemeWipeOverlayState extends State<ThemeWipeOverlay> with SingleTickerPr
           return Opacity(
             opacity: fade,
             child: ClipPath(
-              clipper: _CircleRevealClipper(center: widget.center, radius: radius),
+              clipper:
+                  _CircleRevealClipper(center: widget.center, radius: radius),
               child: Container(
                 color: widget.toDark ? AevraColors.bg : AevraLightColors.bg,
                 child: Center(
@@ -876,7 +932,9 @@ class _ThemeWipeOverlayState extends State<ThemeWipeOverlay> with SingleTickerPr
                     opacity: grow.clamp(0.0, 1.0),
                     child: AevraMark(
                       size: 40,
-                      color: widget.toDark ? AevraColors.accent : AevraLightColors.accent,
+                      color: widget.toDark
+                          ? AevraColors.accent
+                          : AevraLightColors.accent,
                     ),
                   ),
                 ),
@@ -896,7 +954,8 @@ class _CircleRevealClipper extends CustomClipper<Path> {
   final double radius;
 
   @override
-  Path getClip(Size size) => Path()..addOval(Rect.fromCircle(center: center, radius: radius));
+  Path getClip(Size size) =>
+      Path()..addOval(Rect.fromCircle(center: center, radius: radius));
 
   @override
   bool shouldReclip(covariant _CircleRevealClipper oldClipper) =>

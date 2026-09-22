@@ -35,14 +35,17 @@ class _AevraAppState extends State<AevraApp> {
     state.hydrate();
     sound.hydrate();
     SharedPreferences.getInstance().then((prefs) {
-      if (mounted) setState(() => darkMode = prefs.getBool('vae.dark-mode') ?? true);
+      if (mounted) {
+        setState(() => darkMode = prefs.getBool('vae.dark-mode') ?? true);
+      }
     });
   }
 
   void _toggleTheme() {
     final next = !darkMode;
     setState(() => darkMode = next);
-    SharedPreferences.getInstance().then((prefs) => prefs.setBool('vae.dark-mode', next));
+    SharedPreferences.getInstance()
+        .then((prefs) => prefs.setBool('vae.dark-mode', next));
   }
 
   @override
@@ -62,7 +65,8 @@ class _AevraAppState extends State<AevraApp> {
       // Wrapped via `builder`, not `home`, so dialogs, bottom sheets and
       // overlay entries pushed onto the Navigator can still reach it —
       // anything under `home` alone would be invisible to those routes.
-      builder: (context, child) => AevraServices(sound: sound, pulse: pulse, child: child!),
+      builder: (context, child) =>
+          AevraServices(sound: sound, pulse: pulse, child: child!),
       home: AnimatedBuilder(
         animation: state,
         builder: (context, _) {
@@ -105,7 +109,8 @@ class _BootScreen extends StatelessWidget {
       backgroundColor: AevraColors.bg,
       body: Stack(
         children: [
-          const Positioned.fill(child: RepaintBoundary(child: ShaderBackground())),
+          const Positioned.fill(
+              child: RepaintBoundary(child: ShaderBackground())),
           Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -187,7 +192,8 @@ class _MobileShellState extends State<MobileShell> {
     widget.sound.tap();
 
     final overlay = Overlay.of(context);
-    final box = _themeButtonKey.currentContext?.findRenderObject() as RenderBox?;
+    final box =
+        _themeButtonKey.currentContext?.findRenderObject() as RenderBox?;
     final center = box == null
         ? MediaQuery.of(context).size.center(Offset.zero)
         : box.localToGlobal(box.size.center(Offset.zero));
@@ -250,15 +256,22 @@ class _MobileShellState extends State<MobileShell> {
         },
       ),
       CommandAction(
-        label: widget.darkMode ? 'Switch to light theme' : 'Switch to dark theme',
+        label:
+            widget.darkMode ? 'Switch to light theme' : 'Switch to dark theme',
         hint: 'Animated theme wipe',
-        icon: widget.darkMode ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
+        icon: widget.darkMode
+            ? Icons.light_mode_outlined
+            : Icons.dark_mode_outlined,
         run: _toggleThemeWithWipe,
       ),
       CommandAction(
-        label: widget.sound.enabled ? 'Mute feedback sounds' : 'Unmute feedback sounds',
+        label: widget.sound.enabled
+            ? 'Mute feedback sounds'
+            : 'Unmute feedback sounds',
         hint: 'Ambient chime on create and approve',
-        icon: widget.sound.enabled ? Icons.volume_up_outlined : Icons.volume_off_outlined,
+        icon: widget.sound.enabled
+            ? Icons.volume_up_outlined
+            : Icons.volume_off_outlined,
         run: () => widget.sound.toggle(),
       ),
       CommandAction(
@@ -295,9 +308,12 @@ class _MobileShellState extends State<MobileShell> {
       transitionDuration: const Duration(milliseconds: 220),
       pageBuilder: (dialogContext, _, __) => AlertDialog(
         title: const Text('Sign out of VAE?'),
-        content: const Text('Your account is safe. You can sign back in at any time.'),
+        content: const Text(
+            'Your account is safe. You can sign back in at any time.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Cancel')),
+          TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('Cancel')),
           FilledButton.icon(
             onPressed: () => Navigator.pop(dialogContext, true),
             icon: const Icon(Icons.logout_outlined),
@@ -334,7 +350,8 @@ class _MobileShellState extends State<MobileShell> {
       body: Stack(
         children: [
           // Animated GPU background, behind everything.
-          const Positioned.fill(child: RepaintBoundary(child: ShaderBackground())),
+          const Positioned.fill(
+              child: RepaintBoundary(child: ShaderBackground())),
           SafeArea(
             child: Column(
               children: [
@@ -363,7 +380,8 @@ class _MobileShellState extends State<MobileShell> {
                         child: SlideTransition(position: slide, child: child),
                       );
                     },
-                    child: KeyedSubtree(key: ValueKey(index), child: pages[index]),
+                    child:
+                        KeyedSubtree(key: ValueKey(index), child: pages[index]),
                   ),
                 ),
               ],
@@ -380,7 +398,8 @@ class _MobileShellState extends State<MobileShell> {
           child: DecoratedBox(
             decoration: BoxDecoration(
               color: AevraColors.panel.withValues(alpha: 0.72),
-              border: const Border(top: BorderSide(color: AevraColors.lineStrong)),
+              border:
+                  const Border(top: BorderSide(color: AevraColors.lineStrong)),
             ),
             child: NavigationBar(
               selectedIndex: index,
@@ -390,10 +409,16 @@ class _MobileShellState extends State<MobileShell> {
               },
               backgroundColor: Colors.transparent,
               destinations: const [
-                NavigationDestination(icon: Icon(Icons.space_dashboard_outlined), label: 'Overview'),
-                NavigationDestination(icon: Icon(Icons.auto_awesome_outlined), label: 'Create media'),
-                NavigationDestination(icon: Icon(Icons.schedule_outlined), label: 'Schedule'),
-                NavigationDestination(icon: Icon(Icons.insights_outlined), label: 'Analytics'),
+                NavigationDestination(
+                    icon: Icon(Icons.space_dashboard_outlined),
+                    label: 'Overview'),
+                NavigationDestination(
+                    icon: Icon(Icons.auto_awesome_outlined),
+                    label: 'Create media'),
+                NavigationDestination(
+                    icon: Icon(Icons.schedule_outlined), label: 'Schedule'),
+                NavigationDestination(
+                    icon: Icon(Icons.insights_outlined), label: 'Analytics'),
               ],
             ),
           ),
@@ -402,7 +427,12 @@ class _MobileShellState extends State<MobileShell> {
     );
   }
 
-  static const _titles = ['Home', 'Create media', 'Calendar & publishing', 'Analytics'];
+  static const _titles = [
+    'Home',
+    'Create media',
+    'Calendar & publishing',
+    'Analytics'
+  ];
 }
 
 /// Custom glass top bar — the mobile equivalent of the web app's `.topbar`.
@@ -469,7 +499,9 @@ class _TopBar extends StatelessWidget {
             key: themeButtonKey,
             tooltip: darkMode ? 'Use light theme' : 'Use dark theme',
             onPressed: onToggleTheme,
-            icon: Icon(darkMode ? Icons.light_mode_outlined : Icons.dark_mode_outlined, size: 20),
+            icon: Icon(
+                darkMode ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
+                size: 20),
             color: AevraColors.muted,
           ),
           IconButton(

@@ -11,6 +11,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 from typing import Any
+from uuid import UUID
 
 import httpx
 from sqlalchemy import select
@@ -27,16 +28,19 @@ class AnalyticsPoller:
         self.settings = settings
         self.publishing = PublishingService(session, settings)
 
-    def collect(self, *, limit: int = 100) -> dict[str, int]:
+    def collect(self, *, workspace_id: UUID | None = None, limit: int = 100) -> dict[str, int]:
+        filters = [
+            PublishJob.status.in_(("published", "verified")),
+            PublishJob.external_post_id.is_not(None),
+            SocialAccount.status == "connected",
+        ]
+        if workspace_id is not None:
+            filters.append(PublishJob.workspace_id == workspace_id)
         rows = list(
             self.session.execute(
                 select(PublishJob, SocialAccount)
                 .join(SocialAccount, SocialAccount.id == PublishJob.social_account_id)
-                .where(
-                    PublishJob.status.in_(("published", "verified")),
-                    PublishJob.external_post_id.is_not(None),
-                    SocialAccount.status == "connected",
-                )
+                .where(*filters)
                 .order_by(PublishJob.updated_at.desc())
                 .limit(limit)
             ).all()

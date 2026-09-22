@@ -34,121 +34,138 @@ class ScheduleScreen extends StatelessWidget {
         final scheduled = state.scheduled;
         return AdaptiveGlassScroll(
           child: RefreshIndicator(
-          onRefresh: state.load,
-          color: AevraColors.accent,
-          backgroundColor: AevraColors.panel,
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(
-                AevraSpace.gutter, AevraSpace.md, AevraSpace.gutter, AevraSpace.xxl),
-            children: [
-              ParallaxLayer(
-                depth: -1.4,
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('UPCOMING', style: AevraType.eyebrow()),
-                          const SizedBox(height: AevraSpace.xs),
-                          Text('Schedule', style: AevraType.display(30)),
-                          const SizedBox(height: AevraSpace.xxs),
-                          Text(
-                            scheduled.isEmpty
-                                ? 'Nothing queued'
-                                : '${scheduled.length} post${scheduled.length == 1 ? '' : 's'} queued',
-                            style: const TextStyle(fontSize: 12, color: AevraColors.muted),
-                          ),
-                        ],
-                      ),
-                    ),
-                    AiOrb(size: 32, state: state.loading ? AiOrbState.thinking : AiOrbState.idle),
-                  ],
-                ),
-              ),
-              const SizedBox(height: AevraSpace.lg),
-              if (state.loading && scheduled.isEmpty)
-                const GlassCard(child: ShimmerList(count: 4))
-              else if (scheduled.isEmpty)
-                const GlassCard(
-                  padding: EdgeInsets.symmetric(
-                      horizontal: AevraSpace.md, vertical: AevraSpace.xl),
-                  child: Column(
+            onRefresh: state.load,
+            color: AevraColors.accent,
+            backgroundColor: AevraColors.panel,
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(AevraSpace.gutter,
+                  AevraSpace.md, AevraSpace.gutter, AevraSpace.xxl),
+              children: [
+                ParallaxLayer(
+                  depth: -1.4,
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(Icons.schedule_outlined, size: 26, color: AevraColors.accent),
-                      SizedBox(height: AevraSpace.sm),
-                      Text(
-                        'The queue is clear',
-                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('UPCOMING', style: AevraType.eyebrow()),
+                            const SizedBox(height: AevraSpace.xs),
+                            Text('Schedule', style: AevraType.display(30)),
+                            const SizedBox(height: AevraSpace.xxs),
+                            Text(
+                              scheduled.isEmpty
+                                  ? 'Nothing queued'
+                                  : '${scheduled.length} post${scheduled.length == 1 ? '' : 's'} queued',
+                              style: const TextStyle(
+                                  fontSize: 12, color: AevraColors.muted),
+                            ),
+                          ],
+                        ),
                       ),
-                      SizedBox(height: AevraSpace.xxs),
-                      Text(
-                        'Approved content can be scheduled from the web app.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 11.5, height: 1.5, color: AevraColors.muted2),
-                      ),
+                      AiOrb(
+                          size: 32,
+                          state: state.loading
+                              ? AiOrbState.thinking
+                              : AiOrbState.idle),
                     ],
                   ),
-                )
-              else
-                for (final (i, p) in scheduled.indexed) ...[
-                  Reveal(
-                    index: i,
-                    child: DepthCard(
-                    elevation: GlassElevation.raised,
-                    padding: const EdgeInsets.all(AevraSpace.md),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                ),
+                const SizedBox(height: AevraSpace.lg),
+                if (state.loading && scheduled.isEmpty)
+                  const GlassCard(child: ShimmerList(count: 4))
+                else if (scheduled.isEmpty)
+                  const GlassCard(
+                    padding: EdgeInsets.symmetric(
+                        horizontal: AevraSpace.md, vertical: AevraSpace.xl),
+                    child: Column(
                       children: [
-                        // A timetable column: mono figures, left-aligned and
-                        // fixed width so times stack into a readable rail
-                        // instead of drifting with the content beside them.
-                        SizedBox(
-                          width: 46,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                _formatTime(p.scheduledFor),
-                                style: AevraType.mono(size: 12, color: AevraColors.text),
-                              ),
-                              const SizedBox(height: 3),
-                              Text(
-                                _formatDay(p.scheduledFor).toUpperCase(),
-                                style: AevraType.mono(size: 9),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Container(
-                          width: 1,
-                          height: 34,
-                          margin: const EdgeInsets.only(right: AevraSpace.sm),
-                          color: AevraColors.lineStrong,
-                        ),
-                        Expanded(
-                          child: Text(
-                            p.text?.isNotEmpty == true ? p.text! : 'Campaign post',
-                            style: const TextStyle(
-                                fontSize: 12.5, height: 1.45, fontWeight: FontWeight.w600),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        const SizedBox(width: AevraSpace.xs),
+                        Icon(Icons.schedule_outlined,
+                            size: 26, color: AevraColors.accent),
+                        SizedBox(height: AevraSpace.sm),
                         Text(
-                          p.status.replaceAll('_', ' '),
-                          style: AevraType.mono(size: 9, color: AevraColors.muted),
+                          'The queue is clear',
+                          style: TextStyle(
+                              fontSize: 13, fontWeight: FontWeight.w700),
+                        ),
+                        SizedBox(height: AevraSpace.xxs),
+                        Text(
+                          'Approved content can be scheduled from the web app.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                              fontSize: 11.5,
+                              height: 1.5,
+                              color: AevraColors.muted2),
                         ),
                       ],
                     ),
-                  ),
-                  ),
-                  const SizedBox(height: AevraSpace.xs),
-                ],
-            ],
-          ),
+                  )
+                else
+                  for (final (i, p) in scheduled.indexed) ...[
+                    Reveal(
+                      index: i,
+                      child: DepthCard(
+                        elevation: GlassElevation.raised,
+                        padding: const EdgeInsets.all(AevraSpace.md),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // A timetable column: mono figures, left-aligned and
+                            // fixed width so times stack into a readable rail
+                            // instead of drifting with the content beside them.
+                            SizedBox(
+                              width: 46,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    _formatTime(p.scheduledFor),
+                                    style: AevraType.mono(
+                                        size: 12, color: AevraColors.text),
+                                  ),
+                                  const SizedBox(height: 3),
+                                  Text(
+                                    _formatDay(p.scheduledFor).toUpperCase(),
+                                    style: AevraType.mono(size: 9),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Container(
+                              width: 1,
+                              height: 34,
+                              margin:
+                                  const EdgeInsets.only(right: AevraSpace.sm),
+                              color: AevraColors.lineStrong,
+                            ),
+                            Expanded(
+                              child: Text(
+                                p.text?.isNotEmpty == true
+                                    ? p.text!
+                                    : 'Campaign post',
+                                style: const TextStyle(
+                                    fontSize: 12.5,
+                                    height: 1.45,
+                                    fontWeight: FontWeight.w600),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            const SizedBox(width: AevraSpace.xs),
+                            Text(
+                              p.status.replaceAll('_', ' '),
+                              style: AevraType.mono(
+                                  size: 9, color: AevraColors.muted),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: AevraSpace.xs),
+                  ],
+              ],
+            ),
           ),
         );
       },

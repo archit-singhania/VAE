@@ -19,7 +19,8 @@ class OverviewScreen extends StatefulWidget {
 /// One tile of the bento grid. Values are resolved at build time from
 /// [AppState], so reordering only moves the definition, never the data.
 class _StatSpec {
-  const _StatSpec(this.id, this.label, this.caption, this.icon, this.color, this.read);
+  const _StatSpec(
+      this.id, this.label, this.caption, this.icon, this.color, this.read);
 
   final String id;
   final String label;
@@ -31,17 +32,28 @@ class _StatSpec {
 
 class _OverviewScreenState extends State<OverviewScreen> {
   static final List<_StatSpec> _specs = [
-    _StatSpec('brain', 'Knowledge base', 'indexed sources', Icons.hub_outlined, AevraColors.frost,
-        (s) => s.documents.length),
-    _StatSpec('campaigns', 'Campaigns', 'in workspace', Icons.auto_awesome_outlined, AevraColors.accent,
+    _StatSpec('brain', 'Knowledge base', 'indexed sources', Icons.hub_outlined,
+        AevraColors.frost, (s) => s.documents.length),
+    _StatSpec(
+        'campaigns',
+        'Campaigns',
+        'in workspace',
+        Icons.auto_awesome_outlined,
+        AevraColors.accent,
         (s) => s.campaigns.length),
     // Amber, not the accent: this is the one tile that means "a human still
     // owes this a decision", and it should not be the same colour as the
     // tiles that are merely counting things.
-    _StatSpec('queue', 'Approval queue', 'awaiting you', Icons.how_to_reg_outlined, AevraColors.amber,
-        (s) => s.campaigns.where((c) => c.status == 'awaiting_approval').length),
-    _StatSpec('media', 'Media assets', 'generated assets', Icons.image_outlined, AevraColors.jade,
-        (s) => s.assets.length),
+    _StatSpec(
+        'queue',
+        'Approval queue',
+        'awaiting you',
+        Icons.how_to_reg_outlined,
+        AevraColors.amber,
+        (s) =>
+            s.campaigns.where((c) => c.status == 'awaiting_approval').length),
+    _StatSpec('media', 'Media assets', 'generated assets', Icons.image_outlined,
+        AevraColors.jade, (s) => s.assets.length),
   ];
 
   /// #10 — persisted bento order (indexes into [_specs]).
@@ -74,8 +86,10 @@ class _OverviewScreenState extends State<OverviewScreen> {
     return AnimatedBuilder(
       animation: state,
       builder: (context, _) {
-        final firstName = (state.user?.displayName ?? '').split(' ').firstOrNull ?? 'there';
-        final firstLoad = state.loading && state.campaigns.isEmpty && state.documents.isEmpty;
+        final firstName =
+            (state.user?.displayName ?? '').split(' ').firstOrNull ?? 'there';
+        final firstLoad =
+            state.loading && state.campaigns.isEmpty && state.documents.isEmpty;
 
         // #18 — adaptive glass: every GlassCard below reads scroll intensity
         // from this scope and densifies as the user scrolls.
@@ -85,8 +99,8 @@ class _OverviewScreenState extends State<OverviewScreen> {
             color: AevraColors.accent,
             backgroundColor: AevraColors.panel,
             child: ListView(
-              padding: const EdgeInsets.fromLTRB(
-                  AevraSpace.gutter, AevraSpace.md, AevraSpace.gutter, AevraSpace.xxl),
+              padding: const EdgeInsets.fromLTRB(AevraSpace.gutter,
+                  AevraSpace.md, AevraSpace.gutter, AevraSpace.xxl),
               children: [
                 ParallaxLayer(
                   depth: -1.6,
@@ -110,7 +124,10 @@ class _OverviewScreenState extends State<OverviewScreen> {
                         ),
                         const SizedBox(width: AevraSpace.sm),
                         // #6 — shared orb, now state-aware.
-                        AiOrb(state: state.loading ? AiOrbState.thinking : AiOrbState.idle),
+                        AiOrb(
+                            state: state.loading
+                                ? AiOrbState.thinking
+                                : AiOrbState.idle),
                       ],
                     ),
                   ),
@@ -122,7 +139,10 @@ class _OverviewScreenState extends State<OverviewScreen> {
                     index: 1,
                     child: Text(
                       'Everything below is live from the workspace. Nothing publishes without you.',
-                      style: TextStyle(fontSize: 13.5, height: 1.55, color: AevraColors.textSoft),
+                      style: TextStyle(
+                          fontSize: 13.5,
+                          height: 1.55,
+                          color: AevraColors.textSoft),
                     ),
                   ),
                 ),
@@ -136,9 +156,11 @@ class _OverviewScreenState extends State<OverviewScreen> {
                         padding: EdgeInsets.only(bottom: AevraSpace.sm),
                         child: Row(
                           children: [
-                            Expanded(child: GlassCard(child: ShimmerStatCard())),
+                            Expanded(
+                                child: GlassCard(child: ShimmerStatCard())),
                             SizedBox(width: AevraSpace.sm),
-                            Expanded(child: GlassCard(child: ShimmerStatCard())),
+                            Expanded(
+                                child: GlassCard(child: ShimmerStatCard())),
                           ],
                         ),
                       ),
@@ -151,16 +173,19 @@ class _OverviewScreenState extends State<OverviewScreen> {
                   index: 6,
                   child: GlassSurface(
                     elevation: GlassElevation.floating,
-                    padding: const EdgeInsets.fromLTRB(
-                        AevraSpace.md, AevraSpace.md, AevraSpace.md, AevraSpace.xs),
+                    padding: const EdgeInsets.fromLTRB(AevraSpace.md,
+                        AevraSpace.md, AevraSpace.md, AevraSpace.xs),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
                           children: [
-                            Text('RECENT WORK', style: AevraType.eyebrow(color: AevraColors.muted)),
+                            Text('RECENT WORK',
+                                style: AevraType.eyebrow(
+                                    color: AevraColors.muted)),
                             const Spacer(),
-                            Text('${state.campaigns.length}', style: AevraType.mono()),
+                            Text('${state.campaigns.length}',
+                                style: AevraType.mono()),
                           ],
                         ),
                         if (firstLoad) ...[
@@ -170,36 +195,44 @@ class _OverviewScreenState extends State<OverviewScreen> {
                           const SizedBox(height: AevraSpace.sm),
                           const Text(
                             'Your campaign runway is clear. Create one from the Campaigns tab.',
-                            style: TextStyle(fontSize: 12, height: 1.5, color: AevraColors.muted2),
+                            style: TextStyle(
+                                fontSize: 12,
+                                height: 1.5,
+                                color: AevraColors.muted2),
                           ),
                           const SizedBox(height: AevraSpace.xs),
                         ] else
                           for (final c in state.campaigns.take(4))
                             Padding(
-                              padding: const EdgeInsets.only(top: AevraSpace.sm),
+                              padding:
+                                  const EdgeInsets.only(top: AevraSpace.sm),
                               child: Row(
                                 children: [
                                   Container(
                                     width: 2,
                                     height: 22,
-                                    margin: const EdgeInsets.only(right: AevraSpace.sm),
+                                    margin: const EdgeInsets.only(
+                                        right: AevraSpace.sm),
                                     decoration: BoxDecoration(
                                       color: _statusTint(c.status),
-                                      borderRadius: BorderRadius.circular(AevraRadius.pill),
+                                      borderRadius: BorderRadius.circular(
+                                          AevraRadius.pill),
                                     ),
                                   ),
                                   Expanded(
                                     child: Text(
                                       c.name,
                                       style: const TextStyle(
-                                          fontSize: 12.5, fontWeight: FontWeight.w600),
+                                          fontSize: 12.5,
+                                          fontWeight: FontWeight.w600),
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
                                   const SizedBox(width: AevraSpace.xs),
                                   Text(
                                     c.status.replaceAll('_', ' '),
-                                    style: AevraType.mono(size: 9, color: _statusTint(c.status)),
+                                    style: AevraType.mono(
+                                        size: 9, color: _statusTint(c.status)),
                                   ),
                                 ],
                               ),
@@ -216,12 +249,16 @@ class _OverviewScreenState extends State<OverviewScreen> {
                         horizontal: AevraSpace.sm, vertical: 10),
                     decoration: BoxDecoration(
                       color: AevraColors.rose.withValues(alpha: 0.09),
-                      border: Border.all(color: AevraColors.rose.withValues(alpha: 0.22)),
+                      border: Border.all(
+                          color: AevraColors.rose.withValues(alpha: 0.22)),
                       borderRadius: BorderRadius.circular(AevraRadius.sm),
                     ),
                     child: Text(
                       state.error!,
-                      style: const TextStyle(fontSize: 11.5, height: 1.45, color: AevraColors.rose),
+                      style: const TextStyle(
+                          fontSize: 11.5,
+                          height: 1.45,
+                          color: AevraColors.rose),
                     ),
                   ),
                 ],
@@ -253,7 +290,8 @@ class _OverviewScreenState extends State<OverviewScreen> {
           index: position,
           child: Padding(
             padding: const EdgeInsets.only(bottom: AevraSpace.sm),
-            child: Reveal(index: 2 + position, child: _tile(spec, spec.read(state))),
+            child: Reveal(
+                index: 2 + position, child: _tile(spec, spec.read(state))),
           ),
         );
       },
@@ -266,7 +304,8 @@ class _OverviewScreenState extends State<OverviewScreen> {
     // with it in the gesture arena.
     return DepthCard(
       elevation: GlassElevation.floating,
-      padding: const EdgeInsets.fromLTRB(AevraSpace.md, AevraSpace.md, AevraSpace.sm, AevraSpace.md),
+      padding: const EdgeInsets.fromLTRB(
+          AevraSpace.md, AevraSpace.md, AevraSpace.sm, AevraSpace.md),
       child: Row(
         children: [
           // A squircle chip rather than a circle: circles read as avatars,
@@ -312,7 +351,8 @@ class _OverviewScreenState extends State<OverviewScreen> {
             ),
           ),
           const SizedBox(width: AevraSpace.xs),
-          const Icon(Icons.drag_indicator_rounded, size: 15, color: AevraColors.muted2),
+          const Icon(Icons.drag_indicator_rounded,
+              size: 15, color: AevraColors.muted2),
         ],
       ),
     );

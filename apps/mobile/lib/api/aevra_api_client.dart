@@ -15,14 +15,20 @@ class ApiException implements Exception {
 }
 
 class RegistrationResult {
-  const RegistrationResult({this.accessToken, this.onboardingToken, required this.accountStatus});
+  const RegistrationResult(
+      {this.accessToken, this.onboardingToken, required this.accountStatus});
   final String? accessToken;
   final String? onboardingToken;
   final String accountStatus;
 }
 
 class PaymentInstructions {
-  const PaymentInstructions({required this.amount, required this.currency, required this.upiId, required this.qrUrl, required this.supportEmail});
+  const PaymentInstructions(
+      {required this.amount,
+      required this.currency,
+      required this.upiId,
+      required this.qrUrl,
+      required this.supportEmail});
   final String amount;
   final String currency;
   final String upiId;
@@ -47,7 +53,8 @@ class AevraApiClient {
 
   final String baseUrl;
 
-  Uri _uri(String path) => Uri.parse('$baseUrl${path.startsWith('/') ? path : '/$path'}');
+  Uri _uri(String path) =>
+      Uri.parse('$baseUrl${path.startsWith('/') ? path : '/$path'}');
 
   Future<T> _request<T>(
     String path, {
@@ -63,7 +70,8 @@ class AevraApiClient {
     late http.Response response;
     switch (method) {
       case 'POST':
-        response = await http.post(uri, headers: headers, body: body != null ? jsonEncode(body) : null);
+        response = await http.post(uri,
+            headers: headers, body: body != null ? jsonEncode(body) : null);
         break;
       default:
         response = await http.get(uri, headers: headers);
@@ -77,8 +85,12 @@ class AevraApiClient {
         if (detail is String) {
           message = detail;
         } else if (detail is List) {
-          message = detail.map((e) => (e as Map)['msg']).where((e) => e != null).join('. ');
-        } else if (payload['error'] is Map && payload['error']['message'] != null) {
+          message = detail
+              .map((e) => (e as Map)['msg'])
+              .where((e) => e != null)
+              .join('. ');
+        } else if (payload['error'] is Map &&
+            payload['error']['message'] != null) {
           message = payload['error']['message'] as String;
         }
       } catch (_) {
@@ -121,7 +133,8 @@ class AevraApiClient {
           'timezone': timezone,
         },
         parse: (json) => RegistrationResult(
-          accessToken: (json['token'] as Map<String, dynamic>?)?['access_token'] as String?,
+          accessToken: (json['token'] as Map<String, dynamic>?)?['access_token']
+              as String?,
           onboardingToken: json['onboarding_token'] as String?,
           accountStatus: json['account_status'] as String? ?? 'pending_payment',
         ),
@@ -133,7 +146,8 @@ class AevraApiClient {
         parse: (json) => AevraUser.fromJson(json as Map<String, dynamic>),
       );
 
-  Future<PaymentInstructions> paymentInstructions() => _request<PaymentInstructions>(
+  Future<PaymentInstructions> paymentInstructions() =>
+      _request<PaymentInstructions>(
         '/auth/onboarding/payment-instructions',
         parse: (json) => PaymentInstructions(
           amount: json['amount'] as String? ?? '0',
@@ -144,37 +158,53 @@ class AevraApiClient {
         ),
       );
 
-  Future<void> submitPayment(String onboardingToken, String utr, {String? note}) => _request<void>(
+  Future<void> submitPayment(String onboardingToken, String utr,
+          {String? note}) =>
+      _request<void>(
         '/auth/onboarding/payment-submissions/public',
         method: 'POST',
-        body: {'onboarding_token': onboardingToken, 'utr_reference': utr, if (note != null) 'note': note},
-        parse: (_) => null,
+        body: {
+          'onboarding_token': onboardingToken,
+          'utr_reference': utr,
+          if (note != null) 'note': note
+        },
+        parse: (_) {},
       );
 
   Future<List<Workspace>> workspaces(String token) => _request<List<Workspace>>(
         '/workspaces',
         token: token,
-        parse: (json) => (json as List).map((e) => Workspace.fromJson(e as Map<String, dynamic>)).toList(),
+        parse: (json) => (json as List)
+            .map((e) => Workspace.fromJson(e as Map<String, dynamic>))
+            .toList(),
       );
 
-  Future<List<Brand>> brands(String token, String workspaceId) => _request<List<Brand>>(
+  Future<List<Brand>> brands(String token, String workspaceId) =>
+      _request<List<Brand>>(
         '/workspaces/$workspaceId/brands',
         token: token,
-        parse: (json) => (json as List).map((e) => Brand.fromJson(e as Map<String, dynamic>)).toList(),
+        parse: (json) => (json as List)
+            .map((e) => Brand.fromJson(e as Map<String, dynamic>))
+            .toList(),
       );
 
-  Future<List<Campaign>> campaigns(String token, String workspaceId) => _request<List<Campaign>>(
+  Future<List<Campaign>> campaigns(String token, String workspaceId) =>
+      _request<List<Campaign>>(
         '/workspaces/$workspaceId/campaigns',
         token: token,
-        parse: (json) => (json as List).map((e) => Campaign.fromJson(e as Map<String, dynamic>)).toList(),
+        parse: (json) => (json as List)
+            .map((e) => Campaign.fromJson(e as Map<String, dynamic>))
+            .toList(),
       );
 
-  Future<List<ContentVariant>> variants(String token, String workspaceId, String campaignId) =>
+  Future<List<ContentVariant>> variants(
+          String token, String workspaceId, String campaignId) =>
       _request<List<ContentVariant>>(
         '/workspaces/$workspaceId/campaigns/$campaignId/variants',
         token: token,
-        parse: (json) =>
-            (json as List).map((e) => ContentVariant.fromJson(e as Map<String, dynamic>)).toList(),
+        parse: (json) => (json as List)
+            .map((e) => ContentVariant.fromJson(e as Map<String, dynamic>))
+            .toList(),
       );
 
   Future<Campaign> decideCampaign(
@@ -188,21 +218,26 @@ class AevraApiClient {
         method: 'POST',
         token: token,
         body: {'decision': decision, 'feedback': null},
-        parse: (json) => Campaign.fromJson((json as Map<String, dynamic>)['campaign'] as Map<String, dynamic>),
+        parse: (json) => Campaign.fromJson(
+            (json as Map<String, dynamic>)['campaign'] as Map<String, dynamic>),
       );
 
   Future<List<KnowledgeDocument>> documents(String token, String workspaceId) =>
       _request<List<KnowledgeDocument>>(
         '/workspaces/$workspaceId/knowledge/documents',
         token: token,
-        parse: (json) =>
-            (json as List).map((e) => KnowledgeDocument.fromJson(e as Map<String, dynamic>)).toList(),
+        parse: (json) => (json as List)
+            .map((e) => KnowledgeDocument.fromJson(e as Map<String, dynamic>))
+            .toList(),
       );
 
-  Future<List<MediaAsset>> media(String token, String workspaceId) => _request<List<MediaAsset>>(
+  Future<List<MediaAsset>> media(String token, String workspaceId) =>
+      _request<List<MediaAsset>>(
         '/workspaces/$workspaceId/media/assets',
         token: token,
-        parse: (json) => (json as List).map((e) => MediaAsset.fromJson(e as Map<String, dynamic>)).toList(),
+        parse: (json) => (json as List)
+            .map((e) => MediaAsset.fromJson(e as Map<String, dynamic>))
+            .toList(),
       );
 
   Future<List<MediaAsset>> generateImage(
@@ -231,15 +266,17 @@ class AevraApiClient {
       _request<List<SocialAccount>>(
         '/workspaces/$workspaceId/publishing/accounts',
         token: token,
-        parse: (json) =>
-            (json as List).map((e) => SocialAccount.fromJson(e as Map<String, dynamic>)).toList(),
+        parse: (json) => (json as List)
+            .map((e) => SocialAccount.fromJson(e as Map<String, dynamic>))
+            .toList(),
       );
 
   Future<List<ScheduledPost>> scheduled(String token, String workspaceId) =>
       _request<List<ScheduledPost>>(
         '/workspaces/$workspaceId/operations/schedule',
         token: token,
-        parse: (json) =>
-            (json as List).map((e) => ScheduledPost.fromJson(e as Map<String, dynamic>)).toList(),
+        parse: (json) => (json as List)
+            .map((e) => ScheduledPost.fromJson(e as Map<String, dynamic>))
+            .toList(),
       );
 }

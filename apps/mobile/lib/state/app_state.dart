@@ -107,7 +107,8 @@ class AppState extends ChangeNotifier {
       await client.submitPayment(current, utr, note: note);
       onboardingToken = null;
       paymentInfo = null;
-      error = 'Payment submitted for manual verification. Sign in after approval.';
+      error =
+          'Payment submitted for manual verification. Sign in after approval.';
     } catch (caught) {
       error = caught.toString();
     } finally {
@@ -161,13 +162,26 @@ class AppState extends ChangeNotifier {
     final currentWorkspace = workspace;
     if (currentToken == null || currentWorkspace == null) return;
     try {
-      final updated = await client.decideCampaign(currentToken, currentWorkspace.id, campaignId, decision);
-      campaigns = campaigns.map((c) => c.id == campaignId ? updated : c).toList();
+      final updated = await client.decideCampaign(
+          currentToken, currentWorkspace.id, campaignId, decision);
+      campaigns =
+          campaigns.map((c) => c.id == campaignId ? updated : c).toList();
       notifyListeners();
     } catch (caught) {
       error = caught.toString();
       notifyListeners();
     }
+  }
+
+  void prependAssets(List<MediaAsset> created) {
+    assets = [...created, ...assets];
+    error = null;
+    notifyListeners();
+  }
+
+  void reportError(Object caught) {
+    error = caught.toString();
+    notifyListeners();
   }
 
   Future<void> signOut() async {

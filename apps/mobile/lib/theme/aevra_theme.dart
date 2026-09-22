@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 /// ---------------------------------------------------------------------
 /// AEVRA — "Nocturne" design system (mobile).
@@ -159,7 +158,8 @@ class AevraType {
     FontWeight weight = FontWeight.w500,
     double? height,
   }) {
-    return GoogleFonts.playfairDisplay(
+    return TextStyle(
+      fontFamily: 'PlayfairDisplay',
       fontSize: size,
       fontWeight: weight,
       color: color,
@@ -170,7 +170,8 @@ class AevraType {
 
   /// Uppercase eyebrow / kicker above a heading.
   static TextStyle eyebrow({Color color = AevraColors.accent}) {
-    return GoogleFonts.jetBrainsMono(
+    return TextStyle(
+      fontFamily: 'JetBrainsMono',
       fontSize: 9.5,
       fontWeight: FontWeight.w500,
       letterSpacing: 1.6,
@@ -180,7 +181,8 @@ class AevraType {
 
   /// Big tabular figures — metrics, scores, counters.
   static TextStyle metric(double size, {Color color = AevraColors.text}) {
-    return GoogleFonts.manrope(
+    return TextStyle(
+      fontFamily: 'Manrope',
       fontSize: size,
       fontWeight: FontWeight.w700,
       color: color,
@@ -192,7 +194,8 @@ class AevraType {
 
   /// Small monospaced metadata — times, ids, status codes.
   static TextStyle mono({double size = 10, Color color = AevraColors.muted2}) {
-    return GoogleFonts.jetBrainsMono(
+    return TextStyle(
+      fontFamily: 'JetBrainsMono',
       fontSize: size,
       fontWeight: FontWeight.w400,
       letterSpacing: 0.2,
@@ -206,7 +209,7 @@ class AevraTheme {
 
   // Built once and reused. These getters are read on every MaterialApp
   // build, and each call otherwise reconstructs a full ThemeData plus a
-  // dozen GoogleFonts lookups — cheap individually, wasteful every frame
+  // dozen text-style lookups — cheap individually, wasteful every frame
   // a rebuild happens to pass through the root.
   static ThemeData? _darkCache;
   static ThemeData? _lightCache;
@@ -286,7 +289,8 @@ class AevraTheme {
       useMaterial3: true,
     );
 
-    final textTheme = GoogleFonts.manropeTextTheme(base.textTheme).apply(
+    final textTheme = base.textTheme.apply(
+      fontFamily: 'Manrope',
       bodyColor: text,
       displayColor: text,
     );
@@ -310,8 +314,10 @@ class AevraTheme {
           letterSpacing: -0.05,
         ),
         bodyLarge: textTheme.bodyLarge?.copyWith(fontSize: 14.5, height: 1.55),
-        bodyMedium: textTheme.bodyMedium?.copyWith(fontSize: 13.5, height: 1.55),
-        bodySmall: textTheme.bodySmall?.copyWith(fontSize: 11.5, height: 1.5, color: muted),
+        bodyMedium:
+            textTheme.bodyMedium?.copyWith(fontSize: 13.5, height: 1.55),
+        bodySmall: textTheme.bodySmall
+            ?.copyWith(fontSize: 11.5, height: 1.5, color: muted),
         labelLarge: textTheme.labelLarge?.copyWith(
           fontSize: 13,
           fontWeight: FontWeight.w600,
@@ -351,7 +357,8 @@ class AevraTheme {
         filled: true,
         fillColor: fieldFill,
         isDense: true,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 13, vertical: 13),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 13, vertical: 13),
         hintStyle: TextStyle(color: muted2, fontSize: 13),
         labelStyle: TextStyle(color: muted, fontSize: 12),
         border: OutlineInputBorder(
@@ -383,8 +390,13 @@ class AevraTheme {
           disabledBackgroundColor: accent.withValues(alpha: 0.3),
           disabledForegroundColor: accentInk.withValues(alpha: 0.5),
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-          textStyle: GoogleFonts.manrope(fontSize: 13, fontWeight: FontWeight.w700, letterSpacing: 0.1),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AevraRadius.sm)),
+          textStyle: const TextStyle(
+              fontFamily: 'Manrope',
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.1),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AevraRadius.sm)),
         ),
       ),
 
@@ -393,22 +405,28 @@ class AevraTheme {
           foregroundColor: text,
           side: BorderSide(color: lineStrong),
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-          textStyle: GoogleFonts.manrope(fontSize: 13, fontWeight: FontWeight.w600),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AevraRadius.sm)),
+          textStyle: const TextStyle(
+              fontFamily: 'Manrope', fontSize: 13, fontWeight: FontWeight.w600),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AevraRadius.sm)),
         ),
       ),
 
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           foregroundColor: muted,
-          textStyle: GoogleFonts.manrope(fontSize: 12.5, fontWeight: FontWeight.w600),
+          textStyle: const TextStyle(
+              fontFamily: 'Manrope',
+              fontSize: 12.5,
+              fontWeight: FontWeight.w600),
         ),
       ),
 
       chipTheme: ChipThemeData(
         backgroundColor: surface,
         side: BorderSide(color: line),
-        labelStyle: GoogleFonts.jetBrainsMono(fontSize: 9.5, color: muted),
+        labelStyle:
+            TextStyle(fontFamily: 'JetBrainsMono', fontSize: 9.5, color: muted),
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
         shape: const StadiumBorder(),
       ),
@@ -417,7 +435,8 @@ class AevraTheme {
         backgroundColor: surface,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AevraRadius.xl)),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AevraRadius.xl)),
       ),
 
       bottomSheetTheme: BottomSheetThemeData(
@@ -425,15 +444,18 @@ class AevraTheme {
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(AevraRadius.xl)),
+          borderRadius:
+              BorderRadius.vertical(top: Radius.circular(AevraRadius.xl)),
         ),
       ),
 
       snackBarTheme: SnackBarThemeData(
         backgroundColor: surface,
-        contentTextStyle: GoogleFonts.manrope(fontSize: 12.5, color: text),
+        contentTextStyle:
+            TextStyle(fontFamily: 'Manrope', fontSize: 12.5, color: text),
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AevraRadius.md)),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AevraRadius.md)),
       ),
 
       progressIndicatorTheme: ProgressIndicatorThemeData(
@@ -453,7 +475,8 @@ class AevraTheme {
         ),
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           final selected = states.contains(WidgetState.selected);
-          return GoogleFonts.manrope(
+          return TextStyle(
+            fontFamily: 'Manrope',
             fontSize: 10.5,
             fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
             letterSpacing: 0.15,
@@ -469,7 +492,8 @@ class AevraTheme {
       listTileTheme: ListTileThemeData(
         iconColor: muted,
         textColor: text,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AevraRadius.sm)),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AevraRadius.sm)),
       ),
 
       tooltipTheme: TooltipThemeData(
@@ -478,7 +502,7 @@ class AevraTheme {
           borderRadius: BorderRadius.circular(AevraRadius.xs),
           border: Border.all(color: line),
         ),
-        textStyle: GoogleFonts.manrope(fontSize: 11, color: text),
+        textStyle: TextStyle(fontFamily: 'Manrope', fontSize: 11, color: text),
       ),
     );
   }

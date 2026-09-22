@@ -20,7 +20,8 @@ class ShaderBackground extends StatefulWidget {
   State<ShaderBackground> createState() => _ShaderBackgroundState();
 }
 
-class _ShaderBackgroundState extends State<ShaderBackground> with SingleTickerProviderStateMixin {
+class _ShaderBackgroundState extends State<ShaderBackground>
+    with SingleTickerProviderStateMixin {
   ui.FragmentShader? _shader;
   bool _failed = false;
   late final Ticker _ticker;
@@ -58,7 +59,8 @@ class _ShaderBackgroundState extends State<ShaderBackground> with SingleTickerPr
 
   Future<void> _load() async {
     try {
-      final program = await ui.FragmentProgram.fromAsset('shaders/background.frag');
+      final program =
+          await ui.FragmentProgram.fromAsset('shaders/background.frag');
       if (!mounted) return;
       setState(() => _shader = program.fragmentShader());
       _maybeStart();
@@ -68,7 +70,8 @@ class _ShaderBackgroundState extends State<ShaderBackground> with SingleTickerPr
   }
 
   void _maybeStart() {
-    final reduceMotion = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    final reduceMotion =
+        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
     if (!reduceMotion) {
       _ticker.start();
     }
@@ -105,7 +108,8 @@ class _ShaderBackgroundState extends State<ShaderBackground> with SingleTickerPr
 }
 
 class _ShaderPainter extends CustomPainter {
-  _ShaderPainter({required this.shader, required this.time}) : super(repaint: time);
+  _ShaderPainter({required this.shader, required this.time})
+      : super(repaint: time);
 
   final ui.FragmentShader shader;
   final ValueNotifier<double> time;
