@@ -42,8 +42,10 @@ class OperationsService:
         self._editor(user_id, workspace_id)
         if request.scheduled_for <= datetime.now(UTC):
             raise ConflictError("scheduled_for must be in the future")
-        if self.publishing.campaign(user_id, workspace_id, request.campaign_id) is None:
-            raise NotFoundError("Campaign not found")
+        if request.campaign_id is not None and self.publishing.campaign(
+            user_id, workspace_id, request.campaign_id
+        ) is None:
+            raise NotFoundError("Referenced content group not found")
         account = self.publishing.account(user_id, workspace_id, request.social_account_id)
         if account is None or account.status != "connected":
             raise NotFoundError("Connected social account not found")

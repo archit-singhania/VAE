@@ -201,9 +201,6 @@ class PublishingService:
         self, user_id: uuid.UUID, workspace_id: uuid.UUID, request: PublishRequest
     ) -> PublishJob:
         self._editor(user_id, workspace_id)
-        campaign = self.repository.campaign(user_id, workspace_id, request.campaign_id)
-        if campaign is None:
-            raise NotFoundError("Campaign not found")
         account = self.repository.account(user_id, workspace_id, request.social_account_id)
         if account is None or account.status != "connected":
             raise NotFoundError("Connected social account not found")
@@ -212,7 +209,7 @@ class PublishingService:
             return existing
         job = PublishJob(
             workspace_id=workspace_id,
-            campaign_id=campaign.id,
+            campaign_id=request.campaign_id,
             social_account_id=account.id,
             created_by_user_id=user_id,
             idempotency_key=request.idempotency_key,

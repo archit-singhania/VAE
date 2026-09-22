@@ -195,6 +195,7 @@ export function LiveWorkspace() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [documents, setDocuments] = useState<KnowledgeDocument[]>([]);
   const [assets, setAssets] = useState<MediaAsset[]>([]);
+  const [previewAsset, setPreviewAsset] = useState<MediaAsset | null>(null);
   const [accounts, setAccounts] = useState<SocialAccount[]>([]);
   const [scheduled, setScheduled] = useState<ScheduledPost[]>([]);
   const [metrics, setMetrics] = useState<PostMetric[]>([]);
@@ -215,6 +216,7 @@ export function LiveWorkspace() {
   const [profileEmail, setProfileEmail] = useState("");
   const [profileBrand, setProfileBrand] = useState("");
   const [profileAvatar, setProfileAvatar] = useState("");
+  const [profileAvatarBusy, setProfileAvatarBusy] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [brandName, setBrandName] = useState("VAE");
@@ -235,6 +237,7 @@ export function LiveWorkspace() {
   const [generatedText, setGeneratedText] = useState("");
   const [uploadingMedia, setUploadingMedia] = useState(false);
   const [publishCampaign, setPublishCampaign] = useState("");
+  const [publishAssetId, setPublishAssetId] = useState("");
   const [publishAccounts, setPublishAccounts] = useState<string[]>([]);
   const [publishText, setPublishText] = useState("");
   const [scheduleAt, setScheduleAt] = useState("");
@@ -388,45 +391,14 @@ export function LiveWorkspace() {
           withFallback(api.scheduled(accessToken, nextWorkspace.id), []),
           withFallback(api.metrics(accessToken, nextWorkspace.id), []),
         ]);
-        let resolvedBrands = nextBrands;
-        let resolvedCampaigns = nextCampaigns;
-        if (!me.is_admin && resolvedCampaigns.length === 0) {
-          const foundationBrand =
-            resolvedBrands[0] ??
-            (await api.createBrand(accessToken, nextWorkspace.id, {
-              name: me.brand_name || me.display_name,
-              description: "Private publishing profile managed by VAE.",
-              website_url: null,
-              industry: null,
-              tone_attributes: [],
-              target_audiences: [],
-              preferred_ctas: [],
-              preferred_hashtags: [],
-              status: "active",
-            }));
-          const publishingContext = await api.createCampaign(accessToken, nextWorkspace.id, {
-            brand_id: foundationBrand.id,
-            name: "Media publishing",
-            goal: "Create and publish media",
-            product_service: me.brand_name || me.display_name,
-            audience: "Social audience",
-            instructions: "Internal publishing context",
-            platforms: ["instagram"],
-            media_types: ["text", "image", "video"],
-            publishing_mode: "manual",
-          });
-          resolvedBrands = [foundationBrand];
-          resolvedCampaigns = [publishingContext];
-        }
-        setBrands(resolvedBrands);
-        setCampaigns(resolvedCampaigns);
+        setBrands(nextBrands);
+        setCampaigns(nextCampaigns);
         setDocuments(nextDocuments);
         setAssets(nextAssets);
         setAccounts(nextAccounts);
         setScheduled(nextScheduled);
         setMetrics(nextMetrics);
-        setSelected((value) => value || resolvedCampaigns[0]?.id || "");
-        setPublishCampaign((value) => value || resolvedCampaigns[0]?.id || "");
+        setSelected((value) => value || nextCampaigns[0]?.id || "");
         setPublishAccounts((value) =>
           value.length ? value : nextAccounts[0]?.id ? [nextAccounts[0].id] : [],
         );
@@ -629,6 +601,23 @@ export function LiveWorkspace() {
       setProfileOpen(false);
       setNotice("Profile updated successfully.");
     });
+  };
+  const uploadProfileAvatar = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !token || !workspace) return;
+    setProfileAvatarBusy(true);
+    try {
+      if (!file.type.startsWith("image/")) throw new Error("Choose an image file.");
+      const uploaded = await api.uploadMedia(token, workspace.id, null, file);
+      if (!uploaded.download_url) throw new Error("The avatar upload did not return a preview.");
+      setProfileAvatar(uploaded.download_url);
+      setNotice("Profile image uploaded. Save your profile to keep it.");
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Profile image upload failed.");
+    } finally {
+      setProfileAvatarBusy(false);
+      event.target.value = "";
+    }
   };
   const reviewPayment = async (item: PaymentSubmission, decision: "approve" | "reject") => {
     if (!token) return;
@@ -871,7 +860,6 @@ export function LiveWorkspace() {
     if (
       !token ||
       !workspace ||
-      !publishCampaign ||
       !publishAccounts.length ||
       !(publishText || currentVariant?.caption)
     )
@@ -880,11 +868,13 @@ export function LiveWorkspace() {
       const results = await Promise.all(
         publishAccounts.map(async (accountId) => {
           const payload = {
-            campaign_id: publishCampaign,
+            campaign_id: publishCampaign || null,
             social_account_id: accountId,
             idempotency_key: idempotency(),
             text: publishText || currentVariant?.caption || "",
-            media_urls: [],
+            media_urls: assets.find((asset) => asset.id === publishAssetId)?.download_url
+              ? [assets.find((asset) => asset.id === publishAssetId)?.download_url as string]
+              : [],
           };
           if (shouldSchedule) {
             return api.schedule(token, workspace.id, {
@@ -907,6 +897,22 @@ export function LiveWorkspace() {
         );
       }
     });
+  };
+  const uploadPublishAsset = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file || !token || !workspace) return;
+    setUploadingMedia(true);
+    try {
+      const asset = await api.uploadMedia(token, workspace.id, null, file);
+      setAssets((items) => [asset, ...items]);
+      setPublishAssetId(asset.id);
+      setNotice("Asset uploaded and selected for publishing.");
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Asset upload failed.");
+    } finally {
+      setUploadingMedia(false);
+    }
   };
   const cancelScheduled = async (postId: string) => {
     if (!token || !workspace) return;
@@ -951,7 +957,7 @@ export function LiveWorkspace() {
               <span />
               <b>VAE</b>
             </div>
-            <p className="live-kicker">Campaign intelligence, grounded</p>
+            <p className="live-kicker">Content intelligence, grounded</p>
             <h1>Make every piece of content feel like your sharpest team made it.</h1>
             <p>
               Turn approved brand knowledge into evidence-backed, human-approved content operations.
@@ -964,7 +970,7 @@ export function LiveWorkspace() {
                 <Check size={15} /> Reviewable evidence trail
               </span>
               <span>
-                <Check size={15} /> Staged publishing control
+                <Check size={15} /> Controlled publishing
               </span>
             </div>
           </motion.section>
@@ -1720,12 +1726,19 @@ export function LiveWorkspace() {
           assets.map((asset) => (
             <article className="live-asset" key={asset.id}>
               {asset.download_url && asset.media_type === "image" ? (
-                // biome-ignore lint/performance/noImgElement: authenticated media is served by the API route.
-                <img
-                  className="asset-preview"
-                  src={asset.download_url}
-                  alt={asset.prompt || asset.filename}
-                />
+                <button
+                  type="button"
+                  className="asset-preview-button"
+                  onClick={() => setPreviewAsset(asset)}
+                  aria-label={`Preview ${asset.filename}`}
+                >
+                  {/* biome-ignore lint/performance/noImgElement: authenticated media is served by the API route. */}
+                  <img
+                    className="asset-preview asset-preview-thumb"
+                    src={asset.download_url}
+                    alt={asset.prompt || asset.filename}
+                  />
+                </button>
               ) : asset.download_url && asset.media_type === "video" ? (
                 // biome-ignore lint/a11y/useMediaCaption: generated preview videos are silent compositions.
                 <video
@@ -1833,16 +1846,28 @@ export function LiveWorkspace() {
           <p className="live-kicker">Controlled distribution</p>
           <h2>Publish or schedule</h2>
           <div className="live-form">
-            <Field label="Campaign">
-              <select value={publishCampaign} onChange={(e) => setPublishCampaign(e.target.value)}>
-                <option value="">Select campaign</option>
-                {campaigns.map((item) => (
-                  <option value={item.id} key={item.id}>
-                    {item.name}
-                  </option>
-                ))}
+            <Field label="Media asset (optional)">
+              <select value={publishAssetId} onChange={(e) => setPublishAssetId(e.target.value)}>
+                <option value="">Text-only post</option>
+                {assets
+                  .filter((asset) => asset.status === "ready")
+                  .map((asset) => (
+                    <option value={asset.id} key={asset.id}>
+                      {asset.filename} · {asset.media_type}
+                    </option>
+                  ))}
               </select>
             </Field>
+            <label className="profile-upload-control publishing-upload">
+              <Upload size={15} />
+              <span>{uploadingMedia ? "Uploading…" : "Upload an asset"}</span>
+              <input
+                type="file"
+                accept="image/*,video/*"
+                onChange={(event) => void uploadPublishAsset(event)}
+                disabled={uploadingMedia}
+              />
+            </label>
             <fieldset className="live-field platform-picker">
               <legend>Publish to connected channels</legend>
               <div className="platform-picker-grid">
@@ -1902,7 +1927,7 @@ export function LiveWorkspace() {
                 <CalendarDays size={15} />
                 <span>
                   <b>{date(item.scheduled_for)}</b>
-                  <small>{item.payload.text?.slice(0, 72) || "Campaign post"}</small>
+                  <small>{item.payload.text?.slice(0, 72) || "Media post"}</small>
                 </span>
                 <Status value={item.status} />
                 {item.status === "scheduled" || item.status === "failed" ? (
@@ -2065,7 +2090,7 @@ export function LiveWorkspace() {
         </div>
       </section>
       <div className="analytics-grid">
-        <ChartFrame title="Campaign status mix" caption={`${campaigns.length} total`}>
+        <ChartFrame title="Content status mix" caption={`${campaigns.length} total`}>
           <DonutChart
             items={Object.entries(statusCounts).map(([label, value]) => ({
               label: label.replaceAll("_", " "),
@@ -2076,12 +2101,12 @@ export function LiveWorkspace() {
         <ChartFrame title="Approval rate" caption="approved + published">
           <GaugeChart value={approvalRate} max={100} label="% approved" />
         </ChartFrame>
-        <ChartFrame title="Platform distribution" caption="campaigns by platform">
+        <ChartFrame title="Platform distribution" caption="content by platform">
           <PieChart
             items={Object.entries(platformCounts).map(([label, value]) => ({ label, value }))}
           />
         </ChartFrame>
-        <ChartFrame title="Campaigns by platform" caption="ranked">
+        <ChartFrame title="Content by platform" caption="ranked">
           <HorizontalBarChart
             items={Object.entries(platformCounts)
               .sort(([, a], [, b]) => b - a)
@@ -2090,17 +2115,17 @@ export function LiveWorkspace() {
         </ChartFrame>
         <ChartFrame
           title="Workspace signals"
-          caption="sources · campaigns · assets"
+          caption="sources · content · assets"
           className="span-2"
         >
           <StackedBarChart
-            groups={["Sources", "Campaigns", "Assets"]}
+            groups={["Sources", "Content", "Assets"]}
             series={[
               { name: "count", values: [documents.length, campaigns.length, assets.length] },
             ]}
           />
         </ChartFrame>
-        <ChartFrame title="Campaign creation" caption="daily, real timestamps">
+        <ChartFrame title="Content creation" caption="daily, real timestamps">
           <AreaChart values={campaignDays.map(([, v]) => v)} />
         </ChartFrame>
         <ChartFrame title="Source ingestion" caption="daily">
@@ -2111,18 +2136,18 @@ export function LiveWorkspace() {
         </ChartFrame>
         <ChartFrame
           title="Activity streams"
-          caption="sources / campaigns / assets"
+          caption="sources / content / assets"
           className="span-2"
         >
           <StreamChart
             series={[
               { name: "Sources", values: documentDays.map(([, v]) => v), color: "#b8bec7" },
-              { name: "Campaigns", values: campaignDays.map(([, v]) => v), color: "#c9a45c" },
+              { name: "Content", values: campaignDays.map(([, v]) => v), color: "#c9a45c" },
               { name: "Assets", values: assetDays.map(([, v]) => v), color: "#3f5d52" },
             ]}
           />
         </ChartFrame>
-        <ChartFrame title="Recent activity" caption="last 28 campaign days">
+        <ChartFrame title="Recent activity" caption="last 28 content days">
           <CalendarHeatmap days={calendarDays} />
         </ChartFrame>
         <ChartFrame title="Approval funnel" caption="status pipeline">
@@ -2139,7 +2164,7 @@ export function LiveWorkspace() {
         </ChartFrame>
         <ChartFrame
           title="Variant quality scores"
-          caption={`${variants.length} in current campaign`}
+          caption={`${variants.length} in current content group`}
         >
           <DotPlot
             items={variants.map((v) => ({ label: v.platform, value: v.quality_score, max: 100 }))}
@@ -2200,7 +2225,10 @@ export function LiveWorkspace() {
             items={Object.entries(platformCounts).map(([label, value]) => ({ label, value }))}
           />
         </ChartFrame>
-        <ChartFrame title="Revision range per campaign" caption="derived from revision counters">
+        <ChartFrame
+          title="Revision range per content group"
+          caption="derived from revision counters"
+        >
           <CandlestickChart
             bars={campaigns.slice(0, 8).map((c) => ({
               label: c.name.slice(0, 6),
@@ -2211,17 +2239,17 @@ export function LiveWorkspace() {
             }))}
           />
         </ChartFrame>
-        <ChartFrame title="Sources vs. campaigns" caption="waterfall of workspace growth">
+        <ChartFrame title="Sources vs. content" caption="waterfall of workspace growth">
           <WaterfallChart
             steps={[
               { label: "Sources", delta: documents.length },
-              { label: "Campaigns", delta: campaigns.length },
+              { label: "Content", delta: campaigns.length },
               { label: "Approved", delta: approvedCount },
               { label: "Assets", delta: assets.length },
             ]}
           />
         </ChartFrame>
-        <ChartFrame title="Campaign volume + quality combo" caption="count + latest quality">
+        <ChartFrame title="Content volume + quality combo" caption="count + latest quality">
           <ComboChart
             bars={campaignDays.map(([, v]) => v)}
             line={campaignDays.map(() => (variantQuality.length ? variantQuality[0] : 0))}
@@ -2230,7 +2258,7 @@ export function LiveWorkspace() {
         <ChartFrame title="Approval completion" caption="ring">
           <ProgressRing value={approvalRate} label="approval rate" />
         </ChartFrame>
-        <ChartFrame title="Platform activity" caption="bubble size = campaign count">
+        <ChartFrame title="Platform activity" caption="bubble size = content count">
           <BubbleChart
             points={Object.entries(platformCounts).map(([label, value], i) => ({
               label,
@@ -2400,6 +2428,44 @@ export function LiveWorkspace() {
           />
         )}
         <AnimatePresence>
+          {previewAsset?.download_url && (
+            <motion.div
+              className="asset-preview-layer"
+              role="presentation"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onMouseDown={() => setPreviewAsset(null)}
+            >
+              <motion.div
+                className="asset-preview-dialog"
+                role="dialog"
+                aria-modal="true"
+                aria-label="Asset preview"
+                initial={{ opacity: 0, scale: 0.96, y: 12 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.98, y: 8 }}
+                onMouseDown={(event) => event.stopPropagation()}
+              >
+                <button
+                  type="button"
+                  className="asset-preview-close"
+                  aria-label="Close asset preview"
+                  onClick={() => setPreviewAsset(null)}
+                >
+                  <X size={18} />
+                </button>
+                {/* biome-ignore lint/performance/noImgElement: authenticated media preview */}
+                <img
+                  src={previewAsset.download_url}
+                  alt={previewAsset.prompt || previewAsset.filename}
+                />
+                <small>{previewAsset.filename}</small>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+        <AnimatePresence>
           {signOutOpen && (
             <motion.div
               className="confirm-layer"
@@ -2514,14 +2580,16 @@ export function LiveWorkspace() {
                 <Field label="Product or brand">
                   <input value={profileBrand} onChange={(e) => setProfileBrand(e.target.value)} />
                 </Field>
-                <Field label="Profile photo URL">
+                <label className="profile-upload-control">
+                  <span>Profile image</span>
+                  <small>{profileAvatarBusy ? "Uploading…" : "Upload a display picture"}</small>
                   <input
-                    type="url"
-                    value={profileAvatar}
-                    onChange={(e) => setProfileAvatar(e.target.value)}
-                    placeholder="https://…"
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    disabled={profileAvatarBusy}
+                    onChange={uploadProfileAvatar}
                   />
-                </Field>
+                </label>
                 <div className="live-divider" />
                 <Field label="Current password (only to change it)">
                   <input

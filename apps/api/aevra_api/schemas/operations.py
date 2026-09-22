@@ -6,7 +6,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 class ScheduleCreateRequest(BaseModel):
-    campaign_id: uuid.UUID
+    campaign_id: uuid.UUID | None = None
     social_account_id: uuid.UUID
     idempotency_key: str = Field(min_length=8, max_length=160)
     scheduled_for: datetime
@@ -23,7 +23,7 @@ class ScheduledPostResponse(BaseModel):
 
     id: uuid.UUID
     workspace_id: uuid.UUID
-    campaign_id: uuid.UUID
+    campaign_id: uuid.UUID | None
     social_account_id: uuid.UUID
     idempotency_key: str
     scheduled_for: datetime

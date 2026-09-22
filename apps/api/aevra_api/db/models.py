@@ -589,7 +589,7 @@ class PublishJob(TimestampMixin, Base):
     workspace_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("workspaces.id", ondelete="CASCADE"), index=True
     )
-    campaign_id: Mapped[uuid.UUID] = mapped_column(index=True)
+    campaign_id: Mapped[uuid.UUID | None] = mapped_column(index=True, nullable=True)
     social_account_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("social_accounts.id", ondelete="RESTRICT"), index=True
     )
@@ -628,7 +628,7 @@ class ScheduledPost(TimestampMixin, Base):
     workspace_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("workspaces.id", ondelete="CASCADE"), index=True
     )
-    campaign_id: Mapped[uuid.UUID] = mapped_column(index=True)
+    campaign_id: Mapped[uuid.UUID | None] = mapped_column(index=True, nullable=True)
     social_account_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("social_accounts.id", ondelete="RESTRICT"), index=True
     )

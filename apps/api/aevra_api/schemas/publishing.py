@@ -33,7 +33,7 @@ class SocialAccountResponse(BaseModel):
 
 
 class PublishRequest(BaseModel):
-    campaign_id: uuid.UUID
+    campaign_id: uuid.UUID | None = None
     social_account_id: uuid.UUID
     idempotency_key: str = Field(min_length=8, max_length=160)
     text: str = Field(min_length=1, max_length=30_000)
@@ -45,7 +45,7 @@ class PublishJobResponse(BaseModel):
 
     id: uuid.UUID
     workspace_id: uuid.UUID
-    campaign_id: uuid.UUID
+    campaign_id: uuid.UUID | None
     social_account_id: uuid.UUID
     idempotency_key: str
     status: Literal["queued", "publishing", "published", "verified", "failed", "cancelled"]

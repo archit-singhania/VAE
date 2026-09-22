@@ -3186,6 +3186,97 @@ body {
   border-radius: 12px;
   background: #050706;
 }
+.asset-preview-thumb {
+  max-height: 150px;
+  cursor: zoom-in;
+  object-fit: cover;
+}
+.asset-preview-button {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: zoom-in;
+}
+.asset-preview-button:focus-visible {
+  outline: 2px solid var(--accent, #c9a45c);
+  outline-offset: 3px;
+}
+.asset-preview-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: grid;
+  place-items: center;
+  padding: 28px;
+  background: rgba(3, 5, 7, 0.72);
+  backdrop-filter: blur(18px) saturate(0.8);
+  -webkit-backdrop-filter: blur(18px) saturate(0.8);
+}
+.asset-preview-dialog {
+  position: relative;
+  display: grid;
+  gap: 10px;
+  width: min(92vw, 980px);
+  max-height: 92vh;
+  padding: 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-lg);
+  background: var(--surface-2);
+  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.55);
+}
+.asset-preview-dialog img {
+  width: 100%;
+  max-height: calc(92vh - 70px);
+  object-fit: contain;
+  border-radius: var(--r-md);
+}
+.asset-preview-dialog small {
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.asset-preview-close {
+  position: absolute;
+  top: 22px;
+  right: 22px;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--line-strong);
+  border-radius: 50%;
+  color: var(--text-strong);
+  background: rgba(5, 7, 10, 0.78);
+  cursor: pointer;
+}
+.profile-dialog {
+  max-height: min(88vh, 760px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-color: var(--line-strong) transparent;
+}
+.profile-upload-control {
+  display: grid;
+  gap: 5px;
+  padding: 11px 12px;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--r-sm);
+  color: var(--text-soft);
+  cursor: pointer;
+}
+.profile-upload-control small {
+  color: var(--muted);
+}
+.profile-upload-control input {
+  width: 100%;
+  color: var(--muted);
+  font-size: 11px;
+}
 .admin-kpis {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -5563,6 +5654,9 @@ html[data-theme="light"] .live-theme-toggle {
 }
 .asset-preview {
   max-height: 190px;
+}
+.asset-preview-thumb {
+  max-height: 120px;
 }
 .confirm-close {
   position: absolute;
