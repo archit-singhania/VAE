@@ -18,6 +18,7 @@ from aevra_api.domain.errors import (
     ProviderUnavailableError,
 )
 from aevra_api.media.flux_provider import FluxHTTPProvider
+from aevra_api.media.huggingface_provider import HuggingFaceImageProvider
 from aevra_api.media.image_contracts import ImageGenerationRequest as ProviderImageRequest
 from aevra_api.media.image_renderer import DeterministicImageProvider
 from aevra_api.media.image_transforms import BrandVisualStyle, encode_image, resize_cover
@@ -64,11 +65,20 @@ class MediaService:
             if str(settings.storage_backend).lower() in {"minio", "s3", "s3-compatible"}
             else None
         )
-        self.image_provider = image_provider or (
-            FluxHTTPProvider(settings.flux_base_url)
-            if settings.image_provider.lower() == "flux"
-            else DeterministicImageProvider()
-        )
+        provider_name = settings.image_provider.lower()
+        configured_provider: Any
+        if provider_name == "huggingface":
+            configured_provider = HuggingFaceImageProvider(
+                settings.huggingface_api_token,
+                settings.huggingface_image_model,
+                provider=settings.huggingface_image_inference_provider,
+                timeout_seconds=settings.huggingface_image_timeout_seconds,
+            )
+        elif provider_name == "flux":
+            configured_provider = FluxHTTPProvider(settings.flux_base_url)
+        else:
+            configured_provider = DeterministicImageProvider()
+        self.image_provider = image_provider or configured_provider
         self.video_composer = video_composer
 
     def _write(self, storage_key: str, content: bytes, content_type: str) -> None:

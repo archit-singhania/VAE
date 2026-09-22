@@ -1678,7 +1678,7 @@ export function LiveWorkspace() {
             />
           </Field>
           <p className="live-helper">
-            Powered by Groq for text and captions. Images use the free deterministic renderer.
+            Groq refines your direction; a configured AI image model creates the final visual.
           </p>
           <Button type="submit" disabled={busy === mediaMode}>
             {mediaMode === "image" ? <Sparkles size={14} /> : <FileText size={14} />}

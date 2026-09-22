@@ -4,6 +4,7 @@ The package deliberately keeps rendering and composition in-memory. Persistence,
 tenant authorization, and delivery URLs belong to the service layer.
 """
 
+from aevra_api.media.huggingface_provider import HuggingFaceImageProvider
 from aevra_api.media.image_contracts import (
     EncodedImage,
     ImageGenerationRequest,
@@ -28,6 +29,7 @@ __all__ = [
     "ImageGenerationResult",
     "ImagePipelineError",
     "ImageProvider",
+    "HuggingFaceImageProvider",
     "apply_brand_overlay",
     "encode_image",
     "resize_contain",

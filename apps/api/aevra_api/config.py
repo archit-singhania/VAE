@@ -62,6 +62,10 @@ class Settings(BaseSettings):
     groq_timeout_seconds: float = Field(default=60.0, ge=1, le=600)
     media_root: str = "./media"
     image_provider: str = "deterministic"
+    huggingface_api_token: str | None = None
+    huggingface_image_model: str = "black-forest-labs/FLUX.1-schnell"
+    huggingface_image_inference_provider: str = "fal-ai"
+    huggingface_image_timeout_seconds: float = Field(default=120.0, ge=1, le=600)
     flux_base_url: str = "http://localhost:8188"
     flux_timeout_seconds: float = Field(default=120.0, ge=1, le=600)
     video_provider: str = "ffmpeg"

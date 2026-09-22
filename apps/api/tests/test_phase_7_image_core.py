@@ -3,6 +3,7 @@ import io
 import pytest
 from PIL import Image, ImageDraw
 
+from aevra_api.media.huggingface_provider import HuggingFaceImageProvider
 from aevra_api.media.image_contracts import ImageGenerationRequest, ImagePipelineError
 from aevra_api.media.image_renderer import DeterministicImageProvider
 from aevra_api.media.image_transforms import (
@@ -136,3 +137,29 @@ def test_brand_overlay_rejects_invalid_logo_payload_at_decode_boundary() -> None
     style = BrandVisualStyle(logo_png=b"not an image")
     with pytest.raises(ImagePipelineError, match="safely decoded"):
         apply_brand_overlay(Image.new("RGB", (128, 128), "black"), style)
+
+
+def test_huggingface_provider_returns_real_provider_image_with_provenance() -> None:
+    class FakeInferenceClient:
+        def text_to_image(self, prompt: str, **kwargs: object) -> Image.Image:
+            assert prompt == "A cinematic animated runner"
+            assert kwargs["model"] == "black-forest-labs/FLUX.1-schnell"
+            return Image.new("RGB", (256, 256), "#2563eb")
+
+    provider = HuggingFaceImageProvider(
+        "hf_test_token",
+        "black-forest-labs/FLUX.1-schnell",
+        client=FakeInferenceClient(),
+    )
+    result = provider.generate(
+        ImageGenerationRequest(
+            prompt="A cinematic animated runner", width=256, height=256, seed=42
+        )
+    )
+
+    assert provider.status().available is True
+    assert result.provider == "huggingface-inference"
+    assert result.model == "black-forest-labs/FLUX.1-schnell"
+    assert result.seed == 42
+    assert result.metadata["remote"] is True
+    assert _open(result.image.data).size == (256, 256)
