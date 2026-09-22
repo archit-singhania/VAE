@@ -104,13 +104,15 @@ class GroqLLMProvider:
     """OpenAI-compatible Groq provider; enabled only when a server-side key exists."""
 
     def __init__(self, settings: Settings, client: httpx.Client | None = None) -> None:
-        if not settings.groq_api_key:
-            raise ValueError("Groq API key is not configured")
         self.settings = settings
         self.client = client or httpx.Client(
             base_url=settings.groq_base_url.rstrip("/"),
             timeout=settings.groq_timeout_seconds,
-            headers={"Authorization": f"Bearer {settings.groq_api_key}"},
+            headers=(
+                {"Authorization": f"Bearer {settings.groq_api_key}"}
+                if settings.groq_api_key
+                else {}
+            ),
         )
 
     @property
@@ -180,35 +182,5 @@ class GroqLLMProvider:
             raise ProviderUnavailableError("Groq language model streaming is unavailable") from exc
 
 
-class FallbackLLMProvider:
-    """Use Groq first and fall back to local Ollama when Groq is unavailable."""
-
-    def __init__(self, primary: GroqLLMProvider, fallback: OllamaLLMProvider) -> None:
-        self.primary = primary
-        self.fallback = fallback
-
-    @property
-    def model_name(self) -> str:
-        return f"{self.primary.model_name} → {self.fallback.model_name}"
-
-    def status(self) -> ProviderStatus:
-        primary = self.primary.status()
-        return primary if primary.available else self.fallback.status()
-
-    def generate(self, request: GenerationRequest) -> GenerationResult:
-        try:
-            return self.primary.generate(request)
-        except ProviderUnavailableError:
-            return self.fallback.generate(request)
-
-    def stream(self, request: GenerationRequest) -> Iterator[str]:
-        try:
-            yield from self.primary.stream(request)
-        except ProviderUnavailableError:
-            yield from self.fallback.stream(request)
-
-
 def build_llm_provider(settings: Settings) -> LLMProvider:
-    if settings.groq_api_key:
-        return FallbackLLMProvider(GroqLLMProvider(settings), OllamaLLMProvider(settings))
-    return OllamaLLMProvider(settings)
+    return GroqLLMProvider(settings)
