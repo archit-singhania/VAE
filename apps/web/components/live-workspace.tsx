@@ -751,9 +751,22 @@ export function LiveWorkspace() {
     event.preventDefault();
     if (!token || !workspace) return;
     await run("image", async () => {
+      const enhancedPrompt = await api
+        .streamModel(
+          token,
+          workspace.id,
+          {
+            prompt: mediaPrompt,
+            system_prompt:
+              "Rewrite the user's request as a vivid, safe image-generation brief. Preserve named characters and actions, add composition, lighting, palette, camera, and mood. Return only the brief.",
+            max_tokens: 320,
+          },
+          () => undefined,
+        )
+        .catch(() => mediaPrompt);
       const result = await api.generateImage(token, workspace.id, {
         campaign_id: null,
-        prompt: mediaPrompt,
+        prompt: enhancedPrompt,
         platforms: ["instagram"],
         aspect_ratio: "1:1",
         brand_overlay: true,

@@ -92,14 +92,47 @@ class DeterministicImageProvider:
     def _render_stylized_character(
         self, canvas: Image.Image, digest: bytes, seed: int
     ) -> Image.Image:
-        """Add a legible, deterministic editorial character scene for free previews."""
+        """Add a polished, deterministic editorial character scene for free previews."""
         draw = ImageDraw.Draw(canvas, "RGBA")
         width, height = canvas.size
         scale = min(width, height) / 1024
         ground = int(height * 0.78)
-        accent = (*self._colour(digest, 4, floor=100), 235)
+        accent = (*self._colour(digest, 4, floor=100), 245)
         ink = (*self._colour(digest, 12, floor=35), 245)
-        highlight = (*self._colour(digest, 21, floor=120), 220)
+        highlight = (*self._colour(digest, 21, floor=120), 235)
+        skin = (255, 204, 166, 255)
+        shirt = (48, 194, 151, 255)
+        pants = (35, 72, 135, 255)
+        white = (250, 250, 242, 235)
+        outline = max(2, int(5 * scale))
+        # A simple illustrated environment gives the offline renderer a clear
+        # subject/background relationship instead of an abstract color wash.
+        draw.ellipse(
+            (int(width * 0.70), int(height * 0.10), int(width * 0.88), int(height * 0.28)),
+            fill=(*highlight[:3], 150),
+        )
+        for cloud_x, cloud_y in ((0.14, 0.22), (0.66, 0.34)):
+            draw.ellipse(
+                (
+                    int(width * cloud_x),
+                    int(height * cloud_y),
+                    int(width * (cloud_x + 0.12)),
+                    int(height * (cloud_y + 0.06)),
+                ),
+                fill=white,
+            )
+        draw.polygon(
+            [
+                (0, ground),
+                (int(width * 0.32), int(height * 0.67)),
+                (int(width * 0.58), ground),
+                (int(width * 0.82), int(height * 0.70)),
+                (width, ground - int(20 * scale)),
+                (width, height),
+                (0, height),
+            ],
+            fill=(*highlight[:3], 80),
+        )
         draw.rounded_rectangle(
             (int(width * 0.08), ground, int(width * 0.92), ground + max(4, int(8 * scale))),
             radius=max(2, int(4 * scale)),
@@ -108,31 +141,109 @@ class DeterministicImageProvider:
         cx, cy = int(width * 0.52), int(height * 0.45)
         head_radius = max(18, int(42 * scale))
         stroke = max(5, int(18 * scale))
+        shadow_w = int(190 * scale)
         draw.ellipse(
-            (cx - head_radius, cy - int(170 * scale) - head_radius,
-             cx + head_radius, cy - int(170 * scale) + head_radius),
-            fill=accent,
+            (cx - shadow_w, ground - int(4 * scale), cx + shadow_w, ground + int(28 * scale)),
+            fill=(*ink[:3], 90),
+        )
+        draw.ellipse(
+            (
+                cx - head_radius,
+                cy - int(170 * scale) - head_radius,
+                cx + head_radius,
+                cy - int(170 * scale) + head_radius,
+            ),
+            fill=skin,
             outline=ink,
-            width=max(2, int(5 * scale)),
+            width=outline,
+        )
+        draw.ellipse(
+            (
+                cx - int(18 * scale),
+                cy - int(184 * scale),
+                cx - int(8 * scale),
+                cy - int(172 * scale),
+            ),
+            fill=ink,
+        )
+        draw.ellipse(
+            (
+                cx + int(8 * scale),
+                cy - int(184 * scale),
+                cx + int(18 * scale),
+                cy - int(172 * scale),
+            ),
+            fill=ink,
+        )
+        draw.arc(
+            (
+                cx - int(20 * scale),
+                cy - int(166 * scale),
+                cx + int(20 * scale),
+                cy - int(140 * scale),
+            ),
+            15,
+            165,
+            fill=ink,
+            width=outline,
         )
         shoulder = (cx, cy - int(105 * scale))
         hip = (cx - int(15 * scale), cy + int(80 * scale))
-        draw.line((shoulder[0], shoulder[1], hip[0], hip[1]), fill=ink, width=stroke, joint="curve")
+        draw.line(
+            (shoulder[0], shoulder[1], hip[0], hip[1]), fill=shirt, width=stroke, joint="curve"
+        )
+        draw.ellipse(
+            (
+                cx - int(45 * scale),
+                cy - int(140 * scale),
+                cx + int(45 * scale),
+                cy - int(55 * scale),
+            ),
+            fill=shirt,
+            outline=ink,
+            width=outline,
+        )
         draw.line(
             (shoulder[0], shoulder[1], cx - int(145 * scale), cy - int(30 * scale)),
-            fill=highlight,
+            fill=skin,
             width=stroke,
         )
         draw.line(
             (shoulder[0], shoulder[1], cx + int(125 * scale), cy - int(5 * scale)),
-            fill=highlight,
+            fill=skin,
             width=stroke,
         )
-        draw.line((hip[0], hip[1], cx - int(135 * scale), ground), fill=ink, width=stroke)
+        draw.ellipse(
+            (
+                hip[0] - int(30 * scale),
+                hip[1] - int(25 * scale),
+                hip[0] + int(30 * scale),
+                hip[1] + int(35 * scale),
+            ),
+            fill=pants,
+            outline=ink,
+            width=outline,
+        )
+        draw.line((hip[0], hip[1], cx - int(135 * scale), ground), fill=pants, width=stroke)
         draw.line(
             (hip[0], hip[1], cx + int(115 * scale), ground - int(80 * scale)),
-            fill=ink,
+            fill=pants,
             width=stroke,
+        )
+        draw.line(
+            (cx - int(135 * scale), ground, cx - int(172 * scale), ground),
+            fill=ink,
+            width=max(7, int(20 * scale)),
+        )
+        draw.line(
+            (
+                cx + int(115 * scale),
+                ground - int(80 * scale),
+                cx + int(155 * scale),
+                ground - int(82 * scale),
+            ),
+            fill=ink,
+            width=max(7, int(20 * scale)),
         )
         for offset in (0.0, 0.08, 0.16):
             y = int(height * (0.25 + offset))
