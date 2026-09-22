@@ -1665,8 +1665,8 @@ export function LiveWorkspace() {
             />
           </Field>
           <p className="live-helper">
-            Powered by the configured local model when available, with a free deterministic fallback
-            for images.
+            Powered by Groq when configured, with local Ollama fallback and free deterministic
+            images.
           </p>
           <Button type="submit" disabled={busy === mediaMode}>
             {mediaMode === "image" ? <Sparkles size={14} /> : <FileText size={14} />}

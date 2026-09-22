@@ -181,9 +181,9 @@ class GroqLLMProvider:
 
 
 class FallbackLLMProvider:
-    """Use local Ollama first and Groq as an opt-in server-side fallback."""
+    """Use Groq first and fall back to local Ollama when Groq is unavailable."""
 
-    def __init__(self, primary: OllamaLLMProvider, fallback: GroqLLMProvider) -> None:
+    def __init__(self, primary: GroqLLMProvider, fallback: OllamaLLMProvider) -> None:
         self.primary = primary
         self.fallback = fallback
 
@@ -209,7 +209,6 @@ class FallbackLLMProvider:
 
 
 def build_llm_provider(settings: Settings) -> LLMProvider:
-    primary = OllamaLLMProvider(settings)
     if settings.groq_api_key:
-        return FallbackLLMProvider(primary, GroqLLMProvider(settings))
-    return primary
+        return FallbackLLMProvider(GroqLLMProvider(settings), OllamaLLMProvider(settings))
+    return OllamaLLMProvider(settings)
