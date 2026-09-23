@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 /**
  * The landing hero uses the original `.MOV` artwork when the browser can
@@ -8,11 +8,25 @@ import { useEffect, useState } from "react";
  * fallback for browsers that do not support QuickTime containers.
  */
 export function HeroVideo() {
-  const [motionEnabled, setMotionEnabled] = useState(true);
+  const [motionEnabled, setMotionEnabled] = useState(false);
   const [videoReady, setVideoReady] = useState(false);
 
+  const video = useRef<HTMLVideoElement>(null);
   useEffect(() => {
-    setMotionEnabled(!window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+    const query = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const update = () => {
+      const enabled = !query.matches && !document.hidden;
+      setMotionEnabled(enabled);
+      if (enabled) void video.current?.play().catch(() => undefined);
+      else video.current?.pause();
+    };
+    update();
+    query.addEventListener("change", update);
+    document.addEventListener("visibilitychange", update);
+    return () => {
+      query.removeEventListener("change", update);
+      document.removeEventListener("visibilitychange", update);
+    };
   }, []);
 
   return (
@@ -24,12 +38,13 @@ export function HeroVideo() {
         <span className="hero-visual-grid" />
       </div>
       <video
+        ref={video}
         className="hero-video"
         autoPlay={motionEnabled}
         muted
         loop
         playsInline
-        preload="auto"
+        preload="metadata"
         onCanPlay={() => setVideoReady(true)}
         onError={() => setVideoReady(false)}
       >

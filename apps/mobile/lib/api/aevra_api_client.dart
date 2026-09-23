@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'package:file_picker/file_picker.dart';
+import 'package:http_parser/http_parser.dart';
 
 import 'package:http/http.dart' as http;
 
@@ -69,6 +71,10 @@ class AevraApiClient {
     final uri = _uri(path);
     late http.Response response;
     switch (method) {
+      case 'PATCH':
+        response = await http.patch(uri,
+            headers: headers, body: body != null ? jsonEncode(body) : null);
+        break;
       case 'POST':
         response = await http.post(uri,
             headers: headers, body: body != null ? jsonEncode(body) : null);
@@ -241,10 +247,8 @@ class AevraApiClient {
       );
 
   Future<List<MediaAsset>> generateImage(
-    String token,
-    String workspaceId,
-    String prompt,
-  ) =>
+          String token, String workspaceId, String prompt,
+          {String aspectRatio = '1:1'}) =>
       _request<List<MediaAsset>>(
         '/workspaces/$workspaceId/media/images/generate',
         token: token,
@@ -253,7 +257,7 @@ class AevraApiClient {
           'campaign_id': null,
           'prompt': prompt,
           'platforms': ['instagram'],
-          'aspect_ratio': '1:1',
+          'aspect_ratio': aspectRatio,
           'brand_overlay': true,
           'brand_text': 'VAE',
         },
@@ -279,4 +283,174 @@ class AevraApiClient {
             .map((e) => ScheduledPost.fromJson(e as Map<String, dynamic>))
             .toList(),
       );
+
+  Future<MediaAsset?> pickAndUpload(String token, String workspaceId,
+      {bool imagesOnly = false}) async {
+    final selection = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: imagesOnly
+            ? ['jpg', 'jpeg', 'png', 'webp']
+            : ['jpg', 'jpeg', 'png', 'webp', 'mp4', 'mov'],
+        withData: true);
+    if (selection == null) return null;
+    final file = selection.files.single;
+    if (file.bytes == null) {
+      throw ApiException('Unable to read this file.', 400);
+    }
+    if (file.size > 50 * 1024 * 1024) {
+      throw ApiException('Choose a file smaller than 50 MB.', 400);
+    }
+    final request = http.MultipartRequest(
+        'POST', _uri('/workspaces/$workspaceId/media/assets/upload'))
+      ..headers['Authorization'] = 'Bearer $token'
+      ..files.add(http.MultipartFile.fromBytes('file', file.bytes!,
+          filename: file.name,
+          contentType: MediaType.parse(switch (file.extension?.toLowerCase()) {
+            'png' => 'image/png',
+            'webp' => 'image/webp',
+            'mp4' => 'video/mp4',
+            'mov' => 'video/quicktime',
+            _ => 'image/jpeg'
+          })));
+    final response = await http.Response.fromStream(await request.send());
+    if (response.statusCode >= 300) {
+      throw ApiException(
+          'Upload failed. Please try again.', response.statusCode);
+    }
+    return MediaAsset.fromJson(
+        jsonDecode(response.body) as Map<String, dynamic>);
+  }
+
+  Future<AevraUser> updateProfile(String token, Map<String, dynamic> body) =>
+      _request('/auth/me',
+          method: 'PATCH',
+          token: token,
+          body: body,
+          parse: (json) => AevraUser.fromJson(json as Map<String, dynamic>));
+  Future<void> changePassword(String token, String current, String next) =>
+      _request('/auth/change-password',
+          method: 'POST',
+          token: token,
+          body: {'current_password': current, 'new_password': next},
+          parse: (_) {});
+  Future<List<PostMetric>> metrics(String token, String workspaceId) =>
+      _request('/workspaces/$workspaceId/operations/metrics',
+          token: token,
+          parse: (json) => (json as List)
+              .map((m) => PostMetric(m as Map<String, dynamic>))
+              .toList());
+  Future<Map<String, dynamic>> publish(
+          String token, String workspaceId, Map<String, dynamic> payload,
+          {bool schedule = false}) =>
+      _request(
+          '/workspaces/$workspaceId/${schedule ? 'operations/schedule' : 'publishing/jobs'}',
+          token: token,
+          method: 'POST',
+          body: payload,
+          parse: (json) => json as Map<String, dynamic>);
+  Future<void> updateScheduled(
+          String token, String workspaceId, String id, String action) =>
+      _request('/workspaces/$workspaceId/operations/schedule/$id/$action',
+          token: token, method: 'POST', parse: (_) {});
+  Future<Map<String, dynamic>> adminOverview(String token) =>
+      _request('/auth/admin/overview',
+          token: token, parse: (json) => json as Map<String, dynamic>);
+
+  Future<String> generateText(String token, String workspaceId, String prompt,
+      void Function(String) onText) async {
+    final client = http.Client();
+    try {
+      final request = http.Request(
+          'POST', _uri('/workspaces/$workspaceId/models/local/generate/stream'))
+        ..headers.addAll({
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json'
+        })
+        ..body = jsonEncode({'prompt': prompt, 'max_tokens': 640});
+      final response = await client.send(request);
+      if (response.statusCode >= 300) {
+        throw ApiException(
+            'Text generation is unavailable. Try again.', response.statusCode);
+      }
+      var text = '';
+      await for (final line in response.stream
+          .transform(utf8.decoder)
+          .transform(const LineSplitter())) {
+        if (!line.startsWith('data: ')) continue;
+        final value = line.substring(6).trim();
+        if (value == '[DONE]') continue;
+        final event = jsonDecode(value) as Map<String, dynamic>;
+        if (event['message'] != null) {
+          throw ApiException(event['message'].toString(), 500);
+        }
+        text += event['token'] as String? ?? '';
+        onText(text);
+      }
+      return text;
+    } finally {
+      client.close();
+    }
+  }
+
+  Future<String> authorizeChannel(
+          String token, String workspaceId, String provider) =>
+      _request('/workspaces/$workspaceId/publishing/oauth/$provider/authorize',
+          token: token, parse: (json) => json['authorization_url'] as String);
+  Future<void> disconnectChannel(
+          String token, String workspaceId, SocialAccount account) =>
+      _request(
+          '/workspaces/$workspaceId/publishing/oauth/${account.platform}/accounts/${account.id}/revoke',
+          token: token,
+          method: 'POST',
+          parse: (_) {});
+  Future<List<Map<String, dynamic>>> adminPayments(String token) =>
+      _request('/auth/admin/payment-submissions',
+          token: token,
+          parse: (json) => (json as List).cast<Map<String, dynamic>>());
+  Future<void> reviewPayment(
+          String token, String id, String decision, String note) =>
+      _request('/auth/admin/payment-submissions/$id/$decision',
+          token: token, method: 'POST', body: {'note': note}, parse: (_) {});
+
+  Future<Brand> createBrand(
+          String token, String workspaceId, String name, String description) =>
+      _request('/workspaces/$workspaceId/brands',
+          token: token,
+          method: 'POST',
+          body: {
+            'name': name,
+            'description': description,
+            'website_url': null,
+            'industry': null,
+            'tone_attributes': ['clear', 'confident'],
+            'target_audiences': [],
+            'preferred_ctas': [],
+            'preferred_hashtags': [],
+            'status': 'active'
+          },
+          parse: (json) => Brand.fromJson(json as Map<String, dynamic>));
+
+  Future<KnowledgeDocument> ingestSource(
+          String token, String workspaceId, String title, String content,
+          {String? brandId}) =>
+      _request('/workspaces/$workspaceId/knowledge/documents',
+          token: token,
+          method: 'POST',
+          body: {
+            'title': title,
+            'source_type': 'markdown',
+            'content': content,
+            'brand_id': brandId
+          },
+          parse: (json) => KnowledgeDocument.fromJson(
+              json['document'] as Map<String, dynamic>));
+
+  Future<List<Map<String, dynamic>>> searchKnowledge(
+          String token, String workspaceId, String query, {String? brandId}) =>
+      _request('/workspaces/$workspaceId/knowledge/search',
+          token: token,
+          method: 'POST',
+          body: {'query': query, 'brand_id': brandId},
+          parse: (json) =>
+              (json['citations'] as List).cast<Map<String, dynamic>>());
 }

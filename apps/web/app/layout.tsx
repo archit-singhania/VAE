@@ -1,18 +1,16 @@
 import type { Metadata, Viewport } from "next";
-import { DepthField } from "../components/depth-field";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "VAE — Campaign Intelligence",
-  description:
-    "Approved brand knowledge in. Evidence-backed, human-approved campaigns out. Nothing publishes without a person saying yes.",
+  title: "VAE — Create. Publish. Connect.",
+  description: "A quiet space to create media, connect your channels, and share what matters.",
   icons: { icon: "/favicon.svg" },
 };
 
 // Kept in sync with --bg in globals.css (the Nocturne obsidian ground), so
 // the browser chrome on mobile matches the app rather than sitting a few
 // shades off it.
-export const viewport: Viewport = { themeColor: "#06070a", colorScheme: "dark" };
+export const viewport: Viewport = { themeColor: "#191a19", colorScheme: "dark" };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
@@ -37,13 +35,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
         />
       </head>
-      <body>
-        {children}
-        {/* One delegated pointer listener drives tilt for every surface in
-            the app — see components/depth-field.tsx for why it lives here
-            rather than in each card. */}
-        <DepthField />
-      </body>
+      <body>{children}</body>
     </html>
   );
 }

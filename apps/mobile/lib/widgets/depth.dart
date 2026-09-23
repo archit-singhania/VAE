@@ -101,9 +101,13 @@ class GlassSurface extends StatelessWidget {
             child: Container(
               padding: padding,
               decoration: BoxDecoration(
-                color: AevraColors.panel.withValues(alpha: fill),
+                color: Theme.of(context)
+                    .colorScheme
+                    .surface
+                    .withValues(alpha: fill),
                 borderRadius: BorderRadius.circular(radius),
-                border: Border.all(color: borderColor ?? AevraColors.line),
+                border: Border.all(
+                    color: borderColor ?? Theme.of(context).dividerColor),
                 // The catching edge, matching web's `.glass::before` hairline.
                 // Tinted with the cool `sheen` token rather than the warm
                 // accent: a specular highlight is reflected light, and
@@ -144,7 +148,7 @@ class DepthCard extends StatefulWidget {
     this.elevation = GlassElevation.raised,
     this.padding = const EdgeInsets.all(AevraSpace.md),
     this.radius = AevraRadius.md,
-    this.intensity = 1,
+    this.intensity = 0,
     this.onTap,
     this.enablePan = false,
   });

@@ -17,20 +17,26 @@ class LandingVideo extends StatefulWidget {
   State<LandingVideo> createState() => _LandingVideoState();
 }
 
-class _LandingVideoState extends State<LandingVideo> {
+class _LandingVideoState extends State<LandingVideo>
+    with WidgetsBindingObserver {
   VideoPlayerController? _controller;
   Future<void>? _initialization;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     final controller =
         VideoPlayerController.asset('assets/video/video_loop.MOV');
     _controller = controller;
     _initialization = controller.initialize().then((_) async {
       await controller.setLooping(true);
       await controller.setVolume(0);
-      if (mounted) await controller.play();
+      if (mounted &&
+          !MediaQuery.disableAnimationsOf(context) &&
+          WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed) {
+        await controller.play();
+      }
     }).catchError((_) {
       // The shader underneath remains the supported fallback for a platform
       // whose media codecs do not include this MOV container.
@@ -38,7 +44,24 @@ class _LandingVideoState extends State<LandingVideo> {
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed &&
+        !MediaQuery.disableAnimationsOf(context)) {
+      _controller?.play();
+    } else {
+      _controller?.pause();
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MediaQuery.disableAnimationsOf(context)) _controller?.pause();
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _controller?.dispose();
     super.dispose();
   }

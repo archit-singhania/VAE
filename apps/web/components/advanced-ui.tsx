@@ -263,19 +263,19 @@ export function Onboarding({
   const [step, setStep] = useState(0);
   const steps = [
     [
-      "Welcome to your control room",
-      "Start with Brand Brain so every generated claim has an evidence trail.",
+      "Welcome to your creative space",
+      "Start with an idea. Create media, connect your channels, and share your work.",
     ],
+    ["Generate with intent", "Use Create to turn a prompt into images and captions."],
     [
-      "Generate with intent",
-      "Use Campaigns to turn a brief into platform-ready variants in seconds.",
+      "Share on your terms",
+      "Choose an asset, review your caption, and publish now or schedule for later.",
     ],
-    ["Keep the human boundary", "Approve, schedule, and publish only when your team is ready."],
   ] as const;
   const current = steps[step];
   return (
     <motion.div className="onboarding-layer" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-      <div className="onboarding-card">
+      <div className="onboarding-card" role="dialog" aria-modal="true" aria-label="Welcome to VAE">
         <div className="onboarding-orb">
           <AiOrb state={step === 1 ? "thinking" : "idle"} />
         </div>

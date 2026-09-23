@@ -1,0 +1,9 @@
+{
+  "name": "VAE editorial",
+  "dark": {"background":"#191a19","input":"#20211f","surface":"#282925","raised":"#30312d","accent":"#c4855a","text":"#f2f0ea","success":"#4e9c82","error":"#e0656e","info":"#8fa7c2"},
+  "light": {"background":"#f5f3ee","input":"#fbfaf7","surface":"#ffffff","raised":"#edeae3","accent":"#9a5a2e","text":"#14161b","success":"#2f7a61","error":"#b3343e","info":"#3f6183"},
+  "fonts": {"heading":"Playfair Display","interface":"Manrope","metadata":"JetBrains Mono"},
+  "spacing":[4,8,12,16,24,32,48],
+  "radius":{"control":12,"card":20,"hero":32},
+  "motionMs":{"control":160,"panel":260,"page":520}
+}

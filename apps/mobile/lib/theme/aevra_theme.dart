@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'design_tokens.dart';
 
 /// ---------------------------------------------------------------------
 /// AEVRA — "Nocturne" design system (mobile).
@@ -18,19 +19,19 @@ class AevraColors {
 
   // ---- Ground ------------------------------------------------------
   /// Page obsidian. Faint blue cast; never pure black, never warm grey.
-  static const bg = Color(0xFF06070A);
+  static const bg = VaeTokens.darkBackground;
 
   /// Sunken wells — inputs, code, inset rows.
-  static const surface1 = Color(0xFF0B0D12);
+  static const surface1 = VaeTokens.darkInput;
 
   /// The working plane. Panels and cards sit here.
-  static const panel = Color(0xFF11141B);
+  static const panel = VaeTokens.darkSurface;
 
   /// Raised objects on top of a panel.
-  static const surface3 = Color(0xFF181C25);
+  static const surface3 = VaeTokens.darkRaised;
 
   /// Elevated chrome — chips, field fills, hovered rows.
-  static const surface4 = Color(0xFF212632);
+  static const surface4 = Color(0xFF393A35);
 
   // ---- Hairlines ---------------------------------------------------
   static const line = Color(0x12C6D0E2);
@@ -41,31 +42,31 @@ class AevraColors {
 
   // ---- Type --------------------------------------------------------
   /// Porcelain, not white. A trace of warmth stops dark UI reading clinical.
-  static const text = Color(0xFFF2F0EA);
+  static const text = VaeTokens.darkText;
   static const textSoft = Color(0xFFB6BAC4);
   static const muted = Color(0xFF878D9A);
-  static const muted2 = Color(0xFF5A6070);
+  static const muted2 = Color(0xFF95998F);
 
   // ---- Signal ------------------------------------------------------
   /// Copper. The single warm note against the cold ground — the whole
   /// palette is built so this is the only thing that can shout.
-  static const accent = Color(0xFFC4855A);
+  static const accent = VaeTokens.darkAccent;
   static const accentStrong = Color(0xFFE0A87D);
 
   /// Text/iconography placed on top of a filled accent surface.
   static const accentInk = Color(0xFF180C05);
 
   /// Positive / approved / connected.
-  static const jade = Color(0xFF4E9C82);
+  static const jade = VaeTokens.darkSuccess;
 
   /// Informational / neutral-cool / analytics.
-  static const frost = Color(0xFF8FA7C2);
+  static const frost = VaeTokens.darkInfo;
 
   /// Pending / awaiting a human.
   static const amber = Color(0xFFD4A244);
 
   /// Failed / rejected / destructive.
-  static const rose = Color(0xFFE0656E);
+  static const rose = VaeTokens.darkError;
 
   // ---- Legacy aliases ---------------------------------------------
   // The previous palette named its three accents lime/violet/cyan. Those
@@ -83,28 +84,28 @@ class AevraColors {
 class AevraLightColors {
   AevraLightColors._();
 
-  static const bg = Color(0xFFF5F3EE);
-  static const surface1 = Color(0xFFFBFAF7);
-  static const panel = Color(0xFFFFFFFF);
-  static const surface3 = Color(0xFFEDEAE3);
+  static const bg = VaeTokens.lightBackground;
+  static const surface1 = VaeTokens.lightInput;
+  static const panel = VaeTokens.lightSurface;
+  static const surface3 = VaeTokens.lightRaised;
   static const surface4 = Color(0xFFE4E0D7);
 
   static const line = Color(0x1A1A1C21);
   static const lineStrong = Color(0x331A1C21);
 
-  static const text = Color(0xFF14161B);
+  static const text = VaeTokens.lightText;
   static const textSoft = Color(0xFF4A505C);
   static const muted = Color(0xFF6A7180);
-  static const muted2 = Color(0xFF8A909C);
+  static const muted2 = Color(0xFF62665E);
 
-  static const accent = Color(0xFF9A5A2E);
+  static const accent = VaeTokens.lightAccent;
   static const accentStrong = Color(0xFF7C4722);
   static const accentInk = Color(0xFFFFF8F1);
 
-  static const jade = Color(0xFF2F7A61);
-  static const frost = Color(0xFF3F6183);
+  static const jade = VaeTokens.lightSuccess;
+  static const frost = VaeTokens.lightInfo;
   static const amber = Color(0xFF9A6F16);
-  static const rose = Color(0xFFB3343E);
+  static const rose = VaeTokens.lightError;
 }
 
 /// Corner geometry. Tighter than the previous system on small objects and
@@ -114,10 +115,10 @@ class AevraRadius {
   AevraRadius._();
 
   static const double xs = 6;
-  static const double sm = 9;
-  static const double md = 13;
+  static const double sm = 12;
+  static const double md = 20;
   static const double lg = 18;
-  static const double xl = 24;
+  static const double xl = 32;
   static const double pill = 999;
 }
 
@@ -129,9 +130,9 @@ class AevraSpace {
   static const double xs = 8;
   static const double sm = 12;
   static const double md = 16;
-  static const double lg = 20;
-  static const double xl = 28;
-  static const double xxl = 40;
+  static const double lg = 24;
+  static const double xl = 32;
+  static const double xxl = 48;
 
   /// Horizontal screen gutter.
   static const double gutter = 20;

@@ -31,6 +31,20 @@ class AppState extends ChangeNotifier {
   List<MediaAsset> assets = [];
   List<SocialAccount> accounts = [];
   List<ScheduledPost> scheduled = [];
+  List<PostMetric> metrics = [];
+  String draftPrompt = '';
+  String draftCaption = '';
+  String? publishAssetId;
+  void selectForPublishing(String? assetId, {String? caption}) {
+    publishAssetId = assetId;
+    if (caption != null) draftCaption = caption;
+    notifyListeners();
+  }
+
+  void updateUser(AevraUser updated) {
+    user = updated;
+    notifyListeners();
+  }
 
   bool get authenticated => token != null;
 
@@ -131,11 +145,12 @@ class AppState extends ChangeNotifier {
 
       final results = await Future.wait([
         client.brands(currentToken, nextWorkspace.id),
-        client.campaigns(currentToken, nextWorkspace.id),
+        Future.value(<Campaign>[]),
         client.documents(currentToken, nextWorkspace.id),
         client.media(currentToken, nextWorkspace.id),
         client.accounts(currentToken, nextWorkspace.id),
         client.scheduled(currentToken, nextWorkspace.id),
+        client.metrics(currentToken, nextWorkspace.id),
       ]);
 
       user = me;
@@ -146,6 +161,7 @@ class AppState extends ChangeNotifier {
       assets = results[3] as List<MediaAsset>;
       accounts = results[4] as List<SocialAccount>;
       scheduled = results[5] as List<ScheduledPost>;
+      metrics = results[6] as List<PostMetric>;
     } catch (caught) {
       if (caught is ApiException && caught.status == 401) {
         await signOut();
@@ -179,6 +195,19 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  void addBrand(Brand brand) {
+    brands = [brand, ...brands.where((item) => item.id != brand.id)];
+    notifyListeners();
+  }
+
+  void addDocument(KnowledgeDocument document) {
+    documents = [
+      document,
+      ...documents.where((item) => item.id != document.id)
+    ];
+    notifyListeners();
+  }
+
   void reportError(Object caught) {
     error = caught.toString();
     notifyListeners();
@@ -195,6 +224,10 @@ class AppState extends ChangeNotifier {
     assets = [];
     accounts = [];
     scheduled = [];
+    metrics = [];
+    draftPrompt = '';
+    draftCaption = '';
+    publishAssetId = null;
     notifyListeners();
   }
 }

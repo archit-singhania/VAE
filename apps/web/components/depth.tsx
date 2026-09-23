@@ -36,7 +36,7 @@ export function DepthCard({
   children,
   className,
   elevation = "raised",
-  intensity = 1,
+  intensity = 0,
   style,
 }: {
   children: ReactNode;
@@ -215,10 +215,10 @@ export function Reveal3D({
     <div className="depth-stage">
       <motion.div
         className={className}
-        initial={{ opacity: 0, y: 26, rotateX: -12, scale: 0.97 }}
+        initial={{ opacity: 0, y: 12, rotateX: 0, scale: 1 }}
         whileInView={{ opacity: 1, y: 0, rotateX: 0, scale: 1 }}
         viewport={{ once: true, margin: "-12% 0px" }}
-        transition={{ duration: 0.75, delay, ease: [0.16, 1, 0.3, 1] }}
+        transition={{ duration: 0.52, delay, ease: [0.16, 1, 0.3, 1] }}
       >
         {children}
       </motion.div>

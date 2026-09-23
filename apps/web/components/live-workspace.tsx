@@ -25,6 +25,7 @@ import {
   X,
 } from "lucide-react";
 import { AnimatePresence, MotionConfig, motion } from "motion/react";
+import dynamic from "next/dynamic";
 import NextImage from "next/image";
 import {
   type ChangeEvent,
@@ -47,41 +48,44 @@ import {
   Reveal,
   SoundToggle,
   TypewriterText,
-  VoiceIndicator,
   VoiceInputButton,
 } from "@/components/advanced-ui";
 import { GrainOverlay } from "@/components/background/grain-overlay";
 import { HeroVideo } from "@/components/background/hero-video";
 import { WebglBackground } from "@/components/background/webgl-background";
-import {
-  AreaChart,
-  BarChart,
-  BubbleChart,
-  CalendarHeatmap,
-  CandlestickChart,
-  ChartFrame,
-  ComboChart,
-  DonutChart,
-  DotPlot,
-  FunnelChart,
-  GaugeChart,
-  GroupedBarChart,
-  HeatmapChart,
-  HorizontalBarChart,
-  LineChart,
-  LollipopChart,
-  PieChart,
-  PolarAreaChart,
-  ProgressRing,
-  RadarChart,
-  RadialBarChart,
-  ScatterChart,
-  Sparkline,
-  StackedBarChart,
-  StreamChart,
-  TreemapChart,
-  WaterfallChart,
-} from "@/components/charts";
+
+const AreaChart = dynamic(() => import("@/components/charts").then((m) => m.AreaChart));
+const BarChart = dynamic(() => import("@/components/charts").then((m) => m.BarChart));
+const BubbleChart = dynamic(() => import("@/components/charts").then((m) => m.BubbleChart));
+const CalendarHeatmap = dynamic(() => import("@/components/charts").then((m) => m.CalendarHeatmap));
+const CandlestickChart = dynamic(() =>
+  import("@/components/charts").then((m) => m.CandlestickChart),
+);
+const ChartFrame = dynamic(() => import("@/components/charts").then((m) => m.ChartFrame));
+const ComboChart = dynamic(() => import("@/components/charts").then((m) => m.ComboChart));
+const DonutChart = dynamic(() => import("@/components/charts").then((m) => m.DonutChart));
+const DotPlot = dynamic(() => import("@/components/charts").then((m) => m.DotPlot));
+const FunnelChart = dynamic(() => import("@/components/charts").then((m) => m.FunnelChart));
+const GaugeChart = dynamic(() => import("@/components/charts").then((m) => m.GaugeChart));
+const GroupedBarChart = dynamic(() => import("@/components/charts").then((m) => m.GroupedBarChart));
+const HeatmapChart = dynamic(() => import("@/components/charts").then((m) => m.HeatmapChart));
+const HorizontalBarChart = dynamic(() =>
+  import("@/components/charts").then((m) => m.HorizontalBarChart),
+);
+const LineChart = dynamic(() => import("@/components/charts").then((m) => m.LineChart));
+const LollipopChart = dynamic(() => import("@/components/charts").then((m) => m.LollipopChart));
+const PieChart = dynamic(() => import("@/components/charts").then((m) => m.PieChart));
+const PolarAreaChart = dynamic(() => import("@/components/charts").then((m) => m.PolarAreaChart));
+const ProgressRing = dynamic(() => import("@/components/charts").then((m) => m.ProgressRing));
+const RadarChart = dynamic(() => import("@/components/charts").then((m) => m.RadarChart));
+const RadialBarChart = dynamic(() => import("@/components/charts").then((m) => m.RadialBarChart));
+const ScatterChart = dynamic(() => import("@/components/charts").then((m) => m.ScatterChart));
+const Sparkline = dynamic(() => import("@/components/charts").then((m) => m.Sparkline));
+const StackedBarChart = dynamic(() => import("@/components/charts").then((m) => m.StackedBarChart));
+const StreamChart = dynamic(() => import("@/components/charts").then((m) => m.StreamChart));
+const TreemapChart = dynamic(() => import("@/components/charts").then((m) => m.TreemapChart));
+const WaterfallChart = dynamic(() => import("@/components/charts").then((m) => m.WaterfallChart));
+
 import { Reveal3D } from "@/components/depth";
 import { Button } from "@/components/ui/button";
 import {
@@ -233,12 +237,19 @@ export function LiveWorkspace() {
   const [instructions, setInstructions] = useState("");
   const [selectedPlatforms, setSelectedPlatforms] = useState<Platform[]>(["linkedin"]);
   const [mediaPrompt, setMediaPrompt] = useState("");
+  const [aspectRatio, setAspectRatio] = useState("1:1");
+  const [generationPhase, setGenerationPhase] = useState("");
+  const [outputCount, setOutputCount] = useState(1);
+  const [assetLimit, setAssetLimit] = useState(12);
+  const [analyticsChannel, setAnalyticsChannel] = useState("");
+  const [analyticsDays, setAnalyticsDays] = useState(30);
+  const [publishReview, setPublishReview] = useState<boolean | null>(null);
   const [mediaMode, setMediaMode] = useState<"image" | "text">("image");
   const [generatedText, setGeneratedText] = useState("");
   const [uploadingMedia, setUploadingMedia] = useState(false);
-  const [publishCampaign, setPublishCampaign] = useState("");
   const [publishAssetId, setPublishAssetId] = useState("");
   const [publishAccounts, setPublishAccounts] = useState<string[]>([]);
+  const [delivery, setDelivery] = useState<Record<string, string>>({});
   const [publishText, setPublishText] = useState("");
   const [scheduleAt, setScheduleAt] = useState("");
   const [paletteOpen, setPaletteOpen] = useState(false);
@@ -302,8 +313,72 @@ export function LiveWorkspace() {
     if (contentRef.current) contentRef.current.scrollTop = 0;
     setScrolled(false);
   }, [view]);
+  useEffect(() => {
+    if (
+      !(
+        profileOpen ||
+        previewAsset ||
+        signOutOpen ||
+        paletteOpen ||
+        tourOpen ||
+        publishReview !== null
+      )
+    )
+      return;
+    const previous = document.activeElement as HTMLElement | null;
+    const previousOverflow = document.body.style.overflow;
+    const previousRootOverflow = document.documentElement.style.overflow;
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+    const background = Array.from(
+      document.querySelectorAll<HTMLElement>(".live-sidebar, .live-main, .creator-bottom-nav"),
+    );
+    const previousInert = background.map((element) => element.inert);
+    background.forEach((element) => {
+      element.inert = true;
+    });
+    const dialog = document.querySelector<HTMLElement>(
+      '[role="dialog"], .command-dialog, .onboarding-card',
+    );
+    const focusable = () =>
+      Array.from(
+        dialog?.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex="0"]',
+        ) ?? [],
+      );
+    focusable()[0]?.focus();
+    const keyboard = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !signingOut) {
+        setProfileOpen(false);
+        setPreviewAsset(null);
+        setSignOutOpen(false);
+        setPaletteOpen(false);
+        setPublishReview(null);
+      }
+      if (event.key !== "Tab") return;
+      const nodes = focusable();
+      const first = nodes[0];
+      const last = nodes[nodes.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last?.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first?.focus();
+      }
+    };
+    document.addEventListener("keydown", keyboard);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.documentElement.style.overflow = previousRootOverflow;
+      background.forEach((element, index) => {
+        element.inert = previousInert[index];
+      });
+      document.removeEventListener("keydown", keyboard);
+      previous?.focus();
+    };
+  }, [profileOpen, previewAsset, signOutOpen, paletteOpen, tourOpen, publishReview, signingOut]);
   const currentCampaign = campaigns.find((item) => item.id === selected);
-  const currentVariant = variants.find((item) => item.status === "approved") ?? variants[0];
   const playTone = useCallback(() => {
     if (!soundEnabled || typeof window === "undefined") return;
     const AudioContextClass =
@@ -669,7 +744,6 @@ export function LiveWorkspace() {
       ]);
       setCampaigns((items) => [generated.campaign, ...items]);
       setSelected(campaign.id);
-      setPublishCampaign(campaign.id);
       setVariants(generated.variants);
       setNotice("Review-ready variants generated.");
       setPulse((value) => value + 1);
@@ -740,6 +814,7 @@ export function LiveWorkspace() {
     event.preventDefault();
     if (!token || !workspace) return;
     await run("image", async () => {
+      setGenerationPhase("Preparing your creative brief…");
       const enhancedPrompt = await api
         .streamModel(
           token,
@@ -753,16 +828,18 @@ export function LiveWorkspace() {
           () => undefined,
         )
         .catch(() => mediaPrompt);
-      const result = await api.generateImage(token, workspace.id, {
-        campaign_id: null,
-        prompt: enhancedPrompt,
-        platforms: ["instagram"],
-        aspect_ratio: "1:1",
-        brand_overlay: true,
-        brand_text: brands[0]?.name ?? "VAE",
-      });
-      setAssets((items) => [...result.assets, ...items]);
-      setMediaPrompt("");
+      for (let output = 0; output < outputCount; output++) {
+        setGenerationPhase(`Generating image ${output + 1} of ${outputCount}…`);
+        const result = await api.generateImage(token, workspace.id, {
+          campaign_id: null,
+          prompt: enhancedPrompt,
+          platforms: ["instagram"],
+          aspect_ratio: aspectRatio,
+          brand_overlay: true,
+          brand_text: brands[0]?.name ?? "VAE",
+        });
+        setAssets((items) => [...result.assets, ...items]);
+      }
       setNotice("Visual asset generated.");
       setPulse((value) => value + 1);
       playTone();
@@ -857,45 +934,52 @@ export function LiveWorkspace() {
     });
   };
   const publish = async (shouldSchedule: boolean) => {
-    if (
-      !token ||
-      !workspace ||
-      !publishAccounts.length ||
-      !(publishText || currentVariant?.caption)
-    )
+    if (!token || !workspace) return;
+    if (!publishAccounts.length || !(publishText.trim() || publishAssetId)) {
+      setError("Select a connected channel and add media or a caption.");
       return;
+    }
+    if (shouldSchedule && (!scheduleAt || new Date(scheduleAt).getTime() <= Date.now())) {
+      setError("Choose a future date and time.");
+      return;
+    }
+    setPublishReview(null);
+    setDelivery({});
     await run(shouldSchedule ? "schedule" : "publish", async () => {
+      const asset = assets.find((item) => item.id === publishAssetId);
       const results = await Promise.all(
         publishAccounts.map(async (accountId) => {
-          const payload = {
-            campaign_id: publishCampaign || null,
-            social_account_id: accountId,
-            idempotency_key: idempotency(),
-            text: publishText || currentVariant?.caption || "",
-            media_urls: assets.find((asset) => asset.id === publishAssetId)?.download_url
-              ? [assets.find((asset) => asset.id === publishAssetId)?.download_url as string]
-              : [],
-          };
-          if (shouldSchedule) {
-            return api.schedule(token, workspace.id, {
-              ...payload,
-              scheduled_for: new Date(scheduleAt || Date.now() + 86_400_000).toISOString(),
-            });
+          try {
+            const payload = {
+              campaign_id: null,
+              social_account_id: accountId,
+              idempotency_key: idempotency(),
+              text: publishText,
+              media_urls: asset?.download_url ? [asset.download_url] : [],
+            };
+            const result = shouldSchedule
+              ? await api.schedule(token, workspace.id, {
+                  ...payload,
+                  scheduled_for: new Date(scheduleAt).toISOString(),
+                })
+              : await api.publish(token, workspace.id, payload);
+            setDelivery((current) => ({ ...current, [accountId]: result.status }));
+            if (shouldSchedule) setScheduled((current) => [result as ScheduledPost, ...current]);
+            return result.status !== "failed";
+          } catch (reason) {
+            setDelivery((current) => ({
+              ...current,
+              [accountId]:
+                reason instanceof Error ? `Failed: ${reason.message}` : "Failed. Try again.",
+            }));
+            return false;
           }
-          return api.publish(token, workspace.id, payload);
         }),
       );
-      if (shouldSchedule) {
-        setScheduled((items) => [...(results as ScheduledPost[]), ...items]);
-        setNotice(`${results.length} channel${results.length === 1 ? "" : "s"} scheduled.`);
-      } else {
-        const failed = results.filter((item) => item.status === "failed").length;
-        setNotice(
-          failed
-            ? `${results.length - failed} published, ${failed} failed.`
-            : `${results.length} channel${results.length === 1 ? "" : "s"} published.`,
-        );
-      }
+      const succeeded = results.filter(Boolean).length;
+      setNotice(
+        `${succeeded} of ${results.length} channels ${shouldSchedule ? "scheduled" : "submitted"}. See delivery status below.`,
+      );
     });
   };
   const uploadPublishAsset = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -957,20 +1041,18 @@ export function LiveWorkspace() {
               <span />
               <b>VAE</b>
             </div>
-            <p className="live-kicker">Content intelligence, grounded</p>
-            <h1>Make every piece of content feel like your sharpest team made it.</h1>
-            <p>
-              Turn approved brand knowledge into evidence-backed, human-approved content operations.
-            </p>
+            <p className="live-kicker">Your creative workspace</p>
+            <h1>Your ideas. Beautifully made.</h1>
+            <p>A quiet space to create media, connect your channels, and share what matters.</p>
             <div className="live-auth-points">
               <span>
-                <Check size={15} /> Brand-grounded generation
+                <Check size={15} /> Create media.
               </span>
               <span>
-                <Check size={15} /> Reviewable evidence trail
+                <Check size={15} /> Connect channels.
               </span>
               <span>
-                <Check size={15} /> Controlled publishing
+                <Check size={15} /> Publish on schedule.
               </span>
             </div>
           </motion.section>
@@ -1049,7 +1131,7 @@ export function LiveWorkspace() {
                     ) : (
                       <>
                         {paymentStatus?.status === "rejected" && (
-                          <div className="live-alert error">
+                          <div role="alert" className="live-alert error">
                             <CircleAlert size={15} />
                             {paymentStatus.admin_note ||
                               "The payment could not be verified. Submit updated proof."}
@@ -1103,12 +1185,12 @@ export function LiveWorkspace() {
                 </div>
                 <h2>{mode === "login" ? "Welcome back" : "Create your VAE account"}</h2>
                 {notice && mode === "login" && (
-                  <div className="live-alert success">
+                  <div role="status" className="live-alert success">
                     <Check size={15} /> {notice}
                   </div>
                 )}
                 {error && (
-                  <div className="live-alert error">
+                  <div role="alert" className="live-alert error">
                     <CircleAlert size={15} /> {error}
                   </div>
                 )}
@@ -1178,7 +1260,7 @@ export function LiveWorkspace() {
               </>
             )}
             {onboarding && error && (
-              <div className="live-alert error">
+              <div role="alert" className="live-alert error">
                 <CircleAlert size={15} /> {error}
               </div>
             )}
@@ -1188,12 +1270,9 @@ export function LiveWorkspace() {
     );
   const nav = [
     { id: "overview" as View, label: "Home", icon: BrainCircuit },
-    { id: "media" as View, label: "Create media", icon: Sparkles },
-    { id: "publishing" as View, label: "Calendar & publishing", icon: CalendarDays },
+    { id: "media" as View, label: "Create", icon: Sparkles },
+    { id: "publishing" as View, label: "Publish", icon: CalendarDays },
     { id: "analytics" as View, label: "Analytics", icon: BrainCircuit },
-    ...(user?.is_admin
-      ? [{ id: "admin" as View, label: "Payment review", icon: ShieldCheck }]
-      : []),
   ];
   const overview = (
     <>
@@ -1211,15 +1290,27 @@ export function LiveWorkspace() {
           <span className="live-connected">
             <i /> API connected
           </span>
-          <VoiceIndicator />
+          <Button onClick={() => setView("media")}>
+            Create media <Plus size={14} />
+          </Button>
         </div>
       </Reveal>
       <Reveal className="live-stats bento-grid">
         {metricOrder.map((metric) => {
           const metricData = {
             assets: [Image, "Media assets", assets.length, "in your library"],
-            channels: [Send, "Connected channels", accounts.length, "ready to publish"],
-            scheduled: [CalendarDays, "Scheduled", scheduled.length, "upcoming posts"],
+            channels: [
+              Send,
+              "Connected channels",
+              accounts.filter((a) => a.status === "connected").length,
+              "ready to publish",
+            ],
+            scheduled: [
+              CalendarDays,
+              "Scheduled",
+              scheduled.filter((p) => p.status === "scheduled").length,
+              "upcoming posts",
+            ],
             engagement: [
               Sparkles,
               "Engagement",
@@ -1263,42 +1354,27 @@ export function LiveWorkspace() {
       </Reveal>
       <section className="live-panel overview-metrics">
         <div className="live-panel-head">
-          <div>
-            <p className="live-kicker">Distribution pulse</p>
-            <h2>Provider performance</h2>
-          </div>
-          <button type="button" className="text-button" onClick={() => setView("analytics")}>
-            Open analytics <ArrowRight size={14} />
-          </button>
+          <h2>Coming up next</h2>
+          <Button variant="secondary" onClick={() => setView("publishing")}>
+            Publish
+          </Button>
         </div>
-        {metrics.length ? (
-          <div className="overview-metric-grid">
-            <div>
-              <strong>
-                {metrics.reduce((sum, item) => sum + item.impressions, 0).toLocaleString()}
-              </strong>
-              <span>impressions</span>
+        {scheduled.length ? (
+          scheduled.slice(0, 4).map((post) => (
+            <div className="live-list-row" key={post.id}>
+              <CalendarDays size={18} />
+              <span>
+                <b>{date(post.scheduled_for)}</b>
+                <small>{post.payload.text || "Media post"}</small>
+              </span>
+              <Status value={post.status} />
             </div>
-            <div>
-              <strong>
-                {metrics.reduce((sum, item) => sum + item.engagements, 0).toLocaleString()}
-              </strong>
-              <span>engagements</span>
-            </div>
-            <div>
-              <strong>{metrics.reduce((sum, item) => sum + item.likes, 0).toLocaleString()}</strong>
-              <span>likes</span>
-            </div>
-            <div>
-              <strong>{metrics.length}</strong>
-              <span>snapshots</span>
-            </div>
-          </div>
+          ))
         ) : (
           <Empty
-            icon={BrainCircuit}
-            title="Analytics will appear here"
-            body="Connect an approved provider and run the analytics worker to populate live metrics."
+            icon={CalendarDays}
+            title="Make room for your next idea"
+            body="Choose an asset and schedule your first post."
           />
         )}
       </section>
@@ -1372,7 +1448,7 @@ export function LiveWorkspace() {
             <Send size={18} />
             <span>
               <strong>{accounts.length ? "Review publishing" : "Connect a channel"}</strong>
-              <small>Keep publishing manual until provider approvals are complete.</small>
+              <small>Choose an asset, write a caption, and pick the right moment.</small>
             </span>
             <ArrowRight size={15} />
           </button>
@@ -1640,10 +1716,10 @@ export function LiveWorkspace() {
     <div className="live-columns">
       <section className="live-panel">
         <Reveal3D>
-          <p className="live-kicker">Free creator studio</p>
+          <p className="live-kicker">Creator studio</p>
           <h2>Create from a prompt</h2>
         </Reveal3D>
-        <div className="live-tabs media-mode-tabs" role="tablist" aria-label="Media type">
+        <fieldset className="live-tabs media-mode-tabs" aria-label="Media type">
           <button
             type="button"
             className={cn(mediaMode === "image" && "active")}
@@ -1658,7 +1734,7 @@ export function LiveWorkspace() {
           >
             <FileText size={14} /> Caption / text
           </button>
-        </div>
+        </fieldset>
         <form
           className="live-form"
           onSubmit={
@@ -1684,8 +1760,37 @@ export function LiveWorkspace() {
             />
           </Field>
           <p className="live-helper">
-            Groq refines your direction; a configured AI image model creates the final visual.
+            Describe the subject, light, and mood. Your draft stays here as you explore.
           </p>
+          {mediaMode === "image" && (
+            <div className="composer-options">
+              <Field label="Aspect ratio">
+                <select value={aspectRatio} onChange={(e) => setAspectRatio(e.target.value)}>
+                  <option>1:1</option>
+                  <option>4:5</option>
+                  <option>9:16</option>
+                  <option>16:9</option>
+                </select>
+              </Field>
+              <Field label="Outputs">
+                <select
+                  value={outputCount}
+                  onChange={(e) => setOutputCount(Number(e.target.value))}
+                >
+                  {[1, 2, 3, 4].map((n) => (
+                    <option key={n} value={n}>
+                      {n} {n === 1 ? "image" : "images"}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            </div>
+          )}
+          {busy === mediaMode && (
+            <p role="status" className="generation-progress">
+              {mediaMode === "image" ? generationPhase : "Writing your caption…"}
+            </p>
+          )}
           <Button type="submit" disabled={busy === mediaMode}>
             {mediaMode === "image" ? <Sparkles size={14} /> : <FileText size={14} />}
             {busy === mediaMode
@@ -1697,14 +1802,20 @@ export function LiveWorkspace() {
           {generatedText && (
             <div className="generated-copy" aria-live="polite">
               <p>{generatedText}</p>
-              <button type="button" onClick={() => setPublishText(generatedText)}>
+              <button
+                type="button"
+                onClick={() => {
+                  setPublishText(generatedText);
+                  setView("publishing");
+                }}
+              >
                 Use for publishing <ArrowRight size={12} />
               </button>
             </div>
           )}
           <label className="upload-dropzone">
             <Upload size={16} />
-            <span>{uploadingMedia ? "Uploading…" : "Upload an image reference or asset"}</span>
+            <span>{uploadingMedia ? "Uploading…" : "Upload an asset"}</span>
             <small>
               Keep your visual references and finished images together in the private library.
             </small>
@@ -1718,12 +1829,17 @@ export function LiveWorkspace() {
         </form>
       </section>
       <section className="live-panel">
+        {assets.length > assetLimit && (
+          <Button variant="secondary" onClick={() => setAssetLimit((n) => n + 12)}>
+            Show more assets
+          </Button>
+        )}
         <p className="live-kicker">Asset library</p>
         <h2>
           {assets.length} generated asset{assets.length === 1 ? "" : "s"}
         </h2>
         {assets.length ? (
-          assets.map((asset) => (
+          assets.slice(0, assetLimit).map((asset) => (
             <article className="live-asset" key={asset.id}>
               {asset.download_url && asset.media_type === "image" ? (
                 <button
@@ -1734,6 +1850,8 @@ export function LiveWorkspace() {
                 >
                   {/* biome-ignore lint/performance/noImgElement: authenticated media is served by the API route. */}
                   <img
+                    loading="lazy"
+                    decoding="async"
                     className="asset-preview asset-preview-thumb"
                     src={asset.download_url}
                     alt={asset.prompt || asset.filename}
@@ -1751,6 +1869,17 @@ export function LiveWorkspace() {
               <Image size={22} />
               <Status value={asset.status} />
               <b>{asset.filename}</b>
+              {asset.status === "ready" && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPublishAssetId(asset.id);
+                    setView("publishing");
+                  }}
+                >
+                  Use for publishing <ArrowRight size={12} />
+                </button>
+              )}
               <small>
                 {asset.media_type} · {date(asset.created_at)}
               </small>
@@ -1772,75 +1901,7 @@ export function LiveWorkspace() {
     </div>
   );
   const publishingView = (
-    <div className="live-columns">
-      <section className="live-panel">
-        <Reveal3D>
-          <p className="live-kicker">Channel connector</p>
-          <h2>Connect publisher</h2>
-        </Reveal3D>
-        <p className="live-helper">
-          OAuth approval remains required before public publishing; this creates a safely referenced
-          account.
-        </p>
-        <fieldset className="oauth-connect-grid">
-          <legend className="sr-only">Secure publisher connections</legend>
-          {(["facebook", "instagram", "threads", "youtube", "linkedin"] as const).map(
-            (provider) => (
-              <button
-                type="button"
-                className="oauth-connect-button"
-                key={provider}
-                disabled={busy === `oauth-${provider}`}
-                onClick={() => void startOAuth(provider)}
-              >
-                <span className="oauth-connect-mark">{provider.slice(0, 1).toUpperCase()}</span>
-                <span>
-                  <strong>{provider === "youtube" ? "YouTube" : provider}</strong>
-                  <small>Connect with OAuth</small>
-                </span>
-                <ArrowRight size={14} />
-              </button>
-            ),
-          )}
-        </fieldset>
-        <div className="live-divider" />
-        <p className="live-helper">
-          Connect through the provider consent screen. VAE never asks you to paste a token or
-          account ID.
-        </p>
-        {accounts.map((account) => (
-          <div className="live-list-row" key={account.id}>
-            <Send size={15} />
-            <span>
-              <b>{account.display_name}</b>
-              <small>
-                {account.platform} · {account.capabilities.join(", ")}
-              </small>
-            </span>
-            <Status value={account.status} />
-            {account.platform === "linkedin" || account.platform === "youtube" ? (
-              <button
-                type="button"
-                className="icon-button"
-                aria-label={`Refresh ${account.display_name}`}
-                onClick={() => void refreshAccount(account)}
-                disabled={busy === `refresh-${account.id}` || account.status === "revoked"}
-              >
-                <RefreshCw size={14} />
-              </button>
-            ) : null}
-            <button
-              type="button"
-              className="icon-button"
-              aria-label={`Disconnect ${account.display_name}`}
-              onClick={() => void revokeAccount(account)}
-              disabled={busy === `revoke-${account.id}` || account.status === "revoked"}
-            >
-              <X size={14} />
-            </button>
-          </div>
-        ))}
-      </section>
+    <div className="live-columns publishing-layout">
       <div className="live-stack">
         <section className="live-panel">
           <p className="live-kicker">Controlled distribution</p>
@@ -1898,7 +1959,7 @@ export function LiveWorkspace() {
               <textarea
                 value={publishText}
                 onChange={(e) => setPublishText(e.target.value)}
-                placeholder={currentVariant?.caption || "Choose an approved variant."}
+                placeholder="Write a caption for your audience…"
               />
             </Field>
             <Field label={`Schedule time · ${workspace?.timezone ?? "UTC"}`}>
@@ -1909,10 +1970,17 @@ export function LiveWorkspace() {
               />
             </Field>
             <div className="live-approval">
-              <Button variant="secondary" onClick={() => void publish(true)}>
+              <Button
+                variant="secondary"
+                disabled={busy === "schedule" || busy === "publish"}
+                onClick={() => setPublishReview(true)}
+              >
                 <CalendarDays size={14} /> Schedule
               </Button>
-              <Button onClick={() => void publish(false)}>
+              <Button
+                disabled={busy === "schedule" || busy === "publish"}
+                onClick={() => setPublishReview(false)}
+              >
                 <Send size={14} /> Publish now
               </Button>
             </div>
@@ -1921,6 +1989,12 @@ export function LiveWorkspace() {
         <section className="live-panel">
           <p className="live-kicker">Delivery queue</p>
           <h2>Scheduled posts</h2>
+          {Object.entries(delivery).map(([id, status]) => (
+            <div className="live-list-row" key={id} role="status">
+              <span>{accounts.find((a) => a.id === id)?.display_name ?? "Channel"}</span>
+              <span>{status}</span>
+            </div>
+          ))}
           {scheduled.length ? (
             scheduled.map((item) => (
               <div className="live-list-row" key={item.id}>
@@ -1972,6 +2046,76 @@ export function LiveWorkspace() {
           )}
         </section>
       </div>
+      <section className="live-panel">
+        <Reveal3D>
+          <p className="live-kicker">Channel connector</p>
+          <h2>Connect publisher</h2>
+        </Reveal3D>
+        <p className="live-helper">Choose a provider to securely connect your social channel.</p>
+        <fieldset className="oauth-connect-grid">
+          <legend className="sr-only">Secure publisher connections</legend>
+          {(["facebook", "instagram", "threads", "youtube", "linkedin"] as const).map(
+            (provider) => (
+              <button
+                type="button"
+                className="oauth-connect-button"
+                key={provider}
+                disabled={busy === `oauth-${provider}`}
+                onClick={() => void startOAuth(provider)}
+              >
+                <span className="oauth-connect-mark">{provider.slice(0, 1).toUpperCase()}</span>
+                <span>
+                  <strong>{provider === "youtube" ? "YouTube" : provider}</strong>
+                  <small>Connect channel</small>
+                </span>
+                <ArrowRight size={14} />
+              </button>
+            ),
+          )}
+        </fieldset>
+        <div className="live-divider" />
+        <p className="live-helper">
+          Connect through the provider consent screen. VAE never asks you to paste a token or
+          account ID.
+        </p>
+        {accounts.map((account) => (
+          <div className="live-list-row" key={account.id}>
+            <Send size={15} />
+            <span>
+              <b>{account.display_name}</b>
+              <small>
+                {account.platform} · Verified {date(account.last_verified_at)}
+              </small>
+            </span>
+            <Status value={account.status} />
+            {account.status === "revoked" && account.platform !== "x" && (
+              <button onClick={() => void startOAuth(account.platform as Exclude<Platform, "x">)}>
+                Reconnect
+              </button>
+            )}
+            {account.platform === "linkedin" || account.platform === "youtube" ? (
+              <button
+                type="button"
+                className="icon-button"
+                aria-label={`Refresh ${account.display_name}`}
+                onClick={() => void refreshAccount(account)}
+                disabled={busy === `refresh-${account.id}` || account.status === "revoked"}
+              >
+                <RefreshCw size={14} />
+              </button>
+            ) : null}
+            <button
+              type="button"
+              className="icon-button"
+              aria-label={`Disconnect ${account.display_name}`}
+              onClick={() => void revokeAccount(account)}
+              disabled={busy === `revoke-${account.id}` || account.status === "revoked"}
+            >
+              <X size={14} />
+            </button>
+          </div>
+        ))}
+      </section>
     </div>
   );
   const statusCounts = campaigns.reduce(
@@ -2040,7 +2184,14 @@ export function LiveWorkspace() {
       platformQuality[v.platform] = [v.quality_score];
     }
   }
-  const metricTotals = metrics.reduce(
+  const filteredMetrics = metrics
+    .filter(
+      (m) =>
+        (!analyticsChannel || m.social_account_id === analyticsChannel) &&
+        new Date(m.collected_at).getTime() >= Date.now() - analyticsDays * 86400000,
+    )
+    .sort((a, b) => a.collected_at.localeCompare(b.collected_at));
+  const metricTotals = filteredMetrics.reduce(
     (totals, item) => ({
       impressions: totals.impressions + item.impressions,
       engagements: totals.engagements + item.engagements,
@@ -2089,197 +2240,261 @@ export function LiveWorkspace() {
           </div>
         </div>
       </section>
-      <div className="analytics-grid">
-        <ChartFrame title="Content status mix" caption={`${campaigns.length} total`}>
-          <DonutChart
-            items={Object.entries(statusCounts).map(([label, value]) => ({
-              label: label.replaceAll("_", " "),
-              value,
-            }))}
-          />
-        </ChartFrame>
-        <ChartFrame title="Approval rate" caption="approved + published">
-          <GaugeChart value={approvalRate} max={100} label="% approved" />
-        </ChartFrame>
-        <ChartFrame title="Platform distribution" caption="content by platform">
-          <PieChart
-            items={Object.entries(platformCounts).map(([label, value]) => ({ label, value }))}
-          />
-        </ChartFrame>
-        <ChartFrame title="Content by platform" caption="ranked">
-          <HorizontalBarChart
-            items={Object.entries(platformCounts)
-              .sort(([, a], [, b]) => b - a)
-              .map(([label, value]) => ({ label, value }))}
-          />
-        </ChartFrame>
-        <ChartFrame
-          title="Workspace signals"
-          caption="sources · content · assets"
-          className="span-2"
-        >
-          <StackedBarChart
-            groups={["Sources", "Content", "Assets"]}
-            series={[
-              { name: "count", values: [documents.length, campaigns.length, assets.length] },
-            ]}
-          />
-        </ChartFrame>
-        <ChartFrame title="Content creation" caption="daily, real timestamps">
-          <AreaChart values={campaignDays.map(([, v]) => v)} />
-        </ChartFrame>
-        <ChartFrame title="Source ingestion" caption="daily">
-          <LineChart values={documentDays.map(([, v]) => v)} />
-        </ChartFrame>
-        <ChartFrame title="Asset generation" caption="daily">
-          <BarChart values={assetDays.map(([, v]) => v)} />
-        </ChartFrame>
-        <ChartFrame
-          title="Activity streams"
-          caption="sources / content / assets"
-          className="span-2"
-        >
-          <StreamChart
-            series={[
-              { name: "Sources", values: documentDays.map(([, v]) => v), color: "#b8bec7" },
-              { name: "Content", values: campaignDays.map(([, v]) => v), color: "#c9a45c" },
-              { name: "Assets", values: assetDays.map(([, v]) => v), color: "#3f5d52" },
-            ]}
-          />
-        </ChartFrame>
-        <ChartFrame title="Recent activity" caption="last 28 content days">
-          <CalendarHeatmap days={calendarDays} />
-        </ChartFrame>
-        <ChartFrame title="Approval funnel" caption="status pipeline">
-          <FunnelChart
-            stages={[
-              { label: "Draft", value: statusCounts.draft ?? 0 },
-              { label: "Awaiting approval", value: statusCounts.awaiting_approval ?? 0 },
-              {
-                label: "Approved",
-                value: (statusCounts.approved ?? 0) + (statusCounts.published ?? 0),
-              },
-            ]}
-          />
-        </ChartFrame>
-        <ChartFrame
-          title="Variant quality scores"
-          caption={`${variants.length} in current content group`}
-        >
-          <DotPlot
-            items={variants.map((v) => ({ label: v.platform, value: v.quality_score, max: 100 }))}
-          />
-        </ChartFrame>
-        <ChartFrame title="Quality by variant" caption="ranked">
-          <LollipopChart
-            items={variants.map((v, i) => ({
-              label: `${v.platform.slice(0, 3)}${i}`,
-              value: Math.round(v.quality_score),
-            }))}
-          />
-        </ChartFrame>
-        <ChartFrame title="Quality trend" caption="mini sparkline">
-          <Sparkline
-            values={variantQuality.length ? variantQuality : [0]}
-            width={220}
-            height={60}
-          />
-        </ChartFrame>
-        <ChartFrame title="Quality vs. evidence" caption="citations per variant">
-          <ScatterChart points={variantCitations} xLabel="citations" yLabel="quality" />
-        </ChartFrame>
-        <ChartFrame title="Platform quality profile" caption="radar, avg score">
-          <RadarChart
-            axes={Object.keys(platformQuality)}
-            series={[
-              {
-                name: "avg quality",
-                values: Object.values(platformQuality).map(
-                  (scores) => scores.reduce((a, b) => a + b, 0) / scores.length,
-                ),
-              },
-            ]}
-          />
-        </ChartFrame>
-        <ChartFrame title="Documents by source type" caption="polar view">
-          <PolarAreaChart
-            items={Object.entries(docTypeCounts).map(([label, value]) => ({ label, value }))}
-          />
-        </ChartFrame>
-        <ChartFrame title="Asset media mix" caption="images vs video">
-          <RadialBarChart
-            items={Object.entries(assetTypeCounts).map(([label, value]) => ({
-              label,
-              value: assets.length ? Math.round((value / assets.length) * 100) : 0,
-            }))}
-          />
-        </ChartFrame>
-        <ChartFrame title="Asset pipeline status" caption="generation status">
-          <GroupedBarChart
-            groups={Object.keys(assetStatusCounts)}
-            series={[{ name: "assets", values: Object.values(assetStatusCounts) }]}
-          />
-        </ChartFrame>
-        <ChartFrame title="Content mix by platform" caption="treemap" className="span-2">
-          <TreemapChart
-            items={Object.entries(platformCounts).map(([label, value]) => ({ label, value }))}
-          />
-        </ChartFrame>
-        <ChartFrame
-          title="Revision range per content group"
-          caption="derived from revision counters"
-        >
-          <CandlestickChart
-            bars={campaigns.slice(0, 8).map((c) => ({
-              label: c.name.slice(0, 6),
-              low: 0,
-              high: c.current_revision,
-              open: 0,
-              close: c.current_revision,
-            }))}
-          />
-        </ChartFrame>
-        <ChartFrame title="Sources vs. content" caption="waterfall of workspace growth">
-          <WaterfallChart
-            steps={[
-              { label: "Sources", delta: documents.length },
-              { label: "Content", delta: campaigns.length },
-              { label: "Approved", delta: approvedCount },
-              { label: "Assets", delta: assets.length },
-            ]}
-          />
-        </ChartFrame>
-        <ChartFrame title="Content volume + quality combo" caption="count + latest quality">
-          <ComboChart
-            bars={campaignDays.map(([, v]) => v)}
-            line={campaignDays.map(() => (variantQuality.length ? variantQuality[0] : 0))}
-          />
-        </ChartFrame>
-        <ChartFrame title="Approval completion" caption="ring">
-          <ProgressRing value={approvalRate} label="approval rate" />
-        </ChartFrame>
-        <ChartFrame title="Platform activity" caption="bubble size = content count">
-          <BubbleChart
-            points={Object.entries(platformCounts).map(([label, value], i) => ({
-              label,
-              x: i,
-              y: value,
-              size: value,
-            }))}
-          />
-        </ChartFrame>
-        <ChartFrame title="Source status heatmap" caption="documents × status">
-          <HeatmapChart
-            rows={Object.keys(docTypeCounts)}
-            cols={["indexed", "pending", "failed"]}
-            values={Object.keys(docTypeCounts).map((type) => [
-              documents.filter((d) => d.source_type === type && d.status === "indexed").length,
-              documents.filter((d) => d.source_type === type && d.status === "pending").length,
-              documents.filter((d) => d.source_type === type && d.status === "failed").length,
-            ])}
-          />
-        </ChartFrame>
+      <div className="composer-options">
+        <Field label="Channel">
+          <select value={analyticsChannel} onChange={(e) => setAnalyticsChannel(e.target.value)}>
+            <option value="">All channels</option>
+            {accounts.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.display_name}
+              </option>
+            ))}
+          </select>
+        </Field>
+        <Field label="Date range">
+          <select value={analyticsDays} onChange={(e) => setAnalyticsDays(Number(e.target.value))}>
+            <option value={7}>Last 7 days</option>
+            <option value={30}>Last 30 days</option>
+            <option value={90}>Last 90 days</option>
+          </select>
+        </Field>
       </div>
+      <section className="live-panel">
+        <h2>Channel performance</h2>
+        {filteredMetrics.length ? (
+          <>
+            <AreaChart values={filteredMetrics.map((m) => m.engagements)} />
+            <div className="performance-table">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Post</th>
+                    <th>Impressions</th>
+                    <th>Engagements</th>
+                    <th>Updated</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredMetrics.slice(0, 20).map((m) => (
+                    <tr key={m.id}>
+                      <td>{m.external_post_id}</td>
+                      <td>{m.impressions}</td>
+                      <td>{m.engagements}</td>
+                      <td>{date(m.collected_at)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        ) : (
+          <Empty
+            icon={Send}
+            title="Your story is just beginning"
+            body="Connect a channel and publish a post to see performance here."
+          />
+        )}
+      </section>
+      {user?.is_admin && (
+        <details>
+          <summary>Operational insights</summary>
+          <div className="analytics-grid">
+            <ChartFrame title="Content status mix" caption={`${campaigns.length} total`}>
+              <DonutChart
+                items={Object.entries(statusCounts).map(([label, value]) => ({
+                  label: label.replaceAll("_", " "),
+                  value,
+                }))}
+              />
+            </ChartFrame>
+            <ChartFrame title="Approval rate" caption="approved + published">
+              <GaugeChart value={approvalRate} max={100} label="% approved" />
+            </ChartFrame>
+            <ChartFrame title="Platform distribution" caption="content by platform">
+              <PieChart
+                items={Object.entries(platformCounts).map(([label, value]) => ({ label, value }))}
+              />
+            </ChartFrame>
+            <ChartFrame title="Content by platform" caption="ranked">
+              <HorizontalBarChart
+                items={Object.entries(platformCounts)
+                  .sort(([, a], [, b]) => b - a)
+                  .map(([label, value]) => ({ label, value }))}
+              />
+            </ChartFrame>
+            <ChartFrame
+              title="Workspace signals"
+              caption="sources · content · assets"
+              className="span-2"
+            >
+              <StackedBarChart
+                groups={["Sources", "Content", "Assets"]}
+                series={[
+                  { name: "count", values: [documents.length, campaigns.length, assets.length] },
+                ]}
+              />
+            </ChartFrame>
+            <ChartFrame title="Content creation" caption="daily, real timestamps">
+              <AreaChart values={campaignDays.map(([, v]) => v)} />
+            </ChartFrame>
+            <ChartFrame title="Source ingestion" caption="daily">
+              <LineChart values={documentDays.map(([, v]) => v)} />
+            </ChartFrame>
+            <ChartFrame title="Asset generation" caption="daily">
+              <BarChart values={assetDays.map(([, v]) => v)} />
+            </ChartFrame>
+            <ChartFrame
+              title="Activity streams"
+              caption="sources / content / assets"
+              className="span-2"
+            >
+              <StreamChart
+                series={[
+                  { name: "Sources", values: documentDays.map(([, v]) => v), color: "#b8bec7" },
+                  { name: "Content", values: campaignDays.map(([, v]) => v), color: "#c9a45c" },
+                  { name: "Assets", values: assetDays.map(([, v]) => v), color: "#3f5d52" },
+                ]}
+              />
+            </ChartFrame>
+            <ChartFrame title="Recent activity" caption="last 28 content days">
+              <CalendarHeatmap days={calendarDays} />
+            </ChartFrame>
+            <ChartFrame title="Approval funnel" caption="status pipeline">
+              <FunnelChart
+                stages={[
+                  { label: "Draft", value: statusCounts.draft ?? 0 },
+                  { label: "Awaiting approval", value: statusCounts.awaiting_approval ?? 0 },
+                  {
+                    label: "Approved",
+                    value: (statusCounts.approved ?? 0) + (statusCounts.published ?? 0),
+                  },
+                ]}
+              />
+            </ChartFrame>
+            <ChartFrame
+              title="Variant quality scores"
+              caption={`${variants.length} in current content group`}
+            >
+              <DotPlot
+                items={variants.map((v) => ({
+                  label: v.platform,
+                  value: v.quality_score,
+                  max: 100,
+                }))}
+              />
+            </ChartFrame>
+            <ChartFrame title="Quality by variant" caption="ranked">
+              <LollipopChart
+                items={variants.map((v, i) => ({
+                  label: `${v.platform.slice(0, 3)}${i}`,
+                  value: Math.round(v.quality_score),
+                }))}
+              />
+            </ChartFrame>
+            <ChartFrame title="Quality trend" caption="mini sparkline">
+              <Sparkline
+                values={variantQuality.length ? variantQuality : [0]}
+                width={220}
+                height={60}
+              />
+            </ChartFrame>
+            <ChartFrame title="Quality vs. evidence" caption="citations per variant">
+              <ScatterChart points={variantCitations} xLabel="citations" yLabel="quality" />
+            </ChartFrame>
+            <ChartFrame title="Platform quality profile" caption="radar, avg score">
+              <RadarChart
+                axes={Object.keys(platformQuality)}
+                series={[
+                  {
+                    name: "avg quality",
+                    values: Object.values(platformQuality).map(
+                      (scores) => scores.reduce((a, b) => a + b, 0) / scores.length,
+                    ),
+                  },
+                ]}
+              />
+            </ChartFrame>
+            <ChartFrame title="Documents by source type" caption="polar view">
+              <PolarAreaChart
+                items={Object.entries(docTypeCounts).map(([label, value]) => ({ label, value }))}
+              />
+            </ChartFrame>
+            <ChartFrame title="Asset media mix" caption="images vs video">
+              <RadialBarChart
+                items={Object.entries(assetTypeCounts).map(([label, value]) => ({
+                  label,
+                  value: assets.length ? Math.round((value / assets.length) * 100) : 0,
+                }))}
+              />
+            </ChartFrame>
+            <ChartFrame title="Asset pipeline status" caption="generation status">
+              <GroupedBarChart
+                groups={Object.keys(assetStatusCounts)}
+                series={[{ name: "assets", values: Object.values(assetStatusCounts) }]}
+              />
+            </ChartFrame>
+            <ChartFrame title="Content mix by platform" caption="treemap" className="span-2">
+              <TreemapChart
+                items={Object.entries(platformCounts).map(([label, value]) => ({ label, value }))}
+              />
+            </ChartFrame>
+            <ChartFrame
+              title="Revision range per content group"
+              caption="derived from revision counters"
+            >
+              <CandlestickChart
+                bars={campaigns.slice(0, 8).map((c) => ({
+                  label: c.name.slice(0, 6),
+                  low: 0,
+                  high: c.current_revision,
+                  open: 0,
+                  close: c.current_revision,
+                }))}
+              />
+            </ChartFrame>
+            <ChartFrame title="Sources vs. content" caption="waterfall of workspace growth">
+              <WaterfallChart
+                steps={[
+                  { label: "Sources", delta: documents.length },
+                  { label: "Content", delta: campaigns.length },
+                  { label: "Approved", delta: approvedCount },
+                  { label: "Assets", delta: assets.length },
+                ]}
+              />
+            </ChartFrame>
+            <ChartFrame title="Content volume + quality combo" caption="count + latest quality">
+              <ComboChart
+                bars={campaignDays.map(([, v]) => v)}
+                line={campaignDays.map(() => (variantQuality.length ? variantQuality[0] : 0))}
+              />
+            </ChartFrame>
+            <ChartFrame title="Approval completion" caption="ring">
+              <ProgressRing value={approvalRate} label="approval rate" />
+            </ChartFrame>
+            <ChartFrame title="Platform activity" caption="bubble size = content count">
+              <BubbleChart
+                points={Object.entries(platformCounts).map(([label, value], i) => ({
+                  label,
+                  x: i,
+                  y: value,
+                  size: value,
+                }))}
+              />
+            </ChartFrame>
+            <ChartFrame title="Source status heatmap" caption="documents × status">
+              <HeatmapChart
+                rows={Object.keys(docTypeCounts)}
+                cols={["indexed", "pending", "failed"]}
+                values={Object.keys(docTypeCounts).map((type) => [
+                  documents.filter((d) => d.source_type === type && d.status === "indexed").length,
+                  documents.filter((d) => d.source_type === type && d.status === "pending").length,
+                  documents.filter((d) => d.source_type === type && d.status === "failed").length,
+                ])}
+              />
+            </ChartFrame>
+          </div>
+        </details>
+      )}
     </div>
   );
   const adminView = (
@@ -2394,7 +2609,21 @@ export function LiveWorkspace() {
       hint: "View",
       onSelect: () => setView(item.id),
     })),
-    { label: "Create media", hint: "Create", onSelect: () => setView("media") },
+    { label: "Profile", hint: "Account", onSelect: () => setProfileOpen(true) },
+    { label: "Brand knowledge & sources", hint: "More", onSelect: () => setView("brain") },
+    ...(user?.is_admin
+      ? [
+          {
+            label: "Admin dashboard",
+            hint: "Admin",
+            onSelect: () => {
+              setView("admin");
+              void loadPaymentSubmissions();
+            },
+          },
+        ]
+      : []),
+    { label: "Sign out", hint: "Account", onSelect: () => setSignOutOpen(true) },
     {
       label: theme === "dark" ? "Use light theme" : "Use dark theme",
       hint: "Appearance",
@@ -2538,6 +2767,9 @@ export function LiveWorkspace() {
               onMouseDown={() => setProfileOpen(false)}
             >
               <motion.form
+                role="dialog"
+                aria-modal="true"
+                aria-label="Edit profile"
                 className="confirm-dialog profile-dialog"
                 onSubmit={saveProfile}
                 initial={{ opacity: 0, y: 16, scale: 0.97 }}
@@ -2548,6 +2780,7 @@ export function LiveWorkspace() {
                 <button
                   className="confirm-close"
                   type="button"
+                  aria-label="Close profile"
                   onClick={() => setProfileOpen(false)}
                 >
                   <X size={16} />
@@ -2609,6 +2842,10 @@ export function LiveWorkspace() {
                 <Button type="submit" className="live-full-button" disabled={busy === "profile"}>
                   {busy === "profile" ? "Saving…" : "Save profile"}
                 </Button>
+                <button type="button" onClick={toggleTheme}>
+                  Appearance: {theme}
+                </button>
+                <a href="/account-deletion">Delete account</a>
               </motion.form>
             </motion.div>
           )}
@@ -2643,8 +2880,19 @@ export function LiveWorkspace() {
                 <span>{item.label}</span>
               </button>
             ))}
+            <button onClick={() => setProfileOpen(true)}>
+              <UserRound size={17} />
+              <span>Profile</span>
+            </button>
+            <button onClick={() => setPaletteOpen(true)}>
+              <Menu size={17} />
+              <span>More / Command</span>
+            </button>
           </nav>
           <div className="live-sidebar-foot">
+            <button onClick={toggleTheme}>
+              {theme === "dark" ? "Light appearance" : "Dark appearance"}
+            </button>
             <button className="live-user profile-trigger" onClick={() => setProfileOpen(true)}>
               <div>
                 {user?.avatar_url ? (
@@ -2671,13 +2919,58 @@ export function LiveWorkspace() {
             aria-label="Close navigation"
           />
         )}
+        <nav className="creator-bottom-nav" aria-label="Primary navigation">
+          {[nav[0], nav[2], nav[1], nav[3]].map((item) => (
+            <button
+              key={item.id}
+              aria-current={view === item.id ? "page" : undefined}
+              className={cn(item.id === "media" && "create-action")}
+              onClick={() => setView(item.id)}
+            >
+              <item.icon size={20} />
+              <span>{item.label}</span>
+            </button>
+          ))}
+          <button onClick={() => setProfileOpen(true)}>
+            <UserRound size={20} />
+            <span>Profile</span>
+          </button>
+        </nav>
+        {publishReview !== null && (
+          <div className="confirm-layer">
+            <div
+              className="confirm-dialog"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Review publishing"
+            >
+              <p className="live-kicker">Review your post</p>
+              <h2>{publishReview ? "Schedule this post?" : "Publish this post?"}</h2>
+              <p>{assets.find((a) => a.id === publishAssetId)?.filename ?? "Text post"}</p>
+              <p>{publishText || "No caption"}</p>
+              <p>
+                {accounts
+                  .filter((a) => publishAccounts.includes(a.id))
+                  .map((a) => a.display_name)
+                  .join(", ") || "No channels selected"}
+              </p>
+              <p>{publishReview ? date(scheduleAt) : "Publish now"}</p>
+              <div className="confirm-actions">
+                <Button variant="secondary" onClick={() => setPublishReview(null)}>
+                  Keep editing
+                </Button>
+                <Button onClick={() => void publish(publishReview)}>Confirm</Button>
+              </div>
+            </div>
+          </div>
+        )}
         <section className="live-main" data-scrolled={scrolled}>
           <header className="live-topbar">
-            <button onClick={() => setSidebar(true)} aria-label="Open navigation">
+            <button onClick={() => setPaletteOpen(true)} aria-label="Open account and command menu">
               <Menu size={19} />
             </button>
             <span>
-              <i /> VAE online
+              <i /> {nav.find((item) => item.id === view)?.label ?? "Workspace"}
             </span>
             <div>
               <button className="live-command-trigger" onClick={() => setPaletteOpen(true)}>
@@ -2703,6 +2996,7 @@ export function LiveWorkspace() {
             <AnimatePresence>
               {notice && (
                 <motion.div
+                  role="status"
                   className="live-alert success"
                   variants={overlayFade}
                   initial="hidden"
@@ -2717,6 +3011,7 @@ export function LiveWorkspace() {
               )}
               {error && (
                 <motion.div
+                  role="alert"
                   className="live-alert error"
                   variants={overlayFade}
                   initial="hidden"

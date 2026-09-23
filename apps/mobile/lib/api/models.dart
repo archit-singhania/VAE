@@ -6,13 +6,28 @@ class AevraUser {
   final String id;
   final String email;
   final String displayName;
+  final String? brandName;
+  final String? avatarUrl;
+  final String accountType;
+  final bool isAdmin;
 
-  AevraUser({required this.id, required this.email, required this.displayName});
+  AevraUser(
+      {required this.id,
+      required this.email,
+      required this.displayName,
+      this.brandName,
+      this.avatarUrl,
+      this.accountType = 'creator',
+      this.isAdmin = false});
 
   factory AevraUser.fromJson(Map<String, dynamic> json) => AevraUser(
         id: json['id'] as String,
         email: json['email'] as String,
         displayName: json['display_name'] as String? ?? '',
+        brandName: json['brand_name'] as String?,
+        avatarUrl: json['avatar_url'] as String?,
+        accountType: json['account_type'] as String? ?? 'creator',
+        isAdmin: json['is_admin'] as bool? ?? false,
       );
 }
 
@@ -186,4 +201,17 @@ class ScheduledPost {
         status: json['status'] as String? ?? '',
         text: (json['payload'] as Map<String, dynamic>?)?['text'] as String?,
       );
+}
+
+class PostMetric {
+  PostMetric(Map<String, dynamic> json)
+      : id = json['id'] as String,
+        accountId = json['social_account_id'] as String,
+        postId = json['external_post_id'] as String? ?? '',
+        collectedAt = DateTime.parse(json['collected_at'] as String),
+        impressions = (json['impressions'] as num? ?? 0).toInt(),
+        engagements = (json['engagements'] as num? ?? 0).toInt();
+  final String id, accountId, postId;
+  final DateTime collectedAt;
+  final int impressions, engagements;
 }

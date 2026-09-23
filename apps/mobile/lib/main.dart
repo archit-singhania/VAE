@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:ui' show ImageFilter;
 import 'screens/analytics_screen.dart';
+import 'screens/advanced_screen.dart';
 import 'screens/auth_screen.dart';
 import 'screens/media_screen.dart';
 import 'screens/overview_screen.dart';
@@ -12,6 +12,8 @@ import 'theme/aevra_theme.dart';
 import 'widgets/advanced_ui.dart';
 import 'widgets/aevra_logo.dart';
 import 'widgets/shader_background.dart';
+import 'widgets/vae_profile_sheet.dart';
+import 'widgets/vae_ui.dart';
 
 void main() => runApp(const AevraApp());
 
@@ -223,6 +225,25 @@ class _MobileShellState extends State<MobileShell> {
     widget.sound.tap();
     showCommandPalette(context, [
       CommandAction(
+          label: 'Brand knowledge & sources',
+          hint: 'More',
+          icon: Icons.menu_book_outlined,
+          run: () => Navigator.of(context).push(MaterialPageRoute<void>(
+              builder: (_) => AdvancedScreen(state: widget.state)))),
+      if (widget.state.user?.isAdmin == true)
+        CommandAction(
+            label: 'Admin dashboard',
+            hint: 'Admin',
+            icon: Icons.admin_panel_settings_outlined,
+            run: () => Navigator.of(context).push(MaterialPageRoute<void>(
+                builder: (_) =>
+                    AdvancedScreen(state: widget.state, admin: true)))),
+      CommandAction(
+          label: 'Profile',
+          hint: 'Account and appearance',
+          icon: Icons.person_outline,
+          run: _openProfile),
+      CommandAction(
         label: 'Go to Home',
         hint: 'Media, channel, and publishing summary',
         icon: Icons.space_dashboard_outlined,
@@ -230,12 +251,12 @@ class _MobileShellState extends State<MobileShell> {
       ),
       CommandAction(
         label: 'Go to Create',
-        hint: 'Review queue and approvals',
+        hint: 'Create images and captions',
         icon: Icons.auto_awesome_outlined,
         run: () => _go(1),
       ),
       CommandAction(
-        label: 'Go to Calendar',
+        label: 'Go to Publish',
         hint: 'Upcoming scheduled posts',
         icon: Icons.schedule_outlined,
         run: () => _go(2),
@@ -293,6 +314,17 @@ class _MobileShellState extends State<MobileShell> {
     ]);
   }
 
+  void _openProfile() {
+    showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        useSafeArea: true,
+        builder: (context) => VaeProfileSheet(
+            state: widget.state,
+            onTheme: widget.onToggleTheme,
+            onSignOut: _confirmSignOut));
+  }
+
   void _go(int next) {
     HapticFeedback.selectionClick();
     setState(() => index = next);
@@ -336,103 +368,68 @@ class _MobileShellState extends State<MobileShell> {
 
   @override
   Widget build(BuildContext context) {
+    final wide = MediaQuery.sizeOf(context).width >= 720;
     final pages = [
-      OverviewScreen(state: widget.state),
-      MediaScreen(state: widget.state),
+      OverviewScreen(state: widget.state, onNavigate: _go),
+      MediaScreen(state: widget.state, onPublish: () => _go(2)),
       ScheduleScreen(state: widget.state),
       AnalyticsScreen(state: widget.state),
     ];
-
+    const icons = [
+      Icons.space_dashboard_outlined,
+      Icons.auto_awesome_outlined,
+      Icons.schedule_outlined,
+      Icons.insights_outlined
+    ];
     return Scaffold(
-      backgroundColor: AevraColors.bg,
-      extendBodyBehindAppBar: true,
-      extendBody: true,
-      body: Stack(
-        children: [
-          // Animated GPU background, behind everything.
-          const Positioned.fill(
-              child: RepaintBoundary(child: ShaderBackground())),
-          SafeArea(
-            child: Column(
-              children: [
-                _TopBar(
-                  title: _titles[index],
-                  state: widget.state,
-                  sound: widget.sound,
-                  darkMode: widget.darkMode,
-                  themeButtonKey: _themeButtonKey,
-                  onToggleTheme: _toggleThemeWithWipe,
-                  onOpenPalette: _openCommandPalette,
-                  onSignOut: _confirmSignOut,
-                ),
-                Expanded(
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 260),
-                    switchInCurve: Curves.easeOutCubic,
-                    switchOutCurve: Curves.easeInCubic,
-                    transitionBuilder: (child, animation) {
-                      final slide = Tween<Offset>(
-                        begin: const Offset(0, 0.02),
-                        end: Offset.zero,
-                      ).animate(animation);
-                      return FadeTransition(
-                        opacity: animation,
-                        child: SlideTransition(position: slide, child: child),
-                      );
-                    },
-                    child:
-                        KeyedSubtree(key: ValueKey(index), child: pages[index]),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          // #3 — particle burst on approve/reject/create. Sits above content
-          // but ignores pointers, and paints nothing while idle.
-          Positioned.fill(child: ParticleField(pulse: widget.pulse)),
-        ],
-      ),
-      bottomNavigationBar: ClipRect(
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 22, sigmaY: 22),
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: AevraColors.panel.withValues(alpha: 0.72),
-              border:
-                  const Border(top: BorderSide(color: AevraColors.lineStrong)),
-            ),
-            child: NavigationBar(
-              selectedIndex: index,
-              onDestinationSelected: (value) {
-                widget.sound.tap();
-                setState(() => index = value);
-              },
-              backgroundColor: Colors.transparent,
-              destinations: const [
-                NavigationDestination(
-                    icon: Icon(Icons.space_dashboard_outlined),
-                    label: 'Overview'),
-                NavigationDestination(
-                    icon: Icon(Icons.auto_awesome_outlined),
-                    label: 'Create media'),
-                NavigationDestination(
-                    icon: Icon(Icons.schedule_outlined), label: 'Schedule'),
-                NavigationDestination(
-                    icon: Icon(Icons.insights_outlined), label: 'Analytics'),
-              ],
-            ),
-          ),
-        ),
-      ),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      body: SafeArea(
+          child: Column(children: [
+        _TopBar(
+            title: _titles[index],
+            state: widget.state,
+            sound: widget.sound,
+            darkMode: widget.darkMode,
+            themeButtonKey: _themeButtonKey,
+            onToggleTheme: _toggleThemeWithWipe,
+            onOpenPalette: _openCommandPalette,
+            onSignOut: _confirmSignOut),
+        if (widget.state.loading) const LinearProgressIndicator(minHeight: 2),
+        if (widget.state.error != null)
+          Padding(
+              padding: const EdgeInsets.all(12),
+              child: Semantics(
+                  liveRegion: true,
+                  child: Text(widget.state.error!,
+                      style: TextStyle(
+                          color: Theme.of(context).colorScheme.error)))),
+        Expanded(
+            child: Row(children: [
+          if (wide)
+            NavigationRail(
+                selectedIndex: index,
+                onDestinationSelected: _go,
+                labelType: NavigationRailLabelType.all,
+                destinations: [
+                  for (var i = 0; i < 4; i++)
+                    NavigationRailDestination(
+                        icon: Icon(icons[i]), label: Text(_titles[i]))
+                ]),
+          Expanded(
+              child: AnimatedSwitcher(
+            duration: MediaQuery.disableAnimationsOf(context)
+                ? Duration.zero
+                : const Duration(milliseconds: 260),
+            child: KeyedSubtree(key: ValueKey(index), child: pages[index]),
+          )),
+        ])),
+      ])),
+      bottomNavigationBar:
+          wide ? null : VaeBottomNav(index: index, onSelected: _go),
     );
   }
 
-  static const _titles = [
-    'Home',
-    'Create media',
-    'Calendar & publishing',
-    'Analytics'
-  ];
+  static const _titles = ['Home', 'Create', 'Publish', 'Analytics'];
 }
 
 /// Custom glass top bar — the mobile equivalent of the web app's `.topbar`.
@@ -475,7 +472,8 @@ class _TopBar extends StatelessWidget {
             child: Text(
               title.toUpperCase(),
               overflow: TextOverflow.ellipsis,
-              style: AevraType.eyebrow(color: AevraColors.textSoft),
+              style: AevraType.eyebrow(
+                  color: Theme.of(context).colorScheme.onSurface),
             ),
           ),
           const Spacer(),

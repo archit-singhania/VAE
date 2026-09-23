@@ -38,6 +38,13 @@ class _AuthScreenState extends State<AuthScreen> {
   }
 
   Future<void> _submit() async {
+    if (!_email.text.contains('@') ||
+        _password.text.length < 8 ||
+        (!isLogin && _name.text.trim().isEmpty)) {
+      widget.state.reportError(
+          'Enter a valid email, a password of at least 8 characters, and your name when registering.');
+      return;
+    }
     if (isLogin) {
       await widget.state.login(_email.text.trim(), _password.text);
     } else {
@@ -56,11 +63,12 @@ class _AuthScreenState extends State<AuthScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AevraColors.bg,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Stack(
         children: [
-          const Positioned.fill(
-              child: RepaintBoundary(child: ShaderBackground())),
+          if (Theme.of(context).brightness == Brightness.dark)
+            const Positioned.fill(
+                child: RepaintBoundary(child: ShaderBackground())),
           // The original MOV artwork is optional and never blocks the first
           // frame. LandingVideo fades in only after local codec support is
           // confirmed; ShaderBackground remains the free fallback.
@@ -72,32 +80,33 @@ class _AuthScreenState extends State<AuthScreen> {
                 return SingleChildScrollView(
                   padding: const EdgeInsets.fromLTRB(AevraSpace.lg,
                       AevraSpace.xxl, AevraSpace.lg, AevraSpace.xl),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  child: _AuthLayout(
                     children: [
                       const AevraWordmark(markSize: 30, fontSize: 17),
                       const SizedBox(height: AevraSpace.xxl),
-                      Text('CAMPAIGN INTELLIGENCE', style: AevraType.eyebrow()),
+                      Text('YOUR CREATIVE WORKSPACE',
+                          style: AevraType.eyebrow()),
                       const SizedBox(height: AevraSpace.sm),
                       Text(
-                        'Every campaign,\nas sharp as your\nbest work.',
-                        style: AevraType.display(34),
+                        'Your ideas.\nBeautifully made.',
+                        style: Theme.of(context).textTheme.displayMedium,
                       ),
                       const SizedBox(height: AevraSpace.md),
-                      const Text(
-                        'Approved brand knowledge in. Evidence-backed, human-approved content out. Nothing publishes without a person saying yes.',
+                      Text(
+                        'A quiet space to create media, connect your channels, and share what matters.',
                         style: TextStyle(
                             fontSize: 13.5,
                             height: 1.6,
-                            color: AevraColors.textSoft),
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant),
                       ),
                       const SizedBox(height: AevraSpace.lg),
                       // Three proof points, set as a mono rail. On a phone
                       // these do the job the web hero's feature column does.
                       ...[
-                        'Grounded in your own sources',
-                        'Human approval on every variant',
-                        'One account, every channel',
+                        'Create media.',
+                        'Connect channels.',
+                        'Publish on schedule.',
                       ].map(
                         (point) => Padding(
                           padding: const EdgeInsets.only(bottom: AevraSpace.xs),
@@ -159,14 +168,15 @@ class _AuthScreenState extends State<AuthScreen> {
                               isLogin
                                   ? 'Welcome back'
                                   : 'Create your VAE account',
-                              style: AevraType.display(21),
+                              style: Theme.of(context).textTheme.headlineSmall,
                             ),
                             const SizedBox(height: AevraSpace.md),
                             if (widget.state.error != null) ...[
                               _ErrorBanner(message: widget.state.error!),
                               const SizedBox(height: AevraSpace.sm),
                             ],
-                            if (widget.state.paymentPending &&
+                            if (!isLogin &&
+                                widget.state.paymentPending &&
                                 widget.state.paymentInfo != null) ...[
                               Text('Payment verification',
                                   style: AevraType.eyebrow()),
@@ -261,45 +271,21 @@ class _AuthScreenState extends State<AuthScreen> {
 
 class _Tab extends StatelessWidget {
   const _Tab({required this.label, required this.active, required this.onTap});
-
   final String label;
   final bool active;
   final VoidCallback onTap;
-
   @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      // Opaque hit target: without this the gesture only lands on the glyphs
-      // themselves, and the gaps between letters do nothing.
-      behavior: HitTestBehavior.opaque,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12.5,
-              fontWeight: FontWeight.w700,
-              letterSpacing: -0.1,
-              color: active ? AevraColors.text : AevraColors.muted,
-            ),
-          ),
-          const SizedBox(height: AevraSpace.xs),
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 220),
-            curve: Curves.easeOutCubic,
-            height: 2,
-            width: active ? 28 : 0,
-            decoration: BoxDecoration(
-              color: AevraColors.accent,
-              borderRadius: BorderRadius.circular(AevraRadius.pill),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  Widget build(BuildContext context) => Semantics(
+      selected: active,
+      child: TextButton(
+        onPressed: onTap,
+        style: TextButton.styleFrom(
+            minimumSize: const Size(44, 44),
+            foregroundColor: active
+                ? Theme.of(context).colorScheme.primary
+                : Theme.of(context).colorScheme.onSurfaceVariant),
+        child: Text(label),
+      ));
 }
 
 class _Field extends StatefulWidget {
@@ -331,13 +317,15 @@ class _FieldState extends State<_Field> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(widget.label.toUpperCase(),
-            style: AevraType.eyebrow(color: AevraColors.muted2)),
+            style: AevraType.eyebrow(
+                color: Theme.of(context).colorScheme.onSurfaceVariant)),
         const SizedBox(height: AevraSpace.xs),
         TextField(
           controller: widget.controller,
           obscureText: hidden,
           keyboardType: widget.keyboardType,
           decoration: InputDecoration(
+            labelText: widget.label,
             suffixIcon: widget.obscure
                 ? IconButton(
                     tooltip: hidden ? 'Show password' : 'Hide password',
@@ -349,7 +337,8 @@ class _FieldState extends State<_Field> {
                 : null,
           ),
           cursorColor: AevraColors.accent,
-          style: const TextStyle(fontSize: 13.5, color: AevraColors.text),
+          style: TextStyle(
+              fontSize: 13.5, color: Theme.of(context).colorScheme.onSurface),
         ),
       ],
     );
@@ -388,4 +377,28 @@ class _ErrorBanner extends StatelessWidget {
       ),
     );
   }
+}
+
+class _AuthLayout extends StatelessWidget {
+  const _AuthLayout({required this.children});
+  final List<Widget> children;
+  @override
+  Widget build(BuildContext context) => Center(
+          child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 1200),
+        child: LayoutBuilder(
+            builder: (context, box) => box.maxWidth >= 800
+                ? Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Expanded(
+                        child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children:
+                                children.sublist(0, children.length - 1))),
+                    const SizedBox(width: 48),
+                    Expanded(child: children.last),
+                  ])
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: children)),
+      ));
 }

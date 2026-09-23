@@ -755,7 +755,7 @@ class _OnboardingSheetState extends State<OnboardingSheet> {
   static const _steps = [
     _OnboardingStep(
       'Welcome to VAE',
-      'Your control room for evidence-backed campaigns, connected live to the workspace.',
+      'Your home for media, connected channels, and upcoming posts.',
     ),
     _OnboardingStep(
       'Human approval, always',
@@ -763,7 +763,7 @@ class _OnboardingSheetState extends State<OnboardingSheet> {
     ),
     _OnboardingStep(
       'Everything in one place',
-      'Campaigns, schedule, and analytics stay in sync with the web app in real time.',
+      'Create, Publish, and Analytics stay in sync with your web workspace.',
     ),
   ];
 
