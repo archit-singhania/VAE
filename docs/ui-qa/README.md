@@ -46,3 +46,14 @@ Flutter regression tests cover Home at 320px in both themes, the one-output defa
 Final automated checks: web Biome lint, TypeScript typecheck, and Next.js production build passed. Flutter analysis reported no issues, and all ten tests passed. Shared generated-token validation passed.
 
 For local visual QA, run `python tests/e2e/fixtures/mock_ui_api.py` with port 8000 free, and start the web app on port 3000. Stop the fixture before connecting a real backend. The fixture only binds to loopback and must never be deployed.
+
+## Admin dashboard and profile update — 2026-09-23
+
+- Added `/admin` with a dedicated administrator sign-in, server-checked admin login endpoint, and role-based routing. Creator accounts retain the creator dashboard.
+- Admin navigation: Home, AI usage, Publishing, Analytics, Payment review. Reports cover customer/workspace usage, provider/model generation activity, recorded tokens, connected channels, schedule/publishing states, and platform KPIs. Customer rows can expand platform-specific KPIs.
+- Reporting only returns allowlisted identity labels and counts; no emails, prompts, captions, media URLs, provider credentials, or model outputs. Payment references remain in the separate payment review API/view.
+- Workspace headline totals are deduplicated across memberships; customer rows explicitly describe shared-workspace usage. Metrics use only the latest sample per account/post. Successful publishing excludes queued/failed/cancelled jobs.
+- Profile picture editing starts from the centered, keyboard-accessible 96px avatar. Removed the separate upload row and in-dialog appearance control; centered the Edit profile entry and title.
+- Verification: 9 API tests pass (authentication, admin access, reporting privacy, status counting, shared memberships, metric snapshots, recorded token totals); web formatting and TypeScript pass. Browser checks cover all admin destinations, dark/light themes, 390px navigation/layout, profile sizing, and avatar file-picker activation.
+- LLM reporting covers persisted campaign runs and recorded token counts. Media counts are generated assets, not provider request/billing counts. Untracked provider activity and cost estimates are not fabricated.
+- Deploy the API and web changes together. No live customer/payment mutations were performed during QA; browser testing uses the local synthetic GET-only fixture (`--admin` enables the admin preview).

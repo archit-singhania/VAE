@@ -40,6 +40,7 @@ import {
   useState,
 } from "react";
 import { flushSync } from "react-dom";
+import { AdminDashboard, type AdminSection } from "@/components/admin-dashboard";
 import {
   AiOrb,
   CommandPalette,
@@ -186,7 +187,7 @@ function Empty({
   );
 }
 
-export function LiveWorkspace() {
+export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }) {
   const [token, setToken] = useState<string | null>(null);
   const [mode, setMode] = useState<"login" | "register">("login");
   const [view, setView] = useState<View>("overview");
@@ -222,6 +223,7 @@ export function LiveWorkspace() {
   const [profileBrand, setProfileBrand] = useState("");
   const [profileAvatar, setProfileAvatar] = useState("");
   const [profileAvatarBusy, setProfileAvatarBusy] = useState(false);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [brandName, setBrandName] = useState("VAE");
@@ -273,6 +275,7 @@ export function LiveWorkspace() {
     status: string;
     admin_note: string | null;
   } | null>(null);
+  const [paymentsLoaded, setPaymentsLoaded] = useState(false);
   const [paymentSubmissions, setPaymentSubmissions] = useState<PaymentSubmission[]>([]);
   const [adminOverview, setAdminOverview] = useState<AdminOverview | null>(null);
   const [theme, setTheme] = useState<"dark" | "light">(() => {
@@ -422,6 +425,10 @@ export function LiveWorkspace() {
       });
   }, [theme]);
   const reset = useCallback(() => {
+    setAdminOverview(null);
+    setPaymentSubmissions([]);
+    setPaymentsLoaded(false);
+    setView("overview");
     // Remove only the legacy pre-cookie token. New browser sessions are
     // HTTP-only and therefore inaccessible to JavaScript by design.
     window.localStorage.removeItem(legacyTokenKey);
@@ -452,10 +459,19 @@ export function LiveWorkspace() {
     async (accessToken: string) => {
       setBusy("load");
       try {
-        const [me, workspaces] = await Promise.all([
-          api.me(accessToken),
-          api.workspaces(accessToken),
-        ]);
+        const me = await api.me(accessToken);
+        if (me.is_admin !== adminPortal) {
+          window.location.replace(me.is_admin ? "/admin" : "/");
+          return;
+        }
+        setUser(me);
+        const workspaces = await api.workspaces(accessToken);
+        if (me.is_admin) {
+          setWorkspace(workspaces[0] ?? null);
+          const overview = await api.adminOverview(accessToken);
+          setAdminOverview(overview);
+          return;
+        }
         const nextWorkspace = workspaces[0];
         if (!nextWorkspace) throw new Error("No active workspace found.");
         // Let people enter the control room as soon as identity and workspace
@@ -503,7 +519,7 @@ export function LiveWorkspace() {
         setBusy(null);
       }
     },
-    [reset],
+    [reset, adminPortal],
   );
   useEffect(() => {
     window.localStorage.removeItem(legacyTokenKey);
@@ -549,7 +565,7 @@ export function LiveWorkspace() {
         // Ignore stale local preferences.
       }
     }
-    setTourOpen(window.localStorage.getItem("vae.tour-complete") !== "1");
+    setTourOpen(!adminPortal && window.localStorage.getItem("vae.tour-complete") !== "1");
     const query = new URLSearchParams(window.location.search);
     const oauthResult = query.get("oauth");
     if (oauthResult === "connected") {
@@ -579,7 +595,7 @@ export function LiveWorkspace() {
       window.removeEventListener("keydown", onKeyDown);
       scrollContainer?.removeEventListener("scroll", onScroll);
     };
-  }, []);
+  }, [adminPortal]);
   useLayoutEffect(() => {
     document.documentElement.dataset.theme = theme;
     document.documentElement.style.colorScheme = theme;
@@ -595,7 +611,7 @@ export function LiveWorkspace() {
     try {
       const result =
         mode === "login"
-          ? await api.login(email, password)
+          ? await api.login(email, password, adminPortal)
           : await api.register({
               email,
               password,
@@ -662,12 +678,9 @@ export function LiveWorkspace() {
   const loadPaymentSubmissions = async () => {
     if (!token || !user?.is_admin) return;
     await run("admin-payments", async () => {
-      const [payments, overview] = await Promise.all([
-        api.adminPayments(token),
-        api.adminOverview(token),
-      ]);
+      const payments = await api.adminPayments(token);
       setPaymentSubmissions(payments);
-      setAdminOverview(overview);
+      setPaymentsLoaded(true);
     });
   };
   const saveProfile = async (event: FormEvent) => {
@@ -698,7 +711,12 @@ export function LiveWorkspace() {
   };
   const uploadProfileAvatar = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file || !token || !workspace) return;
+    event.target.value = "";
+    if (!file || !token) return;
+    if (!workspace) {
+      setError("A workspace is required to upload a profile picture.");
+      return;
+    }
     setProfileAvatarBusy(true);
     try {
       if (!file.type.startsWith("image/")) throw new Error("Choose an image file.");
@@ -1060,18 +1078,26 @@ export function LiveWorkspace() {
               <span />
               <b>VAE</b>
             </div>
-            <p className="live-kicker">Your creative workspace</p>
-            <h1>Your ideas. Beautifully made.</h1>
-            <p>A quiet space to create media, connect your channels, and share what matters.</p>
+            <p className="live-kicker">
+              {adminPortal ? "VAE administration" : "Your creative workspace"}
+            </p>
+            <h1>
+              {adminPortal ? "A clear view of your operations." : "Your ideas. Beautifully made."}
+            </h1>
+            <p>
+              {adminPortal
+                ? "Monitor customer adoption, generation usage, publishing health, and payment approvals."
+                : "A quiet space to create media, connect your channels, and share what matters."}
+            </p>
             <div className="live-auth-points">
               <span>
-                <Check size={15} /> Create media.
+                <Check size={15} /> {adminPortal ? "Customer KPIs." : "Create media."}
               </span>
               <span>
-                <Check size={15} /> Connect channels.
+                <Check size={15} /> {adminPortal ? "Usage insights." : "Connect channels."}
               </span>
               <span>
-                <Check size={15} /> Publish on schedule.
+                <Check size={15} /> {adminPortal ? "Payment review." : "Publish on schedule."}
               </span>
             </div>
           </motion.section>
@@ -1186,23 +1212,36 @@ export function LiveWorkspace() {
               </div>
             ) : (
               <>
-                <div className="live-tabs">
-                  <button
-                    type="button"
-                    className={cn(mode === "login" && "active")}
-                    onClick={() => setMode("login")}
-                  >
-                    Sign in
-                  </button>
-                  <button
-                    type="button"
-                    className={cn(mode === "register" && "active")}
-                    onClick={() => setMode("register")}
-                  >
-                    Get started
-                  </button>
-                </div>
-                <h2>{mode === "login" ? "Welcome back" : "Create your VAE account"}</h2>
+                {!adminPortal && (
+                  <div className="live-tabs">
+                    <button
+                      type="button"
+                      className={cn(mode === "login" && "active")}
+                      onClick={() => setMode("login")}
+                    >
+                      Sign in
+                    </button>
+                    <button
+                      type="button"
+                      className={cn(mode === "register" && "active")}
+                      onClick={() => setMode("register")}
+                    >
+                      Get started
+                    </button>
+                  </div>
+                )}
+                <h2>
+                  {adminPortal
+                    ? "Administrator sign in"
+                    : mode === "login"
+                      ? "Welcome back"
+                      : "Create your VAE account"}
+                </h2>
+                <p>
+                  {adminPortal
+                    ? "Access customer operations and payment review with your administrator account."
+                    : "Your creator workspace starts here."}
+                </p>
                 {notice && mode === "login" && (
                   <div role="status" className="live-alert success">
                     <Check size={15} /> {notice}
@@ -1274,8 +1313,17 @@ export function LiveWorkspace() {
                 </Field>
                 <Button type="submit" className="live-full-button" disabled={busy === "auth"}>
                   <ArrowRight className={cn(busy === "auth" && "live-spin")} size={15} />
-                  {busy === "auth" ? "Signing in…" : mode === "login" ? "Sign in" : "Get started"}
+                  {busy === "auth"
+                    ? "Signing in…"
+                    : adminPortal
+                      ? "Sign in as administrator"
+                      : mode === "login"
+                        ? "Sign in"
+                        : "Get started"}
                 </Button>
+                <a className="login-portal-link" href={adminPortal ? "/" : "/admin"}>
+                  {adminPortal ? "Creator sign in" : "Administrator sign in"}
+                </a>
               </>
             )}
             {onboarding && error && (
@@ -1287,12 +1335,37 @@ export function LiveWorkspace() {
         </main>
       </MotionConfig>
     );
-  const nav = [
-    { id: "overview" as View, label: "Home", icon: BrainCircuit },
-    { id: "media" as View, label: "Create", icon: Sparkles },
-    { id: "publishing" as View, label: "Publish", icon: CalendarDays },
-    { id: "analytics" as View, label: "Analytics", icon: BrainCircuit },
-  ];
+  if (!user)
+    return (
+      <main className="live-auth">
+        <section role="status">
+          <h1>Loading your workspace</h1>
+          {error ? (
+            <>
+              <p>{error}</p>
+              <Button onClick={() => void load(token)}>Retry</Button>
+              <a href={adminPortal ? "/admin" : "/"}>Back to sign in</a>
+            </>
+          ) : (
+            <p>Checking your account access…</p>
+          )}
+        </section>
+      </main>
+    );
+  const nav = user?.is_admin
+    ? [
+        { id: "overview" as View, label: "Home", icon: BrainCircuit },
+        { id: "media" as View, label: "AI usage", icon: Sparkles },
+        { id: "publishing" as View, label: "Publishing", icon: CalendarDays },
+        { id: "analytics" as View, label: "Analytics", icon: BrainCircuit },
+        { id: "admin" as View, label: "Payment review", icon: ShieldCheck },
+      ]
+    : [
+        { id: "overview" as View, label: "Home", icon: BrainCircuit },
+        { id: "media" as View, label: "Create", icon: Sparkles },
+        { id: "publishing" as View, label: "Publish", icon: CalendarDays },
+        { id: "analytics" as View, label: "Analytics", icon: BrainCircuit },
+      ];
   const overview = (
     <>
       <Reveal className="live-hero live-glow" onMouseMove={handleGlow}>
@@ -2517,60 +2590,24 @@ export function LiveWorkspace() {
     </div>
   );
   const adminView = (
-    <div className="live-columns">
-      <section className="live-panel">
-        <p className="live-kicker">Administrator</p>
-        <h2>Customer operations</h2>
-        <p>Monitor non-sensitive customer adoption, media usage, channels, and approvals.</p>
-        <div className="admin-kpis">
-          <span>
-            <b>{adminOverview?.users_total ?? 0}</b> users
-          </span>
-          <span>
-            <b>{adminOverview?.users_approved ?? 0}</b> approved
-          </span>
-          <span>
-            <b>{adminOverview?.assets_total ?? 0}</b> assets
-          </span>
-          <span>
-            <b>{adminOverview?.channels_total ?? 0}</b> channels
-          </span>
-        </div>
+    <div className="admin-dashboard">
+      <header className="admin-heading">
+        <p className="live-kicker">VAE administration</p>
+        <h1>Payment review</h1>
+        <p>Review submitted payment references and approve customer access.</p>
         <Button
           size="sm"
+          variant="secondary"
           onClick={() => void loadPaymentSubmissions()}
           disabled={busy === "admin-payments"}
         >
-          <RefreshCw size={14} /> Refresh submissions
+          Refresh submissions
         </Button>
-      </section>
-      <section className="live-panel span-2">
-        <h2>User usage</h2>
-        {adminOverview?.users.length ? (
-          adminOverview.users.map((item) => (
-            <article className="admin-user-row" key={item.user_id}>
-              <span>
-                <b>{item.display_name}</b>
-                <small>{item.brand_name || item.account_type}</small>
-              </span>
-              <Status value={item.account_status} />
-              <small>{item.assets} assets</small>
-              <small>{item.channels} channels</small>
-              <small>{item.scheduled} scheduled</small>
-              <small>{item.published} published</small>
-              <small>{item.engagements} engagements</small>
-            </article>
-          ))
-        ) : (
-          <Empty
-            icon={UserRound}
-            title="No customer activity yet"
-            body="Approved customers and usage KPIs will appear here."
-          />
-        )}
-      </section>
+      </header>
       <section className="live-panel">
-        <h2>{paymentSubmissions.length} submissions</h2>
+        <h2>
+          {paymentsLoaded ? `${paymentSubmissions.length} submissions` : "Loading submissions"}
+        </h2>
         {paymentSubmissions.length ? (
           paymentSubmissions.map((item) => (
             <article className="live-list-row" key={item.id}>
@@ -2578,7 +2615,8 @@ export function LiveWorkspace() {
               <span>
                 <b>{item.display_name}</b>
                 <small>
-                  {item.email} · {item.utr_reference || "No UTR"}
+                  {item.amount} {item.currency} · {date(item.submitted_at)} ·{" "}
+                  {item.utr_reference || "No payment reference"}
                 </small>
               </span>
               <Status value={item.status} />
@@ -2601,46 +2639,54 @@ export function LiveWorkspace() {
         ) : (
           <Empty
             icon={ShieldCheck}
-            title="No payment submissions"
-            body="Refresh when a tenant submits UPI proof."
+            title={paymentsLoaded ? "No payment submissions" : "Payment review is not loaded yet"}
+            body="Use Refresh to retrieve the latest payment submissions."
           />
         )}
       </section>
     </div>
   );
-  const content =
-    view === "overview"
-      ? overview
-      : view === "campaigns"
-        ? campaignsView
-        : view === "brain"
-          ? brainView
-          : view === "media"
-            ? mediaView
-            : view === "analytics"
-              ? analyticsView
-              : view === "admin"
-                ? adminView
-                : publishingView;
+  const content = user?.is_admin ? (
+    view === "admin" ? (
+      adminView
+    ) : (
+      <AdminDashboard
+        onRefresh={() => void load(token)}
+        data={adminOverview}
+        section={
+          (["overview", "media", "publishing", "analytics"].includes(view)
+            ? view
+            : "overview") as AdminSection
+        }
+      />
+    )
+  ) : view === "overview" ? (
+    overview
+  ) : view === "campaigns" ? (
+    campaignsView
+  ) : view === "brain" ? (
+    brainView
+  ) : view === "media" ? (
+    mediaView
+  ) : view === "analytics" ? (
+    analyticsView
+  ) : view === "admin" ? (
+    adminView
+  ) : (
+    publishingView
+  );
   const paletteItems = [
     ...nav.map((item) => ({
       label: `Open ${item.label}`,
       hint: "View",
-      onSelect: () => setView(item.id),
+      onSelect: () => {
+        setView(item.id);
+        if (item.id === "admin") void loadPaymentSubmissions();
+      },
     })),
     { label: "Profile", hint: "Account", onSelect: () => setProfileOpen(true) },
-    { label: "Brand knowledge & sources", hint: "More", onSelect: () => setView("brain") },
-    ...(user?.is_admin
-      ? [
-          {
-            label: "Admin dashboard",
-            hint: "Admin",
-            onSelect: () => {
-              setView("admin");
-              void loadPaymentSubmissions();
-            },
-          },
-        ]
+    ...(!user?.is_admin
+      ? [{ label: "Brand knowledge & sources", hint: "More", onSelect: () => setView("brain") }]
       : []),
     { label: "Sign out", hint: "Account", onSelect: () => setSignOutOpen(true) },
     {
@@ -2656,13 +2702,16 @@ export function LiveWorkspace() {
   ];
   return (
     <MotionConfig reducedMotion="user">
-      <main className={cn("live-app", `view-${view}`)} data-theme={theme}>
-        <WebglBackground />
+      <main
+        className={cn("live-app", `view-${view}`, user?.is_admin && "admin-app")}
+        data-theme={theme}
+      >
+        {!user?.is_admin && <WebglBackground />}
         <GrainOverlay />
         {paletteOpen && (
           <CommandPalette items={paletteItems} onClose={() => setPaletteOpen(false)} />
         )}
-        {tourOpen && (
+        {tourOpen && !user?.is_admin && (
           <Onboarding
             onDismiss={() => {
               window.localStorage.setItem("vae.tour-complete", "1");
@@ -2804,15 +2853,32 @@ export function LiveWorkspace() {
                   <X size={16} />
                 </button>
                 <p className="live-kicker">Profile</p>
-                <h2>Edit your account</h2>
-                <div className="profile-avatar-preview">
+                <h2 className="profile-title">Edit profile</h2>
+                <button
+                  type="button"
+                  className="profile-avatar-preview"
+                  aria-label="Change profile picture"
+                  disabled={profileAvatarBusy}
+                  onClick={() => avatarInputRef.current?.click()}
+                >
                   {profileAvatar ? (
                     // biome-ignore lint/performance/noImgElement: user-provided remote avatar URLs are not known at build time.
                     <img src={profileAvatar} alt="Profile preview" />
                   ) : (
                     <UserRound size={24} />
                   )}
-                </div>
+                </button>
+                <small className="profile-avatar-hint">
+                  {profileAvatarBusy ? "Uploading…" : "Click your picture to change it"}
+                </small>
+                <input
+                  ref={avatarInputRef}
+                  hidden
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  disabled={profileAvatarBusy}
+                  onChange={uploadProfileAvatar}
+                />
                 <Field label="Display name">
                   <input
                     required
@@ -2831,16 +2897,6 @@ export function LiveWorkspace() {
                 <Field label="Product or brand">
                   <input value={profileBrand} onChange={(e) => setProfileBrand(e.target.value)} />
                 </Field>
-                <label className="profile-upload-control">
-                  <span>Profile image</span>
-                  <small>{profileAvatarBusy ? "Uploading…" : "Upload a display picture"}</small>
-                  <input
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp"
-                    disabled={profileAvatarBusy}
-                    onChange={uploadProfileAvatar}
-                  />
-                </label>
                 <div className="live-divider" />
                 <Field label="Current password (only to change it)">
                   <input
@@ -2857,12 +2913,13 @@ export function LiveWorkspace() {
                     onChange={(e) => setNewPassword(e.target.value)}
                   />
                 </Field>
-                <Button type="submit" className="live-full-button" disabled={busy === "profile"}>
+                <Button
+                  type="submit"
+                  className="live-full-button"
+                  disabled={busy === "profile" || profileAvatarBusy}
+                >
                   {busy === "profile" ? "Saving…" : "Save profile"}
                 </Button>
-                <button type="button" onClick={toggleTheme}>
-                  Appearance: {theme}
-                </button>
                 <a href="/account-deletion">Delete account</a>
               </motion.form>
             </motion.div>
@@ -2880,7 +2937,13 @@ export function LiveWorkspace() {
             <div>{initial(user?.brand_name || user?.display_name)}</div>
             <span>
               <b>{user?.brand_name || user?.display_name}</b>
-              <small>{user?.account_type === "business" ? "Business" : "Creator"}</small>
+              <small>
+                {user?.is_admin
+                  ? "Administrator"
+                  : user?.account_type === "business"
+                    ? "Business"
+                    : "Creator"}
+              </small>
             </span>
           </div>
           <nav>
@@ -2898,9 +2961,9 @@ export function LiveWorkspace() {
                 <span>{item.label}</span>
               </button>
             ))}
-            <button onClick={() => setProfileOpen(true)}>
+            <button className="edit-profile-trigger" onClick={() => setProfileOpen(true)}>
               <UserRound size={17} />
-              <span>Profile</span>
+              <span>Edit profile</span>
             </button>
             <button onClick={() => setPaletteOpen(true)}>
               <Menu size={17} />
@@ -2938,12 +3001,15 @@ export function LiveWorkspace() {
           />
         )}
         <nav className="creator-bottom-nav" aria-label="Primary navigation">
-          {[nav[0], nav[2], nav[1], nav[3]].map((item) => (
+          {(user?.is_admin ? nav : [nav[0], nav[2], nav[1], nav[3]]).map((item) => (
             <button
               key={item.id}
               aria-current={view === item.id ? "page" : undefined}
-              className={cn(item.id === "media" && "create-action")}
-              onClick={() => setView(item.id)}
+              className={cn(!user?.is_admin && item.id === "media" && "create-action")}
+              onClick={() => {
+                setView(item.id);
+                if (item.id === "admin") void loadPaymentSubmissions();
+              }}
             >
               <item.icon size={20} />
               <span>{item.label}</span>
@@ -2951,7 +3017,7 @@ export function LiveWorkspace() {
           ))}
           <button onClick={() => setProfileOpen(true)}>
             <UserRound size={20} />
-            <span>Profile</span>
+            <span>Edit profile</span>
           </button>
         </nav>
         {publishReview !== null && (
@@ -2998,12 +3064,32 @@ export function LiveWorkspace() {
               <button className="live-theme-toggle" onClick={toggleTheme}>
                 {theme === "dark" ? "Light" : "Dark"}
               </button>
-              <button className="live-refresh" onClick={() => token && void load(token)}>
+              <button
+                className="live-refresh"
+                onClick={() => {
+                  if (token) {
+                    if (user?.is_admin && view === "admin") void loadPaymentSubmissions();
+                    else void load(token);
+                  }
+                }}
+              >
                 <RefreshCw size={15} /> Refresh
               </button>
-              <Button size="sm" onClick={() => setView("media")}>
-                <Plus size={14} /> Create media
-              </Button>
+              {user?.is_admin ? (
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    setView("admin");
+                    void loadPaymentSubmissions();
+                  }}
+                >
+                  <ShieldCheck size={14} /> Payment review
+                </Button>
+              ) : (
+                <Button size="sm" onClick={() => setView("media")}>
+                  <Plus size={14} /> Create media
+                </Button>
+              )}
             </div>
           </header>
           <div
@@ -3058,7 +3144,9 @@ export function LiveWorkspace() {
               <AnimatePresence mode="wait">
                 <motion.div
                   key={view}
-                  className={view === "overview" ? "overview-layout" : "view-layout"}
+                  className={
+                    !user.is_admin && view === "overview" ? "overview-layout" : "view-layout"
+                  }
                   variants={variantSwap}
                   initial="hidden"
                   animate="show"

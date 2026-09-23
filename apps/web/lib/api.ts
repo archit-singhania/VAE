@@ -28,24 +28,60 @@ export type PaymentSubmission = {
   submitted_at: string | null;
 };
 
+export type AdminUsage = {
+  assets: number;
+  generated_assets: number;
+  channels: number;
+  scheduled: number;
+  queued: number;
+  published: number;
+  failed: number;
+  schedule_failed: number;
+  impressions: number;
+  engagements: number;
+  clicks: number;
+  measured_posts: number;
+  generation_runs: number;
+  prompt_tokens: number;
+  completion_tokens: number;
+};
 export type AdminOverview = {
   users_total: number;
   users_approved: number;
   assets_total: number;
   channels_total: number;
-  users: Array<{
-    user_id: string;
-    display_name: string;
-    brand_name: string | null;
-    account_type: string;
-    account_status: string;
-    created_at: string;
-    assets: number;
-    channels: number;
-    scheduled: number;
-    published: number;
-    engagements: number;
+  totals: AdminUsage;
+  users: Array<
+    AdminUsage & {
+      platforms: Array<{
+        platform: string;
+        channels: number;
+        scheduled: number;
+        published: number;
+        impressions: number;
+        engagements: number;
+      }>;
+      user_id: string;
+      display_name: string;
+      brand_name: string | null;
+      account_type: string;
+      account_status: string;
+      created_at: string;
+    }
+  >;
+  platforms: Array<AdminUsage & { platform: string; connected: number }>;
+  models: Array<{
+    kind: string;
+    provider: string;
+    model: string;
+    requests: number;
+    failed: number;
+    prompt_tokens: number;
+    completion_tokens: number;
+    metered_runs: number;
   }>;
+  metrics_updated_at: string | null;
+  generated_at: string;
 };
 
 export type Workspace = {
@@ -252,11 +288,15 @@ export async function request<T>(
 }
 
 export const api = {
-  login: (email: string, password: string) =>
-    request<{ access_token: string; expires_in: number }>("/auth/login", undefined, {
-      method: "POST",
-      body: JSON.stringify({ email, password }),
-    }),
+  login: (email: string, password: string, admin = false) =>
+    request<{ access_token: string; expires_in: number }>(
+      admin ? "/auth/admin/login" : "/auth/login",
+      undefined,
+      {
+        method: "POST",
+        body: JSON.stringify({ email, password }),
+      },
+    ),
   register: (payload: {
     email: string;
     password: string;
