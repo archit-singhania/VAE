@@ -1719,10 +1719,9 @@ html[data-theme="light"] .live-search input {
   color: var(--text-strong);
   border-color: var(--line-strong);
 }
+/* The opaque dark shader must never cover the ivory light-theme surface. */
 html[data-theme="light"] .webgl-background {
-  opacity: 0.1;
-  filter: saturate(0.55) brightness(1.35);
-  mix-blend-mode: multiply;
+  display: none;
 }
 html[data-theme="light"] .grain-overlay {
   opacity: 0.025;
@@ -3769,23 +3768,30 @@ body {
   max-width: 720px;
   font-size: clamp(36px, 5vw, 68px);
 }
-.theme-wipe {
-  position: fixed;
-  inset: 0;
-  z-index: 100;
-  pointer-events: none;
-  clip-path: polygon(100% 0, 100% 0, 100% 0, 100% 0);
-  animation: theme-wipe-in 0.72s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+/* Reveal the new page from the top-right in either theme direction. */
+html.theme-transition::view-transition-old(root),
+html.theme-transition::view-transition-new(root) {
+  mix-blend-mode: normal;
+  animation: none;
 }
-.theme-wipe.light {
-  background: linear-gradient(135deg, #fbfaf7 0%, #f5f3ee 55%, #e7e2d8 100%);
+html.theme-transition::view-transition-old(root) {
+  z-index: 1;
 }
-.theme-wipe.dark {
-  background: linear-gradient(135deg, #20211f 0%, #191a19 55%, #171012 100%);
+html.theme-transition::view-transition-new(root) {
+  z-index: 2;
+  animation: theme-reveal 720ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
-@keyframes theme-wipe-in {
+@keyframes theme-reveal {
+  from {
+    clip-path: circle(0 at 100% 0);
+  }
   to {
-    clip-path: polygon(100% 0, 100% 100%, 0 100%, 0 100%);
+    clip-path: circle(150vmax at 100% 0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  html.theme-transition::view-transition-new(root) {
+    animation: none;
   }
 }
 @media (max-width: 850px) {

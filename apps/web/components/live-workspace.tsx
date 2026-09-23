@@ -39,6 +39,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { flushSync } from "react-dom";
 import {
   AiOrb,
   CommandPalette,
@@ -298,7 +299,7 @@ export function LiveWorkspace() {
     setProfileBrand(user.brand_name ?? "");
     setProfileAvatar(user.avatar_url ?? "");
   }, [user]);
-  const [themeWipe, setThemeWipe] = useState<"dark" | "light" | null>(null);
+  const themeTransition = useRef(false);
   const [soundEnabled, setSoundEnabled] = useState(false);
   const [pulse, setPulse] = useState(0);
   const [scrolled, setScrolled] = useState(false);
@@ -397,10 +398,28 @@ export function LiveWorkspace() {
     oscillator.stop(context.currentTime + 0.2);
   }, [soundEnabled]);
   const toggleTheme = useCallback(() => {
+    if (themeTransition.current) return;
     const next = theme === "dark" ? "light" : "dark";
-    setTheme(next);
-    setThemeWipe(next);
-    window.setTimeout(() => setThemeWipe(null), 760);
+    const applyTheme = () => {
+      document.documentElement.dataset.theme = next;
+      flushSync(() => setTheme(next));
+    };
+    if (
+      !document.startViewTransition ||
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    ) {
+      applyTheme();
+      return;
+    }
+    themeTransition.current = true;
+    document.documentElement.classList.add("theme-transition");
+    const transition = document.startViewTransition(applyTheme);
+    void transition.finished
+      .catch(() => {})
+      .finally(() => {
+        themeTransition.current = false;
+        document.documentElement.classList.remove("theme-transition");
+      });
   }, [theme]);
   const reset = useCallback(() => {
     // Remove only the legacy pre-cookie token. New browser sessions are
@@ -2640,7 +2659,6 @@ export function LiveWorkspace() {
       <main className={cn("live-app", `view-${view}`)} data-theme={theme}>
         <WebglBackground />
         <GrainOverlay />
-        {themeWipe && <div className={`theme-wipe ${themeWipe}`} aria-hidden="true" />}
         {paletteOpen && (
           <CommandPalette items={paletteItems} onClose={() => setPaletteOpen(false)} />
         )}
