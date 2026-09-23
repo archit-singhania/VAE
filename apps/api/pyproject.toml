@@ -26,6 +26,8 @@ dependencies = [
   "pypdf>=6.1,<7",
   "python-multipart>=0.0.20,<1",
   "sqlalchemy>=2.0.43,<3",
+  "scikit-learn>=1.6,<2",
+  "threadpoolctl>=3.5,<4",
   "uvicorn[standard]>=0.35,<1",
 ]
 

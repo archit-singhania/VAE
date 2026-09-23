@@ -84,6 +84,37 @@ export type AdminOverview = {
   generated_at: string;
 };
 
+export type MlReport = {
+  model_version: string;
+  generated_at: string;
+  timezone: string;
+  features: Array<{
+    id: string;
+    title: string;
+    method: string;
+    status: "ready" | "needs_data" | "unreliable";
+    sample_count: number;
+    minimum_samples: number;
+    explanation: string;
+    items: Array<{
+      label: string;
+      detail: string;
+      score: number | null;
+      reference_id: string | null;
+    }>;
+    diagnostics: Record<string, string | number>;
+  }>;
+  audit: {
+    training_scope: string;
+    external_requests: number;
+    automatic_actions: boolean;
+    models_persisted: boolean;
+    history_capped: boolean;
+    limits: Record<string, number>;
+    notes: string[];
+  };
+};
+
 export type Workspace = {
   id: string;
   organization_id: string;
@@ -288,6 +319,11 @@ export async function request<T>(
 }
 
 export const api = {
+  mlInsights: (token: string, workspaceId: string, draft: string, platform: Platform) =>
+    request<MlReport>(`/workspaces/${workspaceId}/ml/insights`, token, {
+      method: "POST",
+      body: JSON.stringify({ draft, platform }),
+    }),
   login: (email: string, password: string, admin = false) =>
     request<{ access_token: string; expires_in: number }>(
       admin ? "/auth/admin/login" : "/auth/login",

@@ -6322,3 +6322,84 @@ html[data-theme="light"] {
   line-height: 1.7;
   margin-top: 10px;
 }
+
+.ml-studio {
+  display: grid;
+  gap: 24px;
+  min-width: 0;
+}
+.ml-input {
+  display: grid;
+  gap: 16px;
+}
+.ml-input textarea {
+  resize: vertical;
+  min-height: 120px;
+}
+.ml-studio .live-panel > p {
+  color: var(--muted);
+  line-height: 1.65;
+}
+.ml-feature-list {
+  columns: 2;
+  padding-left: 24px;
+  line-height: 2;
+}
+.ml-results {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+.ml-result {
+  min-width: 0;
+}
+.ml-result-title {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+}
+.ml-result h2 {
+  font-size: 22px;
+}
+.ml-result ul {
+  padding: 0;
+  list-style: none;
+}
+.ml-result li {
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
+  overflow-wrap: anywhere;
+}
+.ml-result li strong,
+.ml-result li span {
+  display: block;
+}
+.ml-result li span,
+.ml-result small {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.ml-result details {
+  margin-top: 16px;
+  font-size: 13px;
+}
+.ml-result summary {
+  cursor: pointer;
+  color: var(--accent);
+}
+.ml-result details p {
+  overflow-wrap: anywhere;
+}
+@media (max-width: 900px) {
+  .ml-results {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 500px) {
+  .ml-feature-list {
+    columns: 1;
+  }
+}

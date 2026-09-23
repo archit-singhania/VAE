@@ -55,6 +55,7 @@ import {
 import { GrainOverlay } from "@/components/background/grain-overlay";
 import { HeroVideo } from "@/components/background/hero-video";
 import { WebglBackground } from "@/components/background/webgl-background";
+import { MlStudio } from "@/components/ml-studio";
 
 const AreaChart = dynamic(() => import("@/components/charts").then((m) => m.AreaChart));
 const BarChart = dynamic(() => import("@/components/charts").then((m) => m.BarChart));
@@ -123,7 +124,15 @@ function handleGlow(event: MouseEvent<HTMLElement>) {
   );
 }
 
-type View = "overview" | "campaigns" | "brain" | "media" | "publishing" | "analytics" | "admin";
+type View =
+  | "overview"
+  | "campaigns"
+  | "brain"
+  | "media"
+  | "publishing"
+  | "analytics"
+  | "admin"
+  | "ml";
 const browserSession = "cookie";
 const legacyTokenKey = "vae.staging.access-token";
 const platforms: Array<{ id: Platform; label: string }> = [
@@ -1365,6 +1374,7 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
         { id: "media" as View, label: "Create", icon: Sparkles },
         { id: "publishing" as View, label: "Publish", icon: CalendarDays },
         { id: "analytics" as View, label: "Analytics", icon: BrainCircuit },
+        { id: "ml" as View, label: "ML insights", icon: Sparkles },
       ];
   const overview = (
     <>
@@ -2295,6 +2305,9 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
   );
   const analyticsView = (
     <div>
+      <Button variant="secondary" onClick={() => setView("ml")}>
+        Explore ML insights
+      </Button>
       <Reveal3D>
         <p className="live-kicker">Instrument panel</p>
         <h2 style={{ margin: "0 0 16px", fontSize: 21, fontWeight: 500, letterSpacing: "-0.03em" }}>
@@ -2660,6 +2673,13 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
         }
       />
     )
+  ) : view === "ml" && workspace ? (
+    <MlStudio
+      key={workspace.id}
+      token={token}
+      workspaceId={workspace.id}
+      initialDraft={publishText || mediaPrompt}
+    />
   ) : view === "overview" ? (
     overview
   ) : view === "campaigns" ? (

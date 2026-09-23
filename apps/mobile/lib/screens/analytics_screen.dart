@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../state/app_state.dart';
 import '../widgets/vae_ui.dart';
+import 'ml_insights_screen.dart';
 
 class AnalyticsScreen extends StatefulWidget {
   const AnalyticsScreen({super.key, required this.state});
@@ -29,6 +30,13 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         return VaeScaffold(children: [
           const VaePageHeader(
               'Analytics', 'See what resonates with your audience.'),
+          OutlinedButton.icon(
+              onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                      builder: (_) => MlInsightsScreen(state: s))),
+              icon: const Icon(Icons.auto_awesome),
+              label: const Text('Explore ML insights')),
+          const SizedBox(height: 16),
           Wrap(spacing: 16, children: [
             DropdownButton<String>(
                 value: channel,

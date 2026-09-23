@@ -333,6 +333,14 @@ class AevraApiClient {
           token: token,
           body: {'current_password': current, 'new_password': next},
           parse: (_) {});
+  Future<Map<String, dynamic>> mlInsights(
+          String token, String workspaceId, String draft, String platform) =>
+      _request('/workspaces/$workspaceId/ml/insights',
+          token: token,
+          method: 'POST',
+          body: {'draft': draft, 'platform': platform},
+          parse: (json) => Map<String, dynamic>.from(json as Map));
+
   Future<List<PostMetric>> metrics(String token, String workspaceId) =>
       _request('/workspaces/$workspaceId/operations/metrics',
           token: token,
