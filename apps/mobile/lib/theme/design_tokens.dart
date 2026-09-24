@@ -2,23 +2,23 @@
 import 'package:flutter/material.dart';
 
 abstract final class VaeTokens {
-  static const darkBackground = Color(0xFF191A19);
-  static const darkInput = Color(0xFF20211F);
-  static const darkSurface = Color(0xFF282925);
-  static const darkRaised = Color(0xFF30312D);
-  static const darkAccent = Color(0xFFC4855A);
-  static const darkText = Color(0xFFF2F0EA);
+  static const darkBackground = Color(0xFF171014);
+  static const darkInput = Color(0xFF21161B);
+  static const darkSurface = Color(0xFF2A1C22);
+  static const darkRaised = Color(0xFF35232A);
+  static const darkAccent = Color(0xFFE5485D);
+  static const darkText = Color(0xFFF7F2F4);
   static const darkSuccess = Color(0xFF4E9C82);
-  static const darkError = Color(0xFFE0656E);
+  static const darkError = Color(0xFFEF6678);
   static const darkInfo = Color(0xFF8FA7C2);
-  static const lightBackground = Color(0xFFF5F3EE);
-  static const lightInput = Color(0xFFFBFAF7);
+  static const lightBackground = Color(0xFFF8F3F4);
+  static const lightInput = Color(0xFFFDF9FA);
   static const lightSurface = Color(0xFFFFFFFF);
-  static const lightRaised = Color(0xFFEDEAE3);
-  static const lightAccent = Color(0xFF9A5A2E);
-  static const lightText = Color(0xFF14161B);
+  static const lightRaised = Color(0xFFF1E7E9);
+  static const lightAccent = Color(0xFFC72F47);
+  static const lightText = Color(0xFF211418);
   static const lightSuccess = Color(0xFF2F7A61);
-  static const lightError = Color(0xFFB3343E);
+  static const lightError = Color(0xFFB8273D);
   static const lightInfo = Color(0xFF3F6183);
   static const controlMotion = Duration(milliseconds: 160);
   static const panelMotion = Duration(milliseconds: 260);

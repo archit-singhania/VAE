@@ -749,7 +749,7 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
   const uploadProfileAvatar = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     event.target.value = "";
-    if (!file || !token) return;
+    if (!file || !token || !user) return;
     if (!workspace) {
       setError("A workspace is required to upload a profile picture.");
       return;
@@ -760,7 +760,15 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
       const uploaded = await api.uploadMedia(token, workspace.id, null, file);
       if (!uploaded.download_url) throw new Error("The avatar upload did not return a preview.");
       setProfileAvatar(uploaded.download_url);
-      setNotice("Profile image uploaded. Save your profile to keep it.");
+      const updated = await api.updateProfile(token, {
+        display_name: profileName || user.display_name,
+        email: profileEmail || user.email,
+        account_type: user.account_type,
+        brand_name: profileBrand || null,
+        avatar_url: uploaded.download_url,
+      });
+      setUser(updated);
+      setNotice("Profile picture updated.");
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Profile image upload failed.");
     } finally {
@@ -1113,7 +1121,7 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
   if (!token)
     return (
       <MotionConfig reducedMotion="user">
-        <main className="live-auth">
+        <main className={cn("live-auth", adminPortal && "admin-auth")}>
           <WebglBackground />
           <HeroVideo />
           <div className="hero-video-overlay" aria-hidden="true" />
@@ -1160,6 +1168,7 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
             </div>
           </header>
           <motion.section
+            className="landing-hero-copy"
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
@@ -1186,6 +1195,22 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
                 <Check size={15} /> {adminPortal ? "Payment review." : "Publish on schedule."}
               </span>
             </div>
+            <section className="landing-proof" aria-label="Platform highlights">
+              <span>
+                <strong>One workspace</strong>
+                <small>
+                  {adminPortal ? "Complete operational control" : "From idea to published post"}
+                </small>
+              </span>
+              <span>
+                <strong>{adminPortal ? "Live clarity" : "AI, refined"}</strong>
+                <small>
+                  {adminPortal
+                    ? "Signals that support decisions"
+                    : "Creative control stays with you"}
+                </small>
+              </span>
+            </section>
           </motion.section>
           <motion.form
             ref={authCardRef}
@@ -1361,7 +1386,12 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
                     </Field>
                     <div className="live-field">
                       <span>Account type</span>
-                      <div className="account-type-picker" role="radiogroup" aria-label="Account type">
+                      <div
+                        className="account-type-picker"
+                        role="radiogroup"
+                        aria-label="Account type"
+                      >
+                        {/* biome-ignore lint/a11y/useSemanticElements: card-style selector preserves button keyboard behavior inside the form. */}
                         <button
                           type="button"
                           role="radio"
@@ -1375,6 +1405,7 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
                           <strong>Creator</strong>
                           <small>Publish under your own name and voice.</small>
                         </button>
+                        {/* biome-ignore lint/a11y/useSemanticElements: card-style selector preserves button keyboard behavior inside the form. */}
                         <button
                           type="button"
                           role="radio"
@@ -1447,7 +1478,7 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
     );
   if (!user)
     return (
-      <main className="live-auth">
+      <main className={cn("live-auth", adminPortal && "admin-auth")}>
         <section role="status">
           <h1>Loading your workspace</h1>
           {error ? (
@@ -2807,7 +2838,7 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
       adminView
     ) : (
       <AdminDashboard
-        onRefresh={() => void load(token)}
+        onRefresh={() => load(token)}
         data={adminOverview}
         section={
           (["overview", "media", "publishing", "analytics"].includes(view)
@@ -3097,7 +3128,14 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
             </button>
           </div>
           <div className="live-workspace">
-            <div>{initial(user?.brand_name || user?.display_name)}</div>
+            <div>
+              {user?.avatar_url ? (
+                // biome-ignore lint/performance/noImgElement: user-provided remote avatar URLs are dynamic.
+                <img src={user.avatar_url} alt="" />
+              ) : (
+                <UserRound size={18} />
+              )}
+            </div>
             <span>
               <b>{user?.brand_name || user?.display_name}</b>
               <small>
@@ -3124,27 +3162,19 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
                 <span>{item.label}</span>
               </button>
             ))}
-            <button className="edit-profile-trigger" onClick={() => setProfileOpen(true)}>
-              <UserRound size={17} />
-              <span>Edit profile</span>
-            </button>
             <button onClick={() => setPaletteOpen(true)}>
               <Menu size={17} />
               <span>More / Command</span>
             </button>
           </nav>
           <div className="live-sidebar-foot">
-            <button onClick={toggleTheme}>
-              {theme === "dark" ? <Sun size={15} /> : <Moon size={15} />}{" "}
-              {theme === "dark" ? "Light appearance" : "Dark appearance"}
-            </button>
             <button className="live-user profile-trigger" onClick={() => setProfileOpen(true)}>
               <div>
                 {user?.avatar_url ? (
                   // biome-ignore lint/performance/noImgElement: user-provided remote avatar URLs are dynamic.
                   <img src={user.avatar_url} alt="" />
                 ) : (
-                  initial(user?.display_name)
+                  <UserRound size={18} />
                 )}
               </div>
               <span>
@@ -3179,8 +3209,13 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
               <span>{item.label}</span>
             </button>
           ))}
-          <button onClick={() => setProfileOpen(true)}>
-            <UserRound size={20} />
+          <button className="bottom-profile" onClick={() => setProfileOpen(true)}>
+            {user?.avatar_url ? (
+              // biome-ignore lint/performance/noImgElement: user-provided remote avatar URLs are dynamic.
+              <img src={user.avatar_url} alt="" />
+            ) : (
+              <UserRound size={20} />
+            )}
             <span>Edit profile</span>
           </button>
         </nav>

@@ -141,6 +141,18 @@ class AppState extends ChangeNotifier {
       final me = await client.me(currentToken);
       final workspaces = await client.workspaces(currentToken);
       final nextWorkspace = workspaces.isNotEmpty ? workspaces.first : null;
+      user = me;
+      workspace = nextWorkspace;
+      if (me.isAdmin) {
+        brands = [];
+        campaigns = [];
+        documents = [];
+        assets = [];
+        accounts = [];
+        scheduled = [];
+        metrics = [];
+        return;
+      }
       if (nextWorkspace == null) throw Exception('No active workspace found.');
 
       final results = await Future.wait([
@@ -153,8 +165,6 @@ class AppState extends ChangeNotifier {
         client.metrics(currentToken, nextWorkspace.id),
       ]);
 
-      user = me;
-      workspace = nextWorkspace;
       brands = results[0] as List<Brand>;
       campaigns = results[1] as List<Campaign>;
       documents = results[2] as List<KnowledgeDocument>;

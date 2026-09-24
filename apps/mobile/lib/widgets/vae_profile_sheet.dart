@@ -4,12 +4,9 @@ import 'vae_ui.dart';
 
 class VaeProfileSheet extends StatefulWidget {
   const VaeProfileSheet(
-      {super.key,
-      required this.state,
-      required this.onTheme,
-      required this.onSignOut});
+      {super.key, required this.state, required this.onSignOut});
   final AppState state;
-  final VoidCallback onTheme, onSignOut;
+  final VoidCallback onSignOut;
   @override
   State<VaeProfileSheet> createState() => _VaeProfileSheetState();
 }
@@ -42,7 +39,18 @@ class _VaeProfileSheetState extends State<VaeProfileSheet> {
       final result = await s.client
           .pickAndUpload(s.token!, s.workspace!.id, imagesOnly: true);
       if (result != null && mounted) {
-        setState(() => avatar = result.downloadUrl);
+        final updated = await s.client.updateProfile(s.token!, {
+          'display_name': name.text.trim(),
+          'email': email.text.trim(),
+          'brand_name': brand.text.trim(),
+          'avatar_url': result.downloadUrl,
+          'account_type': s.user!.accountType
+        });
+        s.updateUser(updated);
+        setState(() {
+          avatar = result.downloadUrl;
+          notice = 'Profile picture updated.';
+        });
       }
     } catch (e) {
       if (mounted) setState(() => error = e.toString());
@@ -175,9 +183,6 @@ class _VaeProfileSheetState extends State<VaeProfileSheet> {
                           Semantics(liveRegion: true, child: Text(notice!)),
                         VaePrimaryButton('Save profile',
                             busy: busy, onPressed: save),
-                        TextButton(
-                            onPressed: widget.onTheme,
-                            child: const Text('Change appearance')),
                         TextButton(
                             onPressed: () {
                               Navigator.pop(context);

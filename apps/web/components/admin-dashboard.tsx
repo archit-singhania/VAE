@@ -1,5 +1,7 @@
 "use client";
 
+import { Activity, BarChart3, Bot, CheckCircle2, Clock3, RefreshCw } from "lucide-react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import type { AdminOverview } from "@/lib/api";
 
@@ -13,15 +15,26 @@ export function AdminDashboard({
 }: {
   data: AdminOverview | null;
   section: AdminSection;
-  onRefresh: () => void;
+  onRefresh: () => void | Promise<void>;
 }) {
+  const [refreshing, setRefreshing] = useState(false);
+  const refresh = async () => {
+    if (refreshing) return;
+    setRefreshing(true);
+    try {
+      await onRefresh();
+    } finally {
+      setRefreshing(false);
+    }
+  };
   if (!data)
     return (
       <section className="live-panel">
         <h1>Customer operations</h1>
         <p>Usage data is not available yet.</p>
-        <Button size="sm" onClick={onRefresh}>
-          Refresh report
+        <Button size="sm" onClick={() => void refresh()} disabled={refreshing}>
+          <RefreshCw size={14} className={refreshing ? "live-spin" : undefined} />
+          {refreshing ? "Refreshing…" : "Refresh report"}
         </Button>
       </section>
     );
@@ -69,22 +82,36 @@ export function AdminDashboard({
               ["Generated assets", totals.generated_assets],
               ["Published posts", totals.published],
             ];
+  const sectionIcon = {
+    overview: Activity,
+    media: Bot,
+    publishing: Clock3,
+    analytics: BarChart3,
+  }[section];
+  const SectionIcon = sectionIcon;
   return (
     <div className="admin-dashboard">
       <header className="admin-heading">
-        <p className="live-kicker">VAE administration</p>
-        <h1>{headings[section][0]}</h1>
-        <p>{headings[section][1]}</p>
-        <small>
-          Updated {new Date(data.generated_at).toLocaleString()} · Operational KPIs only
-        </small>
-        <Button size="sm" variant="secondary" onClick={onRefresh}>
-          Refresh report
+        <div className="admin-heading-copy">
+          <p className="live-kicker">
+            <SectionIcon size={14} /> VAE administration
+          </p>
+          <h1>{headings[section][0]}</h1>
+          <p>{headings[section][1]}</p>
+          <small>
+            <CheckCircle2 size={13} /> Updated {new Date(data.generated_at).toLocaleString()} ·
+            Operational KPIs
+          </small>
+        </div>
+        <Button size="sm" variant="secondary" onClick={() => void refresh()} disabled={refreshing}>
+          <RefreshCw size={14} className={refreshing ? "live-spin" : undefined} />
+          {refreshing ? "Refreshing…" : "Refresh report"}
         </Button>
       </header>
       <div className="admin-stat-grid">
-        {cards.map(([label, value]) => (
+        {cards.map(([label, value], index) => (
           <article className="live-panel" key={label}>
+            <i>{String(index + 1).padStart(2, "0")}</i>
             <span>{label}</span>
             <strong>{number(Number(value))}</strong>
           </article>

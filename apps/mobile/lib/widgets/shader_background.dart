@@ -146,7 +146,7 @@ class _StaticFallback extends StatelessWidget {
           gradient: RadialGradient(
             center: Alignment(0.55, -0.72),
             radius: 1.15,
-            colors: [Color(0x1FC4855A), Color(0x0006070A)],
+            colors: [Color(0x24E5485D), Color(0x0006070A)],
           ),
         ),
         child: DecoratedBox(
