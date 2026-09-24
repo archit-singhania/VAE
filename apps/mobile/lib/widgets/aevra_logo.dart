@@ -159,13 +159,31 @@ class AevraWordmark extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Image.asset(
-      admin
-          ? 'assets/branding/vae_admin_horizontal_512.png'
-          : 'assets/branding/vae_creator_horizontal_512.png',
-      height: markSize * 1.35,
-      fit: BoxFit.contain,
-      filterQuality: FilterQuality.medium,
+    final light = Theme.of(context).brightness == Brightness.light;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        AevraMark(size: markSize, admin: true),
+        SizedBox(width: markSize * .32),
+        Text.rich(
+          TextSpan(children: [
+            const TextSpan(
+                text: 'V', style: TextStyle(color: Color(0xFF4F8CFF))),
+            TextSpan(
+                text: 'AE',
+                style: TextStyle(
+                    color: light ? const Color(0xFF111318) : Colors.white)),
+          ]),
+          semanticsLabel: 'VAE',
+          style: TextStyle(
+            fontFamily: 'PlayfairDisplay',
+            fontSize: fontSize,
+            fontWeight: FontWeight.w600,
+            letterSpacing: fontSize * .08,
+            height: 1,
+          ),
+        ),
+      ],
     );
   }
 }

@@ -2938,6 +2938,163 @@ html[data-theme="light"] .live-auth-card {
   }
 }
 
+/* Portal chrome: a theme-safe lockup with a blue V and adaptive AE. */
+.brand-lockup {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+}
+.brand-lockup > img,
+.landing-nav .brand-lockup > img,
+.live-sidebar .brand-lockup > img {
+  width: 42px;
+  height: 42px;
+  max-width: none;
+  flex: 0 0 42px;
+  object-fit: contain;
+  filter: drop-shadow(0 6px 16px rgba(79, 140, 255, 0.2));
+  transition:
+    transform 240ms ease,
+    filter 240ms ease;
+}
+.brand-lockup:hover > img {
+  transform: rotate(-5deg) scale(1.04);
+  filter: drop-shadow(0 8px 22px rgba(79, 140, 255, 0.38));
+}
+.brand-wordmark {
+  display: inline-flex;
+  align-items: baseline;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 27px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+.brand-wordmark b {
+  color: #4f8cff;
+  font: inherit;
+  transition:
+    color 240ms ease,
+    text-shadow 240ms ease;
+}
+.brand-wordmark em {
+  color: #fff;
+  font: inherit;
+  font-style: normal;
+  transition:
+    color 240ms ease,
+    text-shadow 240ms ease;
+}
+html[data-theme="light"] .brand-wordmark em {
+  color: #111318;
+}
+.brand-lockup:hover .brand-wordmark b {
+  text-shadow: 0 0 18px rgba(79, 140, 255, 0.5);
+}
+.landing-nav .brand-wordmark {
+  font-size: 29px;
+}
+.live-sidebar .brand-lockup {
+  justify-content: flex-start;
+}
+.live-sidebar .brand-lockup > button {
+  margin-left: auto;
+}
+
+/* The 3D scene is the actual backdrop. Content hierarchy comes from cards,
+   not a second full-page veil placed over the renderer. */
+.live-app .live-main,
+.live-app .live-content,
+.admin-app .live-content,
+.live-app:not(.admin-app) .live-content {
+  background: transparent;
+  background-color: transparent;
+  backdrop-filter: none;
+}
+
+/* Compact, repeatable tab headers. Every destination keeps its own title
+   while giving the operational content most of the viewport. */
+.live-content .admin-heading,
+.ml-studio > .admin-heading {
+  min-height: 0;
+  padding: 18px 22px;
+  border: 1px solid var(--line-strong);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--panel) 88%, transparent);
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.14);
+  backdrop-filter: blur(16px);
+  animation: compact-header-in 360ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.live-content .admin-heading h1,
+.ml-studio > .admin-heading h1 {
+  margin: 3px 0 4px;
+  font-size: clamp(25px, 3vw, 36px);
+  line-height: 1.04;
+}
+.live-content .admin-heading p,
+.ml-studio > .admin-heading p {
+  max-width: 72ch;
+  margin-block: 0;
+  line-height: 1.45;
+}
+.live-content .admin-heading small {
+  margin-top: 7px;
+}
+.ml-studio > .admin-heading {
+  display: block;
+}
+.live-content .live-hero {
+  min-height: 0;
+  padding: 22px 24px;
+  border-radius: 20px;
+  animation: compact-header-in 360ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.live-content .live-hero h1 {
+  margin-block: 5px;
+  font-size: clamp(28px, 4vw, 42px);
+  line-height: 1.05;
+}
+@keyframes compact-header-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.992);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+@media (max-width: 600px) {
+  .brand-lockup > img,
+  .landing-nav .brand-lockup > img,
+  .live-sidebar .brand-lockup > img {
+    width: 36px;
+    height: 36px;
+    flex-basis: 36px;
+  }
+  .brand-wordmark,
+  .landing-nav .brand-wordmark {
+    font-size: 23px;
+  }
+  .live-content .admin-heading,
+  .ml-studio > .admin-heading {
+    padding: 16px 18px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .brand-lockup > img,
+  .brand-wordmark b,
+  .brand-wordmark em,
+  .live-content .admin-heading,
+  .ml-studio > .admin-heading,
+  .live-content .live-hero {
+    animation: none;
+    transition: none;
+  }
+}
+
 /* Light mode keeps the video stage dark, so copy that sits directly on the
    moving image must use its own high-contrast ink. Card/form text remains
    governed by the light surface tokens above. */
@@ -7971,5 +8128,59 @@ main.live-auth > .live-auth-card {
   }
   .admin-heading {
     padding: 22px;
+  }
+}
+
+/* Final portal-shell overrides. Kept last because this stylesheet contains
+   earlier legacy generations of the same dashboard selectors. */
+.brand-lockup > img,
+.landing-nav .brand-lockup > img,
+.live-sidebar .brand-lockup > img {
+  width: 42px;
+  height: 42px;
+  max-width: none;
+  flex: 0 0 42px;
+}
+.live-app .live-main,
+.live-app .live-content,
+.admin-app .live-content,
+.live-app:not(.admin-app) .live-content {
+  background: transparent;
+  background-color: transparent;
+  backdrop-filter: none;
+}
+.live-content .admin-heading,
+.ml-studio > .admin-heading {
+  min-height: 0;
+  padding: 18px 22px;
+  border-radius: 18px;
+  align-items: center;
+  background: color-mix(in srgb, var(--panel) 88%, transparent);
+}
+.live-content .admin-heading h1,
+.ml-studio > .admin-heading h1 {
+  margin: 3px 0 4px;
+  font-size: clamp(25px, 3vw, 36px);
+  line-height: 1.04;
+}
+.ml-studio > .admin-heading {
+  display: block;
+}
+.live-content .live-hero {
+  min-height: 0;
+  padding: 22px 24px;
+}
+.live-content .live-hero h1 {
+  margin-block: 5px;
+  font-size: clamp(28px, 4vw, 42px);
+  line-height: 1.05;
+}
+@media (max-width: 600px) {
+  .brand-lockup > img,
+  .landing-nav .brand-lockup > img,
+  .live-sidebar .brand-lockup > img {
+    width: 36px;
+    height: 36px;
+    flex-basis: 36px;
   }
 }

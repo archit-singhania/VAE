@@ -1145,14 +1145,11 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
           <header className="landing-nav">
             <div className="live-logo brand-lockup">
               {/* biome-ignore lint/performance/noImgElement: static brand SVG */}
-              <img
-                src={
-                  adminPortal
-                    ? "/brand/vae-admin-horizontal.svg"
-                    : "/brand/vae-creator-horizontal.svg"
-                }
-                alt="VAE"
-              />
+              <img src="/brand/vae-admin-icon.svg" alt="" />
+              <span className="brand-wordmark" role="img" aria-label="VAE">
+                <b>V</b>
+                <em>AE</em>
+              </span>
             </div>
             <div className="landing-nav-links">
               <button
@@ -3145,14 +3142,11 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
         <aside className={cn("live-sidebar", sidebar && "open")}>
           <div className="live-logo brand-lockup">
             {/* biome-ignore lint/performance/noImgElement: static brand SVG */}
-            <img
-              src={
-                user?.is_admin
-                  ? "/brand/vae-admin-horizontal.svg"
-                  : "/brand/vae-creator-horizontal.svg"
-              }
-              alt="VAE"
-            />
+            <img src="/brand/vae-admin-icon.svg" alt="" />
+            <span className="brand-wordmark" role="img" aria-label="VAE">
+              <b>V</b>
+              <em>AE</em>
+            </span>
             <button onClick={() => setSidebar(false)} aria-label="Close">
               <X size={17} />
             </button>

@@ -485,7 +485,8 @@ class _TopBar extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(AevraSpace.lg, 10, AevraSpace.xs, 10),
       child: Row(
         children: [
-          AevraMark(size: 30, admin: state.user?.isAdmin == true),
+          AevraWordmark(
+              markSize: 30, fontSize: 20, admin: state.user?.isAdmin == true),
           const SizedBox(width: AevraSpace.sm),
           Flexible(
             child: Text(

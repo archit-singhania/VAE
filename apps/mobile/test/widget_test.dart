@@ -58,7 +58,8 @@ void main() {
       expect(tester.getSize(find.byType(AevraMark)), const Size(44, 44));
     });
 
-    testWidgets('wordmark uses the production creator lockup', (tester) async {
+    testWidgets('wordmark combines the production mark and adaptive name',
+        (tester) async {
       await tester.pumpWidget(
         MaterialApp(
           theme: AevraTheme.dark,
@@ -66,9 +67,8 @@ void main() {
         ),
       );
 
-      final image = tester.widget<Image>(find.byType(Image));
-      expect((image.image as AssetImage).assetName,
-          'assets/branding/vae_creator_horizontal_512.png');
+      expect(find.byType(AevraMark), findsOneWidget);
+      expect(find.byType(RichText), findsWidgets);
     });
   });
 }
