@@ -2815,6 +2815,9 @@ html[data-theme="light"] .live-auth-card {
   -webkit-mask:
     linear-gradient(#fff 0 0) content-box,
     linear-gradient(#fff 0 0);
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
   pointer-events: none;
@@ -4458,6 +4461,9 @@ html.theme-transition::view-transition-new(root) {
     rgba(var(--glass-sheen), 0.06) 100%
   );
   -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask:
     linear-gradient(#000 0 0) content-box,
     linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
@@ -6641,49 +6647,69 @@ html[data-theme="light"] {
   margin: 0;
 }
 
-/* Always-visible glass navigation so sign-in is never scrolled out of view. */
+/* Always-visible glass navigation so sign-in is never scrolled out of view.
+   `position: fixed` is used deliberately (not `sticky`) so this never has to
+   fight the `.live-auth` grid's own column/percentage math — it sits in its
+   own layer above everything, pinned to the viewport, full stop. A matching
+   `.landing-nav-spacer` reserves the same height in normal flow so page
+   content is pushed down and never sits underneath it. */
 .landing-nav {
-  grid-column: 1 / -1;
-  position: sticky;
+  position: fixed;
   top: 0;
-  z-index: 6;
+  left: 0;
+  right: 0;
+  z-index: 50;
   display: flex;
   align-items: center;
+  flex-wrap: nowrap;
   gap: 14px;
-  width: 100vw;
-  margin-left: calc(50% - 50vw);
-  margin-right: calc(50% - 50vw);
-  margin-bottom: 48px;
-  padding: 16px clamp(20px, 8vw, 8vw);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(10, 11, 13, 0.55);
-  backdrop-filter: blur(20px) saturate(160%);
-  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  height: 68px;
+  padding: 0 clamp(20px, 5vw, 64px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(8, 9, 11, 0.86);
+  backdrop-filter: blur(22px) saturate(160%);
+  -webkit-backdrop-filter: blur(22px) saturate(160%);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.28);
 }
 html[data-theme="light"] .landing-nav {
-  border-bottom-color: rgba(20, 22, 27, 0.08);
-  background: rgba(245, 243, 238, 0.6);
+  border-bottom-color: rgba(20, 22, 27, 0.1);
+  background: rgba(250, 249, 246, 0.92);
+  box-shadow: 0 12px 40px rgba(20, 22, 27, 0.1);
+}
+.landing-nav-spacer {
+  grid-column: 1 / -1;
+  height: 68px;
+  width: 100%;
 }
 .landing-nav .live-logo {
   margin: 0;
+  flex: 0 0 auto;
 }
 .landing-nav-links {
   display: flex;
   align-items: center;
   gap: 10px;
   margin-left: auto;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.landing-nav-links::-webkit-scrollbar {
+  display: none;
 }
 .landing-nav-cta {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  flex: 0 0 auto;
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 30px;
-  padding: 10px 18px;
-  background: rgba(255, 255, 255, 0.06);
+  padding: 9px 16px;
+  background: rgba(255, 255, 255, 0.1);
   color: var(--text);
   font-size: 12px;
   font-weight: 600;
+  white-space: nowrap;
   cursor: pointer;
   transition:
     border-color 0.2s,
@@ -6691,8 +6717,9 @@ html[data-theme="light"] .landing-nav {
     transform 0.2s;
 }
 html[data-theme="light"] .landing-nav-cta {
-  border-color: rgba(20, 22, 27, 0.12);
-  background: rgba(255, 255, 255, 0.5);
+  border-color: rgba(20, 22, 27, 0.16);
+  background: rgba(20, 22, 27, 0.05);
+  color: var(--text-strong, var(--text));
 }
 .landing-nav-cta:hover {
   border-color: var(--accent);
@@ -6708,16 +6735,19 @@ html[data-theme="light"] .landing-nav-cta {
 }
 @media (max-width: 900px) {
   .landing-nav {
-    margin-bottom: 34px;
-    flex-wrap: wrap;
+    height: 60px;
+    padding: 0 16px;
+    gap: 10px;
+  }
+  .landing-nav-spacer {
+    height: 60px;
   }
   .landing-nav-links {
-    margin-left: 0;
-    width: 100%;
+    margin-left: auto;
     justify-content: flex-start;
   }
-  .landing-nav-cta span {
-    display: none;
+  .landing-nav-cta {
+    padding: 8px 12px;
   }
 }
 
@@ -7197,5 +7227,389 @@ html[data-theme="light"] .landing-insight-strip {
 @media (max-width: 1000px) {
   .publishing-layout {
     grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ==========================================================================
+   LANDING / AUTH PAGE — FINAL AUTHORITATIVE PASS
+   Everything above stacks many generations of `.live-auth` rules (fixed
+   heights, overflow: hidden, card max-height, translucent fills, muted greys).
+   This block is intentionally last and uses `main.live-auth` specificity so it
+   wins regardless of source order. It owns: page layout, the pinned nav, the
+   glass sign-in card, and text contrast in BOTH themes.
+   ========================================================================== */
+
+/* --- tokens: dark (default) ------------------------------------------- */
+main.live-auth {
+  --nav-h: 68px;
+  --lp-ink: #f7f5ef;
+  --lp-ink-soft: rgba(247, 245, 239, 0.88);
+  --lp-placeholder: rgba(247, 245, 239, 0.55);
+  --lp-nav: rgba(9, 10, 13, 0.9);
+  --lp-btn: rgba(255, 255, 255, 0.12);
+  --lp-card: rgba(12, 14, 18, 0.8);
+  --lp-panel: rgba(12, 14, 18, 0.66);
+  --lp-chip: rgba(12, 14, 18, 0.55);
+  --lp-border: rgba(255, 255, 255, 0.22);
+  --lp-field: rgba(255, 255, 255, 0.09);
+  --lp-field-border: rgba(255, 255, 255, 0.3);
+  --lp-shadow: 0 1px 0 rgba(255, 255, 255, 0.16) inset, 0 30px 90px rgba(0, 0, 0, 0.5);
+  --lp-text-shadow: 0 2px 22px rgba(0, 0, 0, 0.65);
+}
+/* --- tokens: light ---------------------------------------------------- */
+html[data-theme="light"] main.live-auth {
+  --lp-ink: #14161b;
+  --lp-ink-soft: #2b2f38;
+  --lp-placeholder: #5d6370;
+  --lp-nav: rgba(250, 249, 246, 0.94);
+  --lp-btn: rgba(20, 22, 27, 0.06);
+  --lp-card: rgba(255, 255, 255, 0.9);
+  --lp-panel: rgba(255, 255, 255, 0.8);
+  --lp-chip: rgba(255, 255, 255, 0.78);
+  --lp-border: rgba(20, 22, 27, 0.2);
+  --lp-field: #ffffff;
+  --lp-field-border: rgba(20, 22, 27, 0.32);
+  --lp-shadow: 0 1px 0 rgba(255, 255, 255, 0.8) inset, 0 30px 80px rgba(20, 22, 27, 0.2);
+  --lp-text-shadow: 0 1px 16px rgba(255, 255, 255, 0.8);
+}
+
+/* --- page layout ------------------------------------------------------ */
+main.live-auth {
+  height: auto;
+  min-height: 100dvh;
+  overflow: visible;
+  align-items: center;
+  align-content: start;
+  grid-template-columns: minmax(0, 1fr) minmax(340px, 470px);
+  gap: clamp(28px, 6vw, 96px);
+  padding-top: calc(var(--nav-h) + clamp(28px, 5vw, 72px));
+  padding-bottom: clamp(32px, 5vw, 72px);
+  padding-inline: clamp(16px, 6vw, 96px);
+}
+main.live-auth > .landing-nav-spacer {
+  display: none;
+}
+
+/* --- pinned glass nav ------------------------------------------------- */
+main.live-auth > .landing-nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  height: var(--nav-h);
+  padding: 0 clamp(14px, 4vw, 56px);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--lp-ink);
+  background: var(--lp-nav);
+  border-bottom: 1px solid var(--lp-border);
+  backdrop-filter: blur(22px) saturate(160%);
+  -webkit-backdrop-filter: blur(22px) saturate(160%);
+  box-shadow: 0 10px 34px rgba(0, 0, 0, 0.22);
+}
+main.live-auth .landing-nav .live-logo,
+main.live-auth .landing-nav .live-logo b {
+  color: var(--lp-ink);
+}
+main.live-auth .landing-nav-links {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  min-width: 0;
+  overflow: visible;
+}
+main.live-auth .landing-nav-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  flex: 0 0 auto;
+  height: 40px;
+  min-height: 40px;
+  padding: 0 16px;
+  border: 1px solid var(--lp-border);
+  border-radius: 999px;
+  background: var(--lp-btn);
+  color: var(--lp-ink);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+}
+main.live-auth .landing-nav-cta span {
+  color: inherit;
+}
+main.live-auth .landing-nav-cta:hover {
+  border-color: var(--accent);
+}
+main.live-auth .landing-nav-cta.primary {
+  border-color: transparent;
+  background: var(--accent);
+  color: var(--accent-ink);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+}
+main.live-auth .landing-nav-cta.primary:hover {
+  background: var(--accent-strong);
+}
+main.live-auth .landing-nav-cta:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+main.live-auth .nav-short {
+  display: none;
+}
+
+/* --- hero copy: readable over the video in either theme --------------- */
+main.live-auth > section:not(.landing-story) h1 {
+  max-width: 12ch;
+  color: var(--lp-ink);
+  text-shadow: var(--lp-text-shadow);
+}
+main.live-auth > section:not(.landing-story) > p:not(.live-kicker) {
+  max-width: 46ch;
+  color: var(--lp-ink-soft);
+  font-size: 15px;
+  text-shadow: var(--lp-text-shadow);
+}
+main.live-auth > section:not(.landing-story) .live-kicker {
+  text-shadow: var(--lp-text-shadow);
+}
+main.live-auth .live-auth-points {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 26px;
+}
+main.live-auth .live-auth-points span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border: 1px solid var(--lp-border);
+  border-radius: 999px;
+  background: var(--lp-chip);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  color: var(--lp-ink);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+main.live-auth .live-auth-points svg {
+  color: var(--accent);
+}
+
+/* --- sign-in / sign-up glass card ------------------------------------ */
+main.live-auth > .live-auth-card {
+  width: 100%;
+  max-width: 480px;
+  justify-self: end;
+  max-height: none;
+  overflow: visible;
+  padding: clamp(22px, 3vw, 34px);
+  scroll-margin-top: calc(var(--nav-h) + 18px);
+  color: var(--lp-ink);
+  background: var(--lp-card);
+  border: 1px solid var(--lp-border);
+  border-radius: 26px;
+  backdrop-filter: blur(26px) saturate(150%);
+  -webkit-backdrop-filter: blur(26px) saturate(150%);
+  box-shadow: var(--lp-shadow);
+}
+main.live-auth .live-auth-card h2 {
+  color: var(--lp-ink);
+}
+main.live-auth .live-auth-card p:not(.live-kicker) {
+  color: var(--lp-ink-soft);
+  font-size: 14px;
+}
+main.live-auth .live-auth-card .live-field > span:first-child {
+  color: var(--lp-ink);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+main.live-auth .live-auth-card input {
+  background: var(--lp-field);
+  border: 1px solid var(--lp-field-border);
+  color: var(--lp-ink);
+}
+main.live-auth .live-auth-card input::placeholder {
+  color: var(--lp-placeholder);
+  opacity: 1;
+}
+main.live-auth .live-auth-card input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 35%, transparent);
+  outline: none;
+}
+main.live-auth .live-auth-card .password-control button {
+  color: var(--lp-ink-soft);
+}
+main.live-auth .live-auth-card .live-tabs {
+  border-bottom: 1px solid var(--lp-border);
+}
+main.live-auth .live-auth-card .live-tabs button {
+  flex: 1 1 auto;
+  color: var(--lp-ink-soft);
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+}
+main.live-auth .live-auth-card .live-tabs button.active {
+  color: var(--lp-ink);
+  border-bottom-color: var(--accent);
+}
+main.live-auth .live-auth-card .live-full-button {
+  width: 100%;
+  min-height: 48px;
+  border: 0;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 700;
+}
+main.live-auth .live-auth-card .live-full-button:hover:not(:disabled) {
+  background: var(--accent-strong);
+}
+main.live-auth .login-portal-link {
+  display: block;
+  color: var(--lp-ink-soft);
+  font-size: 13px;
+  text-align: center;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+main.live-auth .live-payment-card h2,
+main.live-auth .live-payment-card strong {
+  color: var(--lp-ink);
+}
+main.live-auth .live-payment-card code {
+  color: var(--lp-ink);
+}
+
+/* Creator / Business picker */
+main.live-auth .account-type-option {
+  background: var(--lp-field);
+  border: 1px solid var(--lp-field-border);
+  color: var(--lp-ink);
+}
+main.live-auth .account-type-option strong {
+  color: var(--lp-ink);
+  font-size: 14px;
+}
+main.live-auth .account-type-option small {
+  color: var(--lp-ink-soft);
+  font-size: 11.5px;
+}
+main.live-auth .account-type-option.active {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 22%, var(--lp-field));
+  box-shadow: 0 0 0 1px var(--accent) inset;
+}
+main.live-auth .account-type-option.active::after {
+  content: "\2713";
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  color: var(--accent);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+/* --- story section under the hero ------------------------------------- */
+main.live-auth .landing-story {
+  margin-top: clamp(48px, 8vw, 96px);
+}
+main.live-auth .landing-story h2,
+main.live-auth .landing-story h3 {
+  color: var(--lp-ink);
+  text-shadow: var(--lp-text-shadow);
+}
+main.live-auth .landing-story h2 em,
+main.live-auth .landing-story p,
+main.live-auth .landing-story footer {
+  color: var(--lp-ink-soft);
+}
+main.live-auth .landing-story-grid article,
+main.live-auth .landing-insight-strip {
+  background: var(--lp-panel);
+  border: 1px solid var(--lp-border);
+  color: var(--lp-ink);
+  backdrop-filter: blur(22px) saturate(150%);
+  -webkit-backdrop-filter: blur(22px) saturate(150%);
+}
+main.live-auth .landing-story-grid article h3,
+main.live-auth .landing-story-grid article p,
+main.live-auth .landing-insight-strip h3,
+main.live-auth .landing-insight-strip p {
+  text-shadow: none;
+}
+
+/* --- tablet / phone --------------------------------------------------- */
+@media (max-width: 900px) {
+  main.live-auth {
+    --nav-h: 60px;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 24px;
+  }
+  main.live-auth > .live-auth-card {
+    justify-self: center;
+    max-width: 560px;
+  }
+  main.live-auth .live-auth-points {
+    display: none;
+  }
+  main.live-auth > section:not(.landing-story) h1 {
+    max-width: 14ch;
+    font-size: clamp(32px, 9vw, 46px);
+  }
+  main.live-auth .landing-nav-cta .nav-label {
+    display: none;
+  }
+  main.live-auth .landing-story-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  main.live-auth .landing-insight-strip {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 26px;
+  }
+  main.live-auth .landing-orbit {
+    display: none;
+  }
+}
+@media (max-width: 720px) {
+  main.live-auth .nav-long,
+  main.live-auth .landing-nav-cta.nav-secondary {
+    display: none;
+  }
+  main.live-auth .nav-short {
+    display: inline;
+  }
+  main.live-auth .landing-nav-cta {
+    padding: 0 14px;
+  }
+}
+@media (max-width: 380px) {
+  main.live-auth .landing-nav .live-logo {
+    font-size: 16px;
+    letter-spacing: 0.16em;
+  }
+  main.live-auth .landing-nav-cta {
+    padding: 0 11px;
+    font-size: 12px;
+  }
+}
+
+/* Users who ask the OS for less transparency get solid surfaces. */
+@media (prefers-reduced-transparency: reduce) {
+  main.live-auth {
+    --lp-nav: var(--bg);
+    --lp-card: var(--panel);
+    --lp-panel: var(--panel);
+    --lp-chip: var(--panel);
   }
 }

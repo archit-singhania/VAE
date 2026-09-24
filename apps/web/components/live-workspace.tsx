@@ -241,7 +241,7 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
   const authCardRef = useRef<HTMLFormElement>(null);
   const focusAuthCard = useCallback((nextMode?: "login" | "register") => {
     if (nextMode) setMode(nextMode);
-    authCardRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    authCardRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     window.setTimeout(() => {
       authCardRef.current?.querySelector<HTMLInputElement>("input")?.focus();
     }, 260);
@@ -1124,9 +1124,14 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
               <b>VAE</b>
             </div>
             <div className="landing-nav-links">
-              <button type="button" className="landing-nav-cta" onClick={toggleTheme}>
-                {theme === "dark" ? <Sun size={15} /> : <Moon size={15} />}
-                <span>{theme === "dark" ? "Light" : "Dark"}</span>
+              <button
+                type="button"
+                className="landing-nav-cta"
+                onClick={toggleTheme}
+                aria-label={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
+              >
+                {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
+                <span className="nav-label">{theme === "dark" ? "Light" : "Dark"}</span>
               </button>
               {!adminPortal && (
                 <button
@@ -1134,7 +1139,8 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
                   className="landing-nav-cta"
                   onClick={() => focusAuthCard("login")}
                 >
-                  <span>Creator / Business sign in</span>
+                  <span className="nav-long">Creator / Business sign in</span>
+                  <span className="nav-short">Sign in</span>
                 </button>
               )}
               <button
@@ -1142,9 +1148,12 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
                 className="landing-nav-cta primary"
                 onClick={() => focusAuthCard(adminPortal ? undefined : "register")}
               >
-                <span>{adminPortal ? "Administrator sign in" : "Get started"}</span>
+                <span className="nav-long">
+                  {adminPortal ? "Administrator sign in" : "Get started"}
+                </span>
+                <span className="nav-short">{adminPortal ? "Sign in" : "Get started"}</span>
               </button>
-              <a className="landing-nav-cta" href={adminPortal ? "/" : "/admin"}>
+              <a className="landing-nav-cta nav-secondary" href={adminPortal ? "/" : "/admin"}>
                 <ShieldCheck size={14} />
                 <span>{adminPortal ? "Creator sign in" : "Admin sign in"}</span>
               </a>
