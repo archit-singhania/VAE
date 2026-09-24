@@ -1,8 +1,8 @@
 # VAE ML features and implementation audit
 
-Date: 2026-09-23. Model contract: `vae-ml-v1`.
+Date: 2026-09-24. Model contracts: `vae-ml-v1` and `vae-advanced-v1`.
 
-Implemented in the API, web dashboard and Flutter app. These are local statistical ML models fitted to each workspace's own stored data, not additional LLM prompts. They run on explicit request, return reviewable suggestions, and do not modify content, schedules, accounts, payments or permissions.
+All thirteen features are implemented in the API, web dashboard and Flutter app. These are local statistical ML models fitted to each workspace's own stored data, not additional LLM prompts. They run on explicit request, return reviewable suggestions, and do not modify content, schedules, accounts, payments or permissions.
 
 ## Ten features
 
@@ -20,6 +20,39 @@ Implemented in the API, web dashboard and Flutter app. These are local statistic
 | 10. Seven-day engagement forecast | Estimate near-term engagement on existing tracked posts | Autoregressive ridge using previous day, seven-day mean and weekly lag | 35 consecutive daily snapshots for a stable post cohort, fresh telemetry, no counter resets, and successful recursive holdout validation |
 
 “Comparable posts” have positive impressions and a sample collected 6–8 days after publication. The closest sample to seven days is selected. Engagement rate is engagements per 100 impressions; it is not a probability and is not necessarily capped at 100.
+
+## Three advanced features (11–13)
+
+| Feature | What it shows | Method | Safeguard |
+|---|---|---|---|
+| 11. Content-performance map | Explore up to 500 saved captions, their wording themes, platform and measured seven-day outcomes | TF-IDF, two-dimensional TruncatedSVD and deterministic K-means | Map axes show lexical proximity and retained variance; position is explicitly not quality. Zero outcome and missing outcome are different. |
+| 12. Draft comparison lab | Compare two drafts at the same platform and posting time | The validated Ridge model estimates rates, then 60 deterministic week-block resamples show the central 10th–90th percentile delta range | Requires the existing holdout gates, six weeks and at least 30 valid resamples. This is model resampling, not a calibrated future interval or causal lift. It points out structural-caption features and asks users to confirm with a controlled test. |
+| 13. Data health and distribution shift | Inspect seven-day label coverage, collection freshness, 35-day observation gaps and recent platform outcome distributions | Matched mature publish jobs, UTC daily observation counts, two 14-day outcome windows, KS distance and 199 label permutations | Requires at least ten platform outcomes per period. Repeated monitoring, dependent posts and confounding limit the permutation interpretation. An unobserved day is not zero engagement. |
+
+The advanced API is authenticated at `POST /api/v1/workspaces/{workspace_id}/ml/advanced`. It returns the three independently status-labeled sections under the same workspace and inference bounds. The web table supports selecting map points without a pointer; Flutter exposes point selection by tap and a caption selector.
+
+## Creation, publishing and appearance updates
+
+- Generated images use a sanitized, readable filename based on the user's original prompt, with a unique ID suffix. Original prompt metadata remains unchanged.
+- Generated captions and images can be created in either order. A caption editor can generate, import or edit text and hashtags, preview the result, and save it to a selected asset. A previously generated caption can also be paired in the asset lobby. Pairings are workspace-scoped asset metadata.
+- Caption imports accept UTF-8 TXT/Markdown or text PDFs up to 2 MB, with a 20-page PDF limit and 30,000 extracted-character cap. Scanned PDFs are explained as needing OCR; no OCR or file execution is performed. Import is previewed before use. Uploading caption source files never creates media assets.
+- Media uploads appear in Publish, where generated assets and uploads can be combined in a batch of up to four. The review dialog states that each asset is a separate post to each selected channel, with the reviewed caption. Now and future schedules share the same account, caption, asset and confirmation requirements.
+- Social providers fetch assets themselves, so dispatch creates a signed HTTPS media link expiring in one hour. Local/private object storage uses `AEVRA_PUBLIC_API_BASE_URL` (public HTTPS API origin, no trailing slash); publicly reachable HTTPS object storage can use its native presigned URL. Scheduled jobs retain only the workspace asset download path and mint a new time-limited link when the worker dispatches.
+- The scheduled-post worker atomically claims due items. Explicit retries reuse a resettable idempotent job, so a failed provider call can be attempted again without duplicating a completed post. Calendar cells use device-local scheduling time consistently with the schedule field and require confirmation.
+- The sign-in landing page adds a restrained animated product tour, reduced-motion support and an icon theme toggle. Creator work areas keep light/dark icons; password visibility changes immediately. Admin styling retains its separate sign-in and operational data boundaries.
+
+## Expanded audit: this turn
+
+| Area | Finding / control | Remaining limitation |
+|---|---|---|
+| Asset delivery | Signed links are bound to workspace and asset, use constant-time HMAC verification, HTTPS, one-hour expiry and `private, no-store`; no OAuth token or filename enters the signature. | Local/private storage requires the API's public HTTPS origin in deployment. Confirm public reachability and production CDN/provider requirements for Instagram/Facebook before rollout. |
+| Caption file handling | Authenticated workspace editor check precedes 2 MB bounded reads. PDF page and output size are bounded; malformed/encrypted/empty documents fail closed; UTF-8 and extensions are checked. | Scanned PDF text requires a separate OCR capability. |
+| Publishing | Tests cover publish now, deferred schedule, worker dispatch, retry, stable idempotency and per-asset provider delivery. Worker compare-and-set prevents duplicate concurrent claims. | Provider credentials, public external networks, platform approval and actual publishing cannot be proven by local mocked-provider tests. |
+| Batch semantics | Maximum of four assets; caption applies consistently and each asset/channel pair gets a separate status and stable idempotency key. | Different per-channel or per-asset copy still requires separate submissions. |
+| Accessibility and layout | Browser checked map keyboard/table selection, theme and schedule review. Flutter widgets check the advanced calendar at 320 px; browser publishing calendar checked at 390 px. Reduced-motion preference suppresses decorative landing animation. | This is automated/local browser coverage, not a full assistive-technology or physical-device audit. |
+| UI scope | Removed “API connected” status copy and asset upload from Create. Landing page includes a mode toggle; admin remains on the separate portal and data views. | Existing active admin/customer authorization policies and production accounts still need deployment-level review. |
+
+This is an implementation self-audit, not an independent security certification or live-provider delivery test.
 
 ## Access and integration
 
@@ -49,12 +82,12 @@ No unresolved access-control failure was found in the tests performed. This is a
 
 ## Verification evidence
 
-- API regression suite: **80 tests passed**, including **14 ML-specific tests**.
+- API regression suite: **95 tests passed**, including the existing ML/advanced tests and six new caption, delivery, and scheduler tests.
 - ML-specific tests cover all ten feature paths, empty/punctuation-only/unseen vocabularies, deterministic text results, unsupported platforms, baseline rejection, delayed-label purging, out-of-range drafts, outliers, recursive forecasts, missing days, counter resets, auth, tenant boundaries, input limits, stored hashtag metadata and inference contention.
-- Web formatting, TypeScript and optimized Next.js production build pass.
+- Web Biome formatting, TypeScript and optimized Next.js production build pass.
 - Browser: real ML engine with synthetic local fixture; ten rendered results, stale-input notice, and 390px responsive layout checked. No live tenant writes or provider calls.
-- Flutter: **analysis clean; 11 tests passed**. Added a 320px widget test covering analysis submission, withheld predictions and stale-input messaging.
-- Synthetic local benchmark: 120 posts, 10 text examples and 35 daily snapshots; all ten feature paths returned ready in **0.415 seconds** after import. Not a cold-start, maximum-load, remote-host or production benchmark.
+- Flutter: **analysis clean; 12 tests passed**. Added 320px widget coverage for all three advanced labs, missing-data calendar, stale results, caption pairing and publish input.
+- Synthetic local benchmark: 120 posts, 10 text examples and 35 daily snapshots; all ten base feature paths returned results in **0.415 seconds** after import. Not a cold-start, maximum-load, remote-host or production benchmark.
 - Synthetic prediction validation: 89 training samples, 7 purged samples and 24 holdout samples; MAE **0.0393** versus median baseline **0.758** engagements per 100 impressions.
 - Synthetic recursive forecast: seven-day MAE **5.733** versus weekly baseline **14.0** engagements. One fixed synthetic post cohort.
 

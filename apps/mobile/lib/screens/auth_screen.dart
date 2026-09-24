@@ -10,9 +10,10 @@ import '../widgets/shader_background.dart';
 /// The mobile counterpart of the web app's `.live-auth` screen — same
 /// shader background + glass auth card, same login/register fields.
 class AuthScreen extends StatefulWidget {
-  const AuthScreen({super.key, required this.state});
+  const AuthScreen({super.key, required this.state, this.onToggleTheme});
 
   final AppState state;
+  final VoidCallback? onToggleTheme;
 
   @override
   State<AuthScreen> createState() => _AuthScreenState();
@@ -63,6 +64,14 @@ class _AuthScreenState extends State<AuthScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(title: const Text('VAE'), actions: [
+        IconButton(
+            onPressed: widget.onToggleTheme,
+            tooltip: 'Switch light / dark mode',
+            icon: Icon(Theme.of(context).brightness == Brightness.dark
+                ? Icons.light_mode_outlined
+                : Icons.dark_mode_outlined))
+      ]),
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Stack(
         children: [

@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import hashlib
 import io
+import re
 import tempfile
+import unicodedata
 import uuid
 from typing import Any, Literal, cast
 
@@ -45,6 +47,15 @@ PLATFORM_SIZES: dict[str, tuple[int, int, str]] = {
     "facebook": (1200, 630, "1.91:1"),
     "youtube": (1280, 720, "16:9"),
 }
+
+
+def prompt_filename(prompt: str, asset_id: uuid.UUID, suffix: str = "") -> str:
+    words = re.findall(
+        r"[a-z0-9]+",
+        unicodedata.normalize("NFKD", prompt).encode("ascii", "ignore").decode().lower(),
+    )
+    stem = "-".join(words[:9])[:72].strip("-") or "creative"
+    return f"{stem}{suffix}-{str(asset_id)[:8]}.png"
 
 
 class MediaService:
@@ -168,6 +179,15 @@ class MediaService:
         self.session.commit()
         return asset
 
+    def save_caption(
+        self, user_id: uuid.UUID, workspace_id: uuid.UUID, asset_id: uuid.UUID, caption: str
+    ) -> MediaAsset:
+        self._require_editor(user_id, workspace_id)
+        asset = self.get_asset(user_id, workspace_id, asset_id)
+        asset.asset_metadata = {**asset.asset_metadata, "caption": caption}
+        self.session.commit()
+        return asset
+
     def attach_asset(
         self,
         user_id: uuid.UUID,
@@ -250,7 +270,7 @@ class MediaService:
             asset_role="generated",
             status="ready",
             storage_key=source_key,
-            filename=f"aevra-{source_id}.png",
+            filename=prompt_filename(request.name_prompt or request.prompt, source_id),
             mime_type=result.image.content_type,
             bytes_size=len(result.image.data),
             sha256=result.image.sha256,
@@ -282,7 +302,9 @@ class MediaService:
                         platform=platform,
                         status="ready",
                         storage_key=storage_key,
-                        filename=f"aevra-{platform}-{asset_id}.png",
+                        filename=prompt_filename(
+                            request.name_prompt or request.prompt, asset_id, f"-{platform}"
+                        ),
                         mime_type=encoded.content_type,
                         bytes_size=len(encoded.data),
                         sha256=encoded.sha256,

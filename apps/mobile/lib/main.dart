@@ -90,7 +90,10 @@ class _AevraAppState extends State<AevraApp> {
                     darkMode: darkMode,
                     onToggleTheme: _toggleTheme,
                   )
-                : AuthScreen(key: const ValueKey('auth'), state: state),
+                : AuthScreen(
+                    key: const ValueKey('auth'),
+                    state: state,
+                    onToggleTheme: _toggleTheme),
           );
         },
       ),

@@ -73,6 +73,9 @@ void main() {
     await tester.ensureVisible(find.text('Generate image'));
     await tester.tap(find.text('Generate image'));
     await tester.pumpAndSettle();
+    expect(find.text('Caption & hashtags'), findsWidgets);
+    await tester.tap(find.text('Later'));
+    await tester.pumpAndSettle();
     expect(api.generations, 1);
     expect(s.assets.length, 1);
     await tester.pumpWidget(const SizedBox());
@@ -87,10 +90,10 @@ void main() {
         theme: AevraTheme.dark,
         home: Scaffold(body: ScheduleScreen(state: s))));
     await tester.ensureVisible(find.text('Review post'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Review post'));
     await tester.pumpAndSettle();
-    expect(find.text('Choose a channel and add media or a caption.'),
-        findsOneWidget);
+    expect(find.text('Choose a channel and add a caption.'), findsOneWidget);
     expect(find.byType(AlertDialog), findsNothing);
   });
 

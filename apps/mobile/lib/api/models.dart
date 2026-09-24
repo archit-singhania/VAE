@@ -135,6 +135,8 @@ class KnowledgeDocument {
 }
 
 class MediaAsset {
+  final String caption;
+  final String prompt;
   final String id;
   final String filename;
   final String mediaType;
@@ -143,6 +145,8 @@ class MediaAsset {
   final String createdAt;
 
   MediaAsset({
+    this.caption = '',
+    this.prompt = '',
     required this.id,
     required this.filename,
     required this.mediaType,
@@ -152,6 +156,8 @@ class MediaAsset {
   });
 
   factory MediaAsset.fromJson(Map<String, dynamic> json) => MediaAsset(
+        caption: (json['asset_metadata'] as Map?)?['caption'] as String? ?? '',
+        prompt: json['prompt'] as String? ?? '',
         id: json['id'] as String,
         filename: json['filename'] as String? ?? '',
         mediaType: json['media_type'] as String? ?? 'image',

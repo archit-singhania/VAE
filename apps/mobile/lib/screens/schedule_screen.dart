@@ -3,6 +3,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../api/models.dart';
 import '../state/app_state.dart';
 import '../widgets/vae_ui.dart';
+import '../widgets/caption_studio.dart';
 
 class ScheduleScreen extends StatefulWidget {
   const ScheduleScreen({super.key, required this.state});
@@ -15,6 +16,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   late final TextEditingController caption =
       TextEditingController(text: widget.state.draftCaption);
   final selected = <String>{};
+  final extraAssets = <String>{};
   final delivery = <String, String>{};
   DateTime? when;
   bool busy = false;
@@ -43,6 +45,10 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   Future<void> upload() async {
     final s = widget.state;
     if (s.token == null || s.workspace == null) return;
+    if (extraAssets.length + (s.publishAssetId == null ? 0 : 1) >= 4) {
+      setState(() => error = 'Select up to four assets.');
+      return;
+    }
     setState(() {
       busy = true;
       error = null;
@@ -51,7 +57,11 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       final asset = await s.client.pickAndUpload(s.token!, s.workspace!.id);
       if (asset != null) {
         s.prependAssets([asset]);
-        s.selectForPublishing(asset.id);
+        if (s.publishAssetId == null) {
+          s.selectForPublishing(asset.id);
+        } else {
+          extraAssets.add(asset.id);
+        }
       }
     } catch (e) {
       if (mounted) setState(() => error = e.toString());
@@ -63,9 +73,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   Future<void> publish() async {
     final s = widget.state;
     if (s.token == null || s.workspace == null) return;
-    if (selected.isEmpty ||
-        (caption.text.trim().isEmpty && s.publishAssetId == null)) {
-      setState(() => error = 'Choose a channel and add media or a caption.');
+    if (selected.isEmpty || caption.text.trim().isEmpty) {
+      setState(() => error = 'Choose a channel and add a caption.');
       return;
     }
     if (when != null && !when!.isAfter(DateTime.now())) {
@@ -82,8 +91,10 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
               title: Text(
                   when == null ? 'Publish this post?' : 'Schedule this post?'),
               content: SingleChildScrollView(
-                  child: Text(
-                      '$names\n\n${caption.text}\n\n${when?.toLocal().toString() ?? 'Publish now'}')),
+                  child: Text('$names\n${{
+                        if (s.publishAssetId != null) s.publishAssetId!,
+                        ...extraAssets
+                      }.length.clamp(1, 4) * selected.length} separate posts, one asset per channel.\n\n${caption.text}\n\n${when?.toLocal().toString() ?? 'Publish now'}')),
               actions: [
                 TextButton(
                     onPressed: () => Navigator.pop(context, false),
@@ -99,30 +110,36 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       error = null;
       delivery.clear();
     });
-    final asset = s.assets.where((a) => a.id == s.publishAssetId).firstOrNull;
-    for (final id in selected.toList()) {
-      try {
-        final result = await s.client.publish(
-            s.token!,
-            s.workspace!.id,
-            {
-              'campaign_id': null,
-              'social_account_id': id,
-              'idempotency_key':
-                  'vae-mobile-${DateTime.now().microsecondsSinceEpoch}-$id',
-              'text': caption.text.trim(),
-              'media_urls':
-                  asset?.downloadUrl == null ? [] : [asset!.downloadUrl],
-              if (when != null)
-                'scheduled_for': when!.toUtc().toIso8601String(),
-            },
-            schedule: when != null);
-        if (mounted) {
-          setState(
-              () => delivery[id] = result['status'] as String? ?? 'queued');
+    final ids = {
+      if (s.publishAssetId != null) s.publishAssetId!,
+      ...extraAssets
+    };
+    for (final assetId in ids.isEmpty ? [''] : ids) {
+      final asset = s.assets.where((a) => a.id == assetId).firstOrNull;
+      for (final id in selected.toList()) {
+        try {
+          final result = await s.client.publish(
+              s.token!,
+              s.workspace!.id,
+              {
+                'campaign_id': null,
+                'social_account_id': id,
+                'idempotency_key':
+                    'vae-mobile-${DateTime.now().microsecondsSinceEpoch}-$id',
+                'text': caption.text.trim(),
+                'media_urls':
+                    asset?.downloadUrl == null ? [] : [asset!.downloadUrl],
+                if (when != null)
+                  'scheduled_for': when!.toUtc().toIso8601String(),
+              },
+              schedule: when != null);
+          if (mounted) {
+            setState(() => delivery['$id:$assetId'] =
+                result['status'] as String? ?? 'queued');
+          }
+        } catch (e) {
+          if (mounted) setState(() => delivery['$id:$assetId'] = 'Failed: $e');
         }
-      } catch (e) {
-        if (mounted) setState(() => delivery[id] = 'Failed: $e');
       }
     }
     await s.load();
@@ -208,7 +225,42 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                               child: Text(a.filename,
                                   overflow: TextOverflow.ellipsis)))
                     ],
-                    onChanged: busy ? null : (id) => s.selectForPublishing(id)),
+                    onChanged: busy
+                        ? null
+                        : (id) {
+                            s.selectForPublishing(id);
+                            extraAssets.remove(id);
+                            final asset =
+                                s.assets.where((a) => a.id == id).firstOrNull;
+                            if (asset != null && asset.caption.isNotEmpty) {
+                              caption.text = asset.caption;
+                              s.draftCaption = asset.caption;
+                            }
+                          }),
+                const Text(
+                    'Mix generated assets and uploads. Each selected asset becomes a separate post with the caption below.'),
+                ...s.assets
+                    .where(
+                        (a) => a.status == 'ready' && a.id != s.publishAssetId)
+                    .map((a) => CheckboxListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(a.filename),
+                        value: extraAssets.contains(a.id),
+                        onChanged: busy ||
+                                (!extraAssets.contains(a.id) &&
+                                    extraAssets.length +
+                                            (s.publishAssetId == null
+                                                ? 0
+                                                : 1) >=
+                                        4)
+                            ? null
+                            : (v) => setState(() {
+                                  if (v == true) {
+                                    extraAssets.add(a.id);
+                                  } else {
+                                    extraAssets.remove(a.id);
+                                  }
+                                }))),
                 OutlinedButton.icon(
                     onPressed: busy ? null : upload,
                     icon: const Icon(Icons.upload),
@@ -236,7 +288,22 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                     minLines: 3,
                     maxLines: 8,
                     onChanged: (v) => s.draftCaption = v,
-                    decoration: const InputDecoration(labelText: '3. Caption')),
+                    decoration: const InputDecoration(
+                        labelText: '3. Caption & hashtags')),
+                TextButton.icon(
+                    onPressed: busy
+                        ? null
+                        : () async {
+                            final value = await showDialog<String>(
+                                context: context,
+                                builder: (_) => CaptionStudio(
+                                    state: s, initial: caption.text));
+                            if (value != null && mounted) {
+                              setState(() => caption.text = value);
+                            }
+                          },
+                    icon: const Icon(Icons.auto_awesome),
+                    label: const Text('Generate or import caption')),
                 const SizedBox(height: 16),
                 Wrap(spacing: 12, children: [
                   OutlinedButton(
@@ -261,7 +328,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                     busy: busy, onPressed: publish),
                 ...delivery.entries.map((e) => ListTile(
                     title: Text(s.accounts
-                            .where((a) => a.id == e.key)
+                            .where((a) => a.id == e.key.split(':').first)
                             .firstOrNull
                             ?.displayName ??
                         'Channel'),

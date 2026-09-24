@@ -284,6 +284,37 @@ class AevraApiClient {
             .toList(),
       );
 
+  Future<MediaAsset> saveAssetCaption(
+          String token, String workspaceId, String assetId, String caption) =>
+      _request('/workspaces/$workspaceId/media/assets/$assetId/caption',
+          method: 'PATCH',
+          token: token,
+          body: {'caption': caption},
+          parse: (json) => MediaAsset.fromJson(json as Map<String, dynamic>));
+
+  Future<String?> pickCaption(String token, String workspaceId) async {
+    final selection = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf', 'txt', 'md'],
+        withData: true);
+    if (selection == null) return null;
+    final file = selection.files.single;
+    if (file.bytes == null || file.size > 2 * 1024 * 1024) {
+      throw ApiException('Choose a readable file of 2 MB or smaller.', 400);
+    }
+    final request = http.MultipartRequest(
+        'POST', _uri('/workspaces/$workspaceId/media/captions/extract'))
+      ..headers['Authorization'] = 'Bearer $token'
+      ..files.add(http.MultipartFile.fromBytes('file', file.bytes!,
+          filename: file.name));
+    final response = await http.Response.fromStream(await request.send());
+    if (response.statusCode >= 300) {
+      throw ApiException('Use UTF-8 text or a text PDF of up to 20 pages.',
+          response.statusCode);
+    }
+    return (jsonDecode(response.body) as Map)['text'] as String;
+  }
+
   Future<MediaAsset?> pickAndUpload(String token, String workspaceId,
       {bool imagesOnly = false}) async {
     final selection = await FilePicker.platform.pickFiles(
@@ -333,6 +364,22 @@ class AevraApiClient {
           token: token,
           body: {'current_password': current, 'new_password': next},
           parse: (_) {});
+  Future<Map<String, dynamic>> advancedInsights(
+          String token,
+          String workspaceId,
+          String draft,
+          String alternativeDraft,
+          String platform) =>
+      _request('/workspaces/$workspaceId/ml/advanced',
+          token: token,
+          method: 'POST',
+          body: {
+            'draft': draft,
+            'alternative_draft': alternativeDraft,
+            'platform': platform
+          },
+          parse: (json) => Map<String, dynamic>.from(json as Map));
+
   Future<Map<String, dynamic>> mlInsights(
           String token, String workspaceId, String draft, String platform) =>
       _request('/workspaces/$workspaceId/ml/insights',

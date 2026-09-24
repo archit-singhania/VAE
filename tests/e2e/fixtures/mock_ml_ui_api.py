@@ -7,11 +7,12 @@ from http.server import ThreadingHTTPServer
 from mock_ui_api import Handler
 
 from aevra_api.services.ml_insights import History, analyze
+from aevra_api.services.advanced_analytics import advanced_analyze
 
 
 class MlHandler(Handler):
     def do_POST(self):
-        if not self.path.endswith('/ml/insights'):
+        if not self.path.endswith(('/ml/insights', '/ml/advanced')):
             return super().do_POST()
         payload = json.loads(self.rfile.read(int(self.headers.get('Content-Length', '0'))))
         captions = [f'Fresh coffee roast {i} with espresso aroma #coffee #roast{i}' for i in range(5)]
@@ -34,7 +35,8 @@ class MlHandler(Handler):
         for i in range(35):
             total += 10 + i * 2
             history.daily[(now - timedelta(days=34 - i)).date()] = {'demo': total}
-        report = analyze(history, payload.get('draft', ''), payload.get('platform', 'instagram'))
+        history.quality = {'mature_published_posts': 150, 'mature_matched_posts': 120, 'metric_samples': 500, 'latest_metric_at': now.isoformat()}
+        report = advanced_analyze(history, payload.get('draft', ''), payload.get('alternative_draft', ''), payload.get('platform', 'instagram')) if self.path.endswith('/ml/advanced') else analyze(history, payload.get('draft', ''), payload.get('platform', 'instagram'))
         self.send_response(200)
         self.send_header('Content-Type', 'application/json')
         self.end_headers()

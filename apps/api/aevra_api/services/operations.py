@@ -5,7 +5,7 @@ from datetime import UTC, datetime
 
 from sqlalchemy.orm import Session
 
-from aevra_api.db.models import AuditLog, PostMetric, ScheduledPost
+from aevra_api.db.models import AuditLog, PostMetric, PublishJob, ScheduledPost
 from aevra_api.domain.errors import ConflictError, ForbiddenError, NotFoundError
 from aevra_api.repositories.operations import OperationsRepository
 from aevra_api.repositories.publishing import PublishingRepository
@@ -42,9 +42,10 @@ class OperationsService:
         self._editor(user_id, workspace_id)
         if request.scheduled_for <= datetime.now(UTC):
             raise ConflictError("scheduled_for must be in the future")
-        if request.campaign_id is not None and self.publishing.campaign(
-            user_id, workspace_id, request.campaign_id
-        ) is None:
+        if (
+            request.campaign_id is not None
+            and self.publishing.campaign(user_id, workspace_id, request.campaign_id) is None
+        ):
             raise NotFoundError("Referenced content group not found")
         account = self.publishing.account(user_id, workspace_id, request.social_account_id)
         if account is None or account.status != "connected":
@@ -159,6 +160,10 @@ class OperationsService:
             raise NotFoundError("Scheduled post not found")
         if item.status != "failed":
             raise ConflictError("Only failed posts can be retried")
+        if item.published_job_id:
+            failed_job = self.session.get(PublishJob, item.published_job_id)
+            if failed_job is not None and failed_job.status == "failed":
+                failed_job.status = "queued"
         item.status = "scheduled"
         item.attempts += 1
         item.error_message = None
