@@ -236,6 +236,9 @@ class VaeBottomNav extends StatelessWidget {
                     icon: Icon(Icons.schedule_outlined), label: 'Publishing'),
                 NavigationDestination(
                     icon: Icon(Icons.insights_outlined), label: 'Analytics'),
+                NavigationDestination(
+                    icon: Icon(Icons.verified_user_outlined),
+                    label: 'Payments'),
               ]
             : const [
                 NavigationDestination(
@@ -246,6 +249,8 @@ class VaeBottomNav extends StatelessWidget {
                     icon: Icon(Icons.schedule_outlined), label: 'Publish'),
                 NavigationDestination(
                     icon: Icon(Icons.insights_outlined), label: 'Analytics'),
+                NavigationDestination(
+                    icon: Icon(Icons.psychology_outlined), label: 'ML'),
               ],
       );
 }

@@ -209,6 +209,15 @@ class _AdvancedScreenState extends State<AdvancedScreen> {
           MapEntry('Engagements', totals['engagements'] ?? 0),
           MapEntry('Clicks', totals['clicks'] ?? 0),
         ],
+      'payments' => [
+          MapEntry('Awaiting review',
+              payments.where((p) => p['status'] == 'under_review').length),
+          MapEntry('Approved',
+              payments.where((p) => p['status'] == 'approved').length),
+          MapEntry('Rejected',
+              payments.where((p) => p['status'] == 'rejected').length),
+          MapEntry('Total submissions', payments.length),
+        ],
       _ => [
           MapEntry('Customers', overview?['users_total'] ?? 0),
           MapEntry('Approved', overview?['users_approved'] ?? 0),
@@ -222,13 +231,16 @@ class _AdvancedScreenState extends State<AdvancedScreen> {
         'media' => 'AI & media usage',
         'publishing' => 'Publishing operations',
         'analytics' => 'Customer analytics',
+        'payments' => 'Payment review',
         _ => 'Customer overview',
       };
 
   Widget adminBody(BuildContext context) {
-    final detailItems = widget.adminSection == 'media'
-        ? (overview?['models'] as List? ?? const [])
-        : (overview?['platforms'] as List? ?? const []);
+    final detailItems = widget.adminSection == 'payments'
+        ? const []
+        : widget.adminSection == 'media'
+            ? (overview?['models'] as List? ?? const [])
+            : (overview?['platforms'] as List? ?? const []);
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       VaePageHeader(adminTitle,
           'Live operational reporting across customers and workspaces.'),
@@ -267,7 +279,7 @@ class _AdvancedScreenState extends State<AdvancedScreen> {
               })
             ])),
       const SizedBox(height: 24),
-      if (widget.adminSection == 'overview') ...[
+      if (widget.adminSection == 'payments') ...[
         Text('Payment review',
             style: Theme.of(context).textTheme.headlineSmall),
         const SizedBox(height: 12),
@@ -306,8 +318,9 @@ class _AdvancedScreenState extends State<AdvancedScreen> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-      appBar: AppBar(
-          title: Text(widget.admin ? 'Admin dashboard' : 'Brand knowledge')),
+      backgroundColor: Colors.transparent,
+      appBar:
+          widget.admin ? null : AppBar(title: const Text('Brand knowledge')),
       body: VaeScaffold(children: [
         if (busy) const LinearProgressIndicator(),
         if (error != null)

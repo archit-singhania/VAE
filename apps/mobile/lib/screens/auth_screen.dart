@@ -64,7 +64,7 @@ class _AuthScreenState extends State<AuthScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('VAE'), actions: [
+      appBar: AppBar(title: const AevraWordmark(markSize: 28), actions: [
         IconButton(
             onPressed: widget.onToggleTheme,
             tooltip: 'Switch light / dark mode',

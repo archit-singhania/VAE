@@ -5,6 +5,7 @@ import 'screens/analytics_screen.dart';
 import 'screens/advanced_screen.dart';
 import 'screens/auth_screen.dart';
 import 'screens/media_screen.dart';
+import 'screens/ml_insights_screen.dart';
 import 'screens/overview_screen.dart';
 import 'screens/schedule_screen.dart';
 import 'state/app_state.dart';
@@ -381,64 +382,73 @@ class _MobileShellState extends State<MobileShell> {
                 state: widget.state, admin: true, adminSection: 'publishing'),
             AdvancedScreen(
                 state: widget.state, admin: true, adminSection: 'analytics'),
+            AdvancedScreen(
+                state: widget.state, admin: true, adminSection: 'payments'),
           ]
         : [
             OverviewScreen(state: widget.state, onNavigate: _go),
             MediaScreen(state: widget.state, onPublish: () => _go(2)),
             ScheduleScreen(state: widget.state),
             AnalyticsScreen(state: widget.state),
+            MlInsightsScreen(state: widget.state),
           ];
     final titles = admin
-        ? const ['Home', 'AI usage', 'Publishing', 'Analytics']
-        : const ['Home', 'Create', 'Publish', 'Analytics'];
-    const icons = [
+        ? const ['Home', 'AI usage', 'Publishing', 'Analytics', 'Payments']
+        : const ['Home', 'Create', 'Publish', 'Analytics', 'ML insights'];
+    final icons = [
       Icons.space_dashboard_outlined,
       Icons.auto_awesome_outlined,
       Icons.schedule_outlined,
-      Icons.insights_outlined
+      Icons.insights_outlined,
+      admin ? Icons.verified_user_outlined : Icons.psychology_outlined,
     ];
     return Theme(
       data: admin ? AevraTheme.adminDark : Theme.of(context),
       child: Scaffold(
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        body: SafeArea(
-            child: Column(children: [
-          _TopBar(
-              title: titles[index],
-              state: widget.state,
-              sound: widget.sound,
-              onOpenPalette: _openCommandPalette,
-              onOpenProfile: _openProfile),
-          if (widget.state.loading) const LinearProgressIndicator(minHeight: 2),
-          if (widget.state.error != null)
-            Padding(
-                padding: const EdgeInsets.all(12),
-                child: Semantics(
-                    liveRegion: true,
-                    child: Text(widget.state.error!,
-                        style: TextStyle(
-                            color: Theme.of(context).colorScheme.error)))),
-          Expanded(
-              child: Row(children: [
-            if (wide)
-              NavigationRail(
-                  selectedIndex: index,
-                  onDestinationSelected: _go,
-                  labelType: NavigationRailLabelType.all,
-                  destinations: [
-                    for (var i = 0; i < 4; i++)
-                      NavigationRailDestination(
-                          icon: Icon(icons[i]), label: Text(titles[i]))
-                  ]),
+        backgroundColor: Colors.transparent,
+        body: Stack(children: [
+          Positioned.fill(
+              child: RepaintBoundary(child: ShaderBackground(admin: admin))),
+          SafeArea(
+              child: Column(children: [
+            _TopBar(
+                title: titles[index],
+                state: widget.state,
+                sound: widget.sound,
+                onOpenPalette: _openCommandPalette,
+                onOpenProfile: _openProfile),
+            if (widget.state.loading)
+              const LinearProgressIndicator(minHeight: 2),
+            if (widget.state.error != null)
+              Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Semantics(
+                      liveRegion: true,
+                      child: Text(widget.state.error!,
+                          style: TextStyle(
+                              color: Theme.of(context).colorScheme.error)))),
             Expanded(
-                child: AnimatedSwitcher(
-              duration: MediaQuery.disableAnimationsOf(context)
-                  ? Duration.zero
-                  : const Duration(milliseconds: 260),
-              child: KeyedSubtree(key: ValueKey(index), child: pages[index]),
-            )),
+                child: Row(children: [
+              if (wide)
+                NavigationRail(
+                    selectedIndex: index,
+                    onDestinationSelected: _go,
+                    labelType: NavigationRailLabelType.all,
+                    destinations: [
+                      for (var i = 0; i < 5; i++)
+                        NavigationRailDestination(
+                            icon: Icon(icons[i]), label: Text(titles[i]))
+                    ]),
+              Expanded(
+                  child: AnimatedSwitcher(
+                duration: MediaQuery.disableAnimationsOf(context)
+                    ? Duration.zero
+                    : const Duration(milliseconds: 260),
+                child: KeyedSubtree(key: ValueKey(index), child: pages[index]),
+              )),
+            ])),
           ])),
-        ])),
+        ]),
         bottomNavigationBar: wide
             ? null
             : VaeBottomNav(index: index, onSelected: _go, admin: admin),
@@ -475,7 +485,7 @@ class _TopBar extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(AevraSpace.lg, 10, AevraSpace.xs, 10),
       child: Row(
         children: [
-          const AevraMark(size: 25),
+          AevraMark(size: 30, admin: state.user?.isAdmin == true),
           const SizedBox(width: AevraSpace.sm),
           Flexible(
             child: Text(

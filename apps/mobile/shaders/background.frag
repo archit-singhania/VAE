@@ -12,6 +12,7 @@ precision highp float;
 // Do not reorder these without updating the painter.
 uniform vec2 uSize;
 uniform float uTime;
+uniform float uAdmin;
 
 out vec4 fragColor;
 
@@ -58,7 +59,9 @@ void main() {
   // a cool jade one low-left, and a wide frost wash through the middle that
   // ties the two together instead of leaving them as two unrelated blobs.
   vec3 bg = vec3(0.024, 0.027, 0.039);
-  vec3 copper = vec3(0.769, 0.522, 0.353);
+  vec3 creator = vec3(0.898, 0.282, 0.365);
+  vec3 admin = vec3(0.310, 0.549, 1.0);
+  vec3 accent = mix(creator, admin, uAdmin);
   vec3 jade = vec3(0.306, 0.612, 0.510);
   vec3 frost = vec3(0.561, 0.655, 0.761);
 
@@ -67,7 +70,7 @@ void main() {
   float frostMask = smoothstep(0.20, 0.58, field * 0.6 + 0.2) * smoothstep(0.05, 0.62, 1.0 - length(aspectUv - vec2(0.5, 0.52)));
 
   vec3 color = bg;
-  color += copper * copperMask * 0.115;
+  color += accent * copperMask * 0.145;
   color += jade * jadeMask * 0.085;
   color += frost * frostMask * 0.042;
 

@@ -238,6 +238,7 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
   const [profileAvatar, setProfileAvatar] = useState("");
   const [profileAvatarBusy, setProfileAvatarBusy] = useState(false);
   const avatarInputRef = useRef<HTMLInputElement>(null);
+  const prefetchedSessionUser = useRef<User | null>(null);
   const authCardRef = useRef<HTMLFormElement>(null);
   const focusAuthCard = useCallback((nextMode?: "login" | "register") => {
     if (nextMode) setMode(nextMode);
@@ -496,17 +497,29 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
     async (accessToken: string) => {
       setBusy("load");
       try {
-        const me = await api.me(accessToken);
+        // Identity and workspace membership are independent requests. Starting
+        // them together removes a full network round-trip from sign-in,
+        // especially noticeable when the API is waking from an idle deploy.
+        const cachedUser = prefetchedSessionUser.current;
+        prefetchedSessionUser.current = null;
+        const [me, workspaces] = await Promise.all([
+          cachedUser ? Promise.resolve(cachedUser) : api.me(accessToken),
+          api.workspaces(accessToken),
+        ]);
         if (me.is_admin !== adminPortal) {
           window.location.replace(me.is_admin ? "/admin" : "/");
           return;
         }
         setUser(me);
-        const workspaces = await api.workspaces(accessToken);
         if (me.is_admin) {
           setWorkspace(workspaces[0] ?? null);
-          const overview = await api.adminOverview(accessToken);
-          setAdminOverview(overview);
+          setBusy(null);
+          void api
+            .adminOverview(accessToken)
+            .then(setAdminOverview)
+            .catch((caught) =>
+              setError(caught instanceof Error ? caught.message : "Unable to load admin report."),
+            );
           return;
         }
         const nextWorkspace = workspaces[0];
@@ -562,7 +575,10 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
     window.localStorage.removeItem(legacyTokenKey);
     api
       .me(browserSession)
-      .then(() => setToken(browserSession))
+      .then((me) => {
+        prefetchedSessionUser.current = me;
+        setToken(browserSession);
+      })
       .catch(() => setToken(null));
   }, []);
   useEffect(() => {
@@ -1122,14 +1138,21 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
     return (
       <MotionConfig reducedMotion="user">
         <main className={cn("live-auth", adminPortal && "admin-auth")}>
-          <WebglBackground />
+          <WebglBackground variant={adminPortal ? "admin" : "creator"} />
           <HeroVideo />
           <div className="hero-video-overlay" aria-hidden="true" />
           <GrainOverlay />
           <header className="landing-nav">
-            <div className="live-logo">
-              <span />
-              <b>VAE</b>
+            <div className="live-logo brand-lockup">
+              {/* biome-ignore lint/performance/noImgElement: static brand SVG */}
+              <img
+                src={
+                  adminPortal
+                    ? "/brand/vae-admin-horizontal.svg"
+                    : "/brand/vae-creator-horizontal.svg"
+                }
+                alt="VAE"
+              />
             </div>
             <div className="landing-nav-links">
               <button
@@ -2900,7 +2923,7 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
         className={cn("live-app", `view-${view}`, user?.is_admin && "admin-app")}
         data-theme={theme}
       >
-        {!user?.is_admin && <WebglBackground />}
+        <WebglBackground variant={user?.is_admin ? "admin" : "creator"} />
         <GrainOverlay />
         {paletteOpen && (
           <CommandPalette items={paletteItems} onClose={() => setPaletteOpen(false)} />
@@ -3120,9 +3143,16 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
           )}
         </AnimatePresence>
         <aside className={cn("live-sidebar", sidebar && "open")}>
-          <div className="live-logo">
-            <span />
-            <b>VAE</b>
+          <div className="live-logo brand-lockup">
+            {/* biome-ignore lint/performance/noImgElement: static brand SVG */}
+            <img
+              src={
+                user?.is_admin
+                  ? "/brand/vae-admin-horizontal.svg"
+                  : "/brand/vae-creator-horizontal.svg"
+              }
+              alt="VAE"
+            />
             <button onClick={() => setSidebar(false)} aria-label="Close">
               <X size={17} />
             </button>

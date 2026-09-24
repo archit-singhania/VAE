@@ -58,7 +58,7 @@ void main() {
       expect(tester.getSize(find.byType(AevraMark)), const Size(44, 44));
     });
 
-    testWidgets('wordmark pairs the mark with the VAE lockup', (tester) async {
+    testWidgets('wordmark uses the production creator lockup', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
           theme: AevraTheme.dark,
@@ -66,8 +66,9 @@ void main() {
         ),
       );
 
-      expect(find.byType(AevraMark), findsOneWidget);
-      expect(find.text('VAE'), findsOneWidget);
+      final image = tester.widget<Image>(find.byType(Image));
+      expect((image.image as AssetImage).assetName,
+          'assets/branding/vae_creator_horizontal_512.png');
     });
   });
 }

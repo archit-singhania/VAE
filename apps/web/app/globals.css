@@ -2938,6 +2938,31 @@ html[data-theme="light"] .live-auth-card {
   }
 }
 
+/* Light mode keeps the video stage dark, so copy that sits directly on the
+   moving image must use its own high-contrast ink. Card/form text remains
+   governed by the light surface tokens above. */
+html[data-theme="light"] main.live-auth > .landing-hero-copy,
+html[data-theme="light"] main.live-auth .landing-story-heading,
+html[data-theme="light"] main.live-auth .landing-story > footer {
+  --video-copy: #fffafc;
+  --video-copy-soft: rgba(255, 250, 252, 0.86);
+  --video-copy-shadow: 0 2px 4px rgba(0, 0, 0, 0.92), 0 8px 28px rgba(0, 0, 0, 0.82);
+}
+html[data-theme="light"] main.live-auth > .landing-hero-copy h1,
+html[data-theme="light"] main.live-auth > .landing-hero-copy > .live-kicker,
+html[data-theme="light"] main.live-auth .landing-story-heading h2,
+html[data-theme="light"] main.live-auth .landing-story-heading h2 em,
+html[data-theme="light"] main.live-auth .landing-story-heading > .live-kicker {
+  color: var(--video-copy);
+  text-shadow: var(--video-copy-shadow);
+}
+html[data-theme="light"] main.live-auth > .landing-hero-copy > p:not(.live-kicker),
+html[data-theme="light"] main.live-auth .landing-story-heading > p,
+html[data-theme="light"] main.live-auth .landing-story > footer {
+  color: var(--video-copy-soft);
+  text-shadow: var(--video-copy-shadow);
+}
+
 /* =================================================================
    Responsive application shell
 
@@ -7671,18 +7696,63 @@ main.live-auth .live-auth-card .password-control input {
 }
 main.live-auth .live-auth-card .password-control button {
   position: absolute;
-  top: 50%;
+  inset-block: 0;
   right: 8px;
   width: 36px;
   height: 36px;
-  margin: 0;
+  margin: auto 0;
   padding: 0;
   display: grid;
   place-items: center;
   border: 0;
   border-radius: 10px;
   background: transparent;
-  transform: translateY(-50%);
+  transform: none;
+}
+
+.brand-lockup {
+  min-width: 0;
+}
+.brand-lockup > img {
+  display: block;
+  width: auto;
+  height: 31px;
+  max-width: 150px;
+  object-fit: contain;
+  object-position: left center;
+}
+.landing-nav .brand-lockup > img {
+  height: 38px;
+  max-width: 168px;
+}
+.live-sidebar .brand-lockup {
+  justify-content: space-between;
+}
+.live-sidebar .brand-lockup > img {
+  height: 34px;
+  max-width: 142px;
+}
+.webgl-admin {
+  filter: hue-rotate(176deg) saturate(1.45) brightness(0.92);
+}
+.live-app .live-main,
+.live-app .live-content {
+  background-color: transparent;
+}
+.admin-app .live-content {
+  background:
+    radial-gradient(circle at 95% 0%, rgba(40, 101, 220, 0.14), transparent 30%),
+    rgba(8, 14, 26, 0.72);
+  backdrop-filter: blur(12px);
+}
+.live-app:not(.admin-app) .live-content {
+  background: linear-gradient(180deg, rgba(23, 16, 20, 0.58), rgba(23, 16, 20, 0.78));
+  backdrop-filter: blur(10px);
+}
+@media (prefers-reduced-motion: reduce), (max-width: 767px) {
+  .webgl-background {
+    display: none;
+  }
 }
 
 /* More deliberate landing-page composition. */
@@ -7806,7 +7876,9 @@ main.live-auth > .live-auth-card {
 }
 .admin-app .live-content {
   background:
-    radial-gradient(circle at 95% 0%, rgba(40, 101, 220, 0.12), transparent 30%), var(--bg);
+    radial-gradient(circle at 95% 0%, rgba(40, 101, 220, 0.14), transparent 30%),
+    rgba(8, 14, 26, 0.72);
+  backdrop-filter: blur(12px);
 }
 .admin-dashboard {
   gap: 28px;

@@ -138,8 +138,12 @@ class AppState extends ChangeNotifier {
     error = null;
     notifyListeners();
     try {
-      final me = await client.me(currentToken);
-      final workspaces = await client.workspaces(currentToken);
+      final identity = await Future.wait([
+        client.me(currentToken),
+        client.workspaces(currentToken),
+      ]);
+      final me = identity[0] as AevraUser;
+      final workspaces = identity[1] as List<Workspace>;
       final nextWorkspace = workspaces.isNotEmpty ? workspaces.first : null;
       user = me;
       workspace = nextWorkspace;

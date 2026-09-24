@@ -1,42 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="VAE">
-  <!--
-    The Nocturne mark: an open aperture ring with a deliberate notch at the
-    upper right, closed by a copper tick, and a monoline "A" inside it. The
-    notch is the point — a closed ring reads as a generic app chip, an
-    interrupted one reads as an instrument dial.
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 200" role="img" aria-label="VAE logo">
 
-    The ring and the tick are the same circle (r = 12.4, circumference
-    77.91) drawn twice with complementary dash patterns, so the tick lands
-    exactly in the notch no matter how the geometry is retuned: change the
-    gap length in one place and both follow.
-
-    Kept in sync with AevraMark in apps/mobile/lib/widgets/aevra_logo.dart.
-  -->
-  <defs>
-    <linearGradient id="copper" x1="10%" y1="0%" x2="90%" y2="100%">
-      <stop offset="0%" stop-color="#e0a87d"/>
-      <stop offset="55%" stop-color="#c4855a"/>
-      <stop offset="100%" stop-color="#9a5a2e"/>
-    </linearGradient>
-  </defs>
-
-  <rect width="32" height="32" rx="9" fill="#06070a"/>
-
-  <!-- Aperture ring — 320° of arc in the cool specular tint. -->
-  <circle cx="16" cy="16" r="12.4" fill="none"
-          stroke="#c6d0e2" stroke-opacity="0.3" stroke-width="2.2"
-          stroke-linecap="round" stroke-dasharray="69.25 8.66"/>
-
-  <!-- The tick closing the notch — the one saturated arc in the mark. -->
-  <circle cx="16" cy="16" r="12.4" fill="none"
-          stroke="url(#copper)" stroke-width="2.2"
-          stroke-linecap="round" stroke-dasharray="8.66 69.25" stroke-dashoffset="-69.25"/>
-
-  <!-- Monoline "A": apex, two legs, and a short low crossbar that keeps the
-       counter open at 16px, where a centred full-width bar closes the glyph
-       into a solid triangle. -->
-  <path d="M10.6 22.2 16 9.8 21.4 22.2" fill="none" stroke="url(#copper)"
-        stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M13.4 18.6h5.2" fill="none" stroke="url(#copper)" stroke-opacity="0.75"
-        stroke-width="1.8" stroke-linecap="round"/>
+<path id="mark" d="M 105 28 C 125 16 146 20 160 39 L 190 78 C 202 94 199 116 182 129 L 143 159 C 124 174 101 171 88 153 L 58 114 C 44 96 47 74 64 61 Z" fill="none" stroke="#D7A47A" stroke-width="10" stroke-linejoin="round" stroke-linecap="round" pathLength="1"/>
 </svg>

@@ -53,7 +53,7 @@ class _MlInsightsScreenState extends State<MlInsightsScreen> {
   Widget build(BuildContext context) {
     final features = (report?['features'] as List?) ?? [];
     return Scaffold(
-      appBar: AppBar(title: const Text('ML insights')),
+      backgroundColor: Colors.transparent,
       body: VaeScaffold(children: [
         const VaePageHeader('Learn from your work',
             'Ten workspace-local ML tools. Suggestions never publish or schedule automatically.'),
