@@ -2771,13 +2771,53 @@ html[data-theme="light"] .live-theme-toggle {
   overflow: hidden;
   display: grid;
   gap: 15px;
-  padding: 30px;
-  border: 1px solid rgba(196, 186, 168, 0.14);
-  border-radius: 18px;
-  background: linear-gradient(125deg, rgba(196, 186, 168, 0.05), rgba(196, 186, 168, 0.02));
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  box-shadow: 0 24px 90px rgba(0, 0, 0, 0.3);
+  padding: 34px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 22px;
+  background: linear-gradient(
+    140deg,
+    rgba(255, 255, 255, 0.12),
+    rgba(255, 255, 255, 0.04) 55%,
+    rgba(196, 186, 168, 0.05)
+  );
+  backdrop-filter: blur(30px) saturate(160%);
+  -webkit-backdrop-filter: blur(30px) saturate(160%);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.22) inset,
+    0 30px 100px rgba(0, 0, 0, 0.38);
+}
+html[data-theme="light"] .live-auth-card {
+  border-color: rgba(20, 22, 27, 0.1);
+  background: linear-gradient(
+    140deg,
+    rgba(255, 255, 255, 0.78),
+    rgba(255, 255, 255, 0.4) 55%,
+    rgba(255, 255, 255, 0.55)
+  );
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.6) inset,
+    0 30px 100px rgba(20, 22, 27, 0.16);
+}
+.live-auth-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    140deg,
+    rgba(255, 255, 255, 0.5),
+    rgba(255, 255, 255, 0) 30%,
+    rgba(255, 255, 255, 0) 70%,
+    rgba(201, 164, 92, 0.35)
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
 }
 .live-auth-card::after {
   content: "";
@@ -3709,12 +3749,12 @@ body {
   background:
     linear-gradient(
       115deg,
-      rgba(10, 11, 13, 0.94) 0%,
-      rgba(10, 11, 13, 0.74) 36%,
-      rgba(10, 11, 13, 0.32) 64%,
-      rgba(10, 11, 13, 0.8) 100%
+      rgba(10, 11, 13, 0.68) 0%,
+      rgba(10, 11, 13, 0.4) 36%,
+      rgba(10, 11, 13, 0.1) 64%,
+      rgba(10, 11, 13, 0.46) 100%
     ),
-    radial-gradient(circle at 78% 18%, rgba(201, 164, 92, 0.14), transparent 55%);
+    radial-gradient(circle at 78% 18%, rgba(201, 164, 92, 0.2), transparent 55%);
 }
 
 /* The original landing artwork is a QuickTime file. Keep it as the preferred
@@ -4646,11 +4686,11 @@ html[data-theme="light"] .hero-video-overlay {
   background:
     linear-gradient(
       115deg,
-      rgba(243, 241, 236, 0.92),
-      rgba(243, 241, 236, 0.55) 46%,
-      rgba(243, 241, 236, 0.8)
+      rgba(243, 241, 236, 0.66),
+      rgba(243, 241, 236, 0.32) 46%,
+      rgba(243, 241, 236, 0.52)
     ),
-    radial-gradient(circle at 78% 18%, rgba(141, 107, 44, 0.12), transparent 55%);
+    radial-gradient(circle at 78% 18%, rgba(141, 107, 44, 0.16), transparent 55%);
 }
 
 html[data-theme="light"] .hero-visual {
@@ -5470,12 +5510,17 @@ body {
   background:
     linear-gradient(
       115deg,
-      rgba(6, 7, 10, 0.94) 0%,
-      rgba(6, 7, 10, 0.74) 36%,
-      rgba(6, 7, 10, 0.3) 64%,
-      rgba(6, 7, 10, 0.82) 100%
+      rgba(6, 7, 10, 0.62) 0%,
+      rgba(6, 7, 10, 0.38) 36%,
+      rgba(6, 7, 10, 0.08) 64%,
+      rgba(6, 7, 10, 0.42) 100%
     ),
-    radial-gradient(circle at 78% 18%, rgba(var(--accent-rgb), 0.16), transparent 55%);
+    radial-gradient(circle at 78% 18%, rgba(var(--accent-rgb), 0.22), transparent 55%);
+}
+
+.hero-video-stage.has-video .hero-video {
+  opacity: 1;
+  filter: saturate(1.08) contrast(1.02);
 }
 
 /* ---- 9. layout density ----------------------------------------------
@@ -6595,6 +6640,135 @@ html[data-theme="light"] {
 .live-auth-brand-row .live-logo {
   margin: 0;
 }
+
+/* Always-visible glass navigation so sign-in is never scrolled out of view. */
+.landing-nav {
+  grid-column: 1 / -1;
+  position: sticky;
+  top: 0;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+  margin-bottom: 48px;
+  padding: 16px clamp(20px, 8vw, 8vw);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(10, 11, 13, 0.55);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+}
+html[data-theme="light"] .landing-nav {
+  border-bottom-color: rgba(20, 22, 27, 0.08);
+  background: rgba(245, 243, 238, 0.6);
+}
+.landing-nav .live-logo {
+  margin: 0;
+}
+.landing-nav-links {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+}
+.landing-nav-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 30px;
+  padding: 10px 18px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    border-color 0.2s,
+    background 0.2s,
+    transform 0.2s;
+}
+html[data-theme="light"] .landing-nav-cta {
+  border-color: rgba(20, 22, 27, 0.12);
+  background: rgba(255, 255, 255, 0.5);
+}
+.landing-nav-cta:hover {
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+.landing-nav-cta.primary {
+  border-color: transparent;
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+.landing-nav-cta.primary:hover {
+  background: var(--accent-strong);
+}
+@media (max-width: 900px) {
+  .landing-nav {
+    margin-bottom: 34px;
+    flex-wrap: wrap;
+  }
+  .landing-nav-links {
+    margin-left: 0;
+    width: 100%;
+    justify-content: flex-start;
+  }
+  .landing-nav-cta span {
+    display: none;
+  }
+}
+
+/* Premium creator / business account-type picker. */
+.account-type-picker {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.account-type-option {
+  position: relative;
+  display: grid;
+  gap: 4px;
+  padding: 14px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 0.2s,
+    background 0.2s,
+    transform 0.2s;
+}
+html[data-theme="light"] .account-type-option {
+  border-color: rgba(20, 22, 27, 0.1);
+  background: rgba(255, 255, 255, 0.5);
+}
+.account-type-option:hover {
+  transform: translateY(-2px);
+  border-color: rgba(201, 164, 92, 0.4);
+}
+.account-type-option strong {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+.account-type-option small {
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--muted);
+}
+.account-type-option.active {
+  border-color: var(--accent);
+  background: linear-gradient(
+    140deg,
+    color-mix(in srgb, var(--accent) 18%, transparent),
+    rgba(255, 255, 255, 0.03)
+  );
+  box-shadow: 0 0 0 1px var(--accent) inset;
+}
 .landing-story {
   grid-column: 1 / -1;
   position: relative;
@@ -6627,16 +6801,42 @@ html[data-theme="light"] {
 }
 .landing-story-grid article {
   padding: 30px;
-  border: 1px solid var(--line);
+  border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 24px;
-  background: var(--panel);
+  background: linear-gradient(
+    160deg,
+    rgba(255, 255, 255, 0.1),
+    rgba(255, 255, 255, 0.03) 55%,
+    rgba(255, 255, 255, 0.06)
+  );
+  backdrop-filter: blur(22px) saturate(140%);
+  -webkit-backdrop-filter: blur(22px) saturate(140%);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.16) inset,
+    0 18px 46px rgba(0, 0, 0, 0.22);
   transition:
     border-color 0.25s,
-    box-shadow 0.25s;
+    box-shadow 0.25s,
+    transform 0.25s;
+}
+html[data-theme="light"] .landing-story-grid article {
+  border-color: rgba(20, 22, 27, 0.1);
+  background: linear-gradient(
+    160deg,
+    rgba(255, 255, 255, 0.62),
+    rgba(255, 255, 255, 0.28) 55%,
+    rgba(255, 255, 255, 0.4)
+  );
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.5) inset,
+    0 18px 46px rgba(20, 22, 27, 0.1);
 }
 .landing-story-grid article:hover {
   border-color: var(--accent);
-  box-shadow: 0 18px 50px #00000012;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.2) inset,
+    0 22px 60px rgba(0, 0, 0, 0.3);
+  transform: translateY(-3px);
 }
 .landing-story-grid article > div {
   display: flex;
@@ -6655,14 +6855,30 @@ html[data-theme="light"] {
   gap: 28px;
   padding: 42px;
   margin-top: 24px;
-  border: 1px solid var(--line);
+  border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 24px;
   background: linear-gradient(
     115deg,
-    color-mix(in srgb, var(--accent) 10%, var(--panel)),
-    var(--panel)
+    color-mix(in srgb, var(--accent) 16%, transparent),
+    rgba(255, 255, 255, 0.05)
   );
+  backdrop-filter: blur(24px) saturate(150%);
+  -webkit-backdrop-filter: blur(24px) saturate(150%);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.18) inset,
+    0 20px 55px rgba(0, 0, 0, 0.24);
   overflow: hidden;
+}
+html[data-theme="light"] .landing-insight-strip {
+  border-color: rgba(20, 22, 27, 0.1);
+  background: linear-gradient(
+    115deg,
+    color-mix(in srgb, var(--accent) 14%, transparent),
+    rgba(255, 255, 255, 0.45)
+  );
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.55) inset,
+    0 20px 55px rgba(20, 22, 27, 0.1);
 }
 .landing-insight-strip > div {
   max-width: 650px;

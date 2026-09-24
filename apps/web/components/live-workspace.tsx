@@ -238,6 +238,14 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
   const [profileAvatar, setProfileAvatar] = useState("");
   const [profileAvatarBusy, setProfileAvatarBusy] = useState(false);
   const avatarInputRef = useRef<HTMLInputElement>(null);
+  const authCardRef = useRef<HTMLFormElement>(null);
+  const focusAuthCard = useCallback((nextMode?: "login" | "register") => {
+    if (nextMode) setMode(nextMode);
+    authCardRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    window.setTimeout(() => {
+      authCardRef.current?.querySelector<HTMLInputElement>("input")?.focus();
+    }, 260);
+  }, []);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [brandName, setBrandName] = useState("VAE");
@@ -1110,25 +1118,43 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
           <HeroVideo />
           <div className="hero-video-overlay" aria-hidden="true" />
           <GrainOverlay />
+          <header className="landing-nav">
+            <div className="live-logo">
+              <span />
+              <b>VAE</b>
+            </div>
+            <div className="landing-nav-links">
+              <button type="button" className="landing-nav-cta" onClick={toggleTheme}>
+                {theme === "dark" ? <Sun size={15} /> : <Moon size={15} />}
+                <span>{theme === "dark" ? "Light" : "Dark"}</span>
+              </button>
+              {!adminPortal && (
+                <button
+                  type="button"
+                  className="landing-nav-cta"
+                  onClick={() => focusAuthCard("login")}
+                >
+                  <span>Creator / Business sign in</span>
+                </button>
+              )}
+              <button
+                type="button"
+                className="landing-nav-cta primary"
+                onClick={() => focusAuthCard(adminPortal ? undefined : "register")}
+              >
+                <span>{adminPortal ? "Administrator sign in" : "Get started"}</span>
+              </button>
+              <a className="landing-nav-cta" href={adminPortal ? "/" : "/admin"}>
+                <ShieldCheck size={14} />
+                <span>{adminPortal ? "Creator sign in" : "Admin sign in"}</span>
+              </a>
+            </div>
+          </header>
           <motion.section
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
           >
-            <div className="live-auth-brand-row">
-              <div className="live-logo">
-                <span />
-                <b>VAE</b>
-              </div>
-              <button
-                type="button"
-                className="landing-theme-toggle live-theme-toggle"
-                onClick={toggleTheme}
-              >
-                {theme === "dark" ? <Sun size={17} /> : <Moon size={17} />}
-                {theme === "dark" ? "Light" : "Dark"} mode
-              </button>
-            </div>
             <p className="live-kicker">
               {adminPortal ? "VAE administration" : "Your creative workspace"}
             </p>
@@ -1153,6 +1179,7 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
             </div>
           </motion.section>
           <motion.form
+            ref={authCardRef}
             className="live-auth-card"
             onSubmit={authenticate}
             onMouseMove={handleGlow}
@@ -1277,7 +1304,7 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
                       className={cn(mode === "register" && "active")}
                       onClick={() => setMode("register")}
                     >
-                      Get started
+                      Creator / Business sign up
                     </button>
                   </div>
                 )}
@@ -1291,7 +1318,9 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
                 <p>
                   {adminPortal
                     ? "Access customer operations and payment review with your administrator account."
-                    : "Your creator workspace starts here."}
+                    : mode === "login"
+                      ? "Your creator workspace starts here."
+                      : "Choose Creator or Business below to set up your workspace."}
                 </p>
                 {notice && mode === "login" && (
                   <div role="status" className="live-alert success">
@@ -1321,17 +1350,37 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
                         placeholder="Acme Studio"
                       />
                     </Field>
-                    <Field label="Account type">
-                      <select
-                        value={accountType}
-                        onChange={(event) =>
-                          setAccountType(event.target.value as "creator" | "business")
-                        }
-                      >
-                        <option value="creator">Creator</option>
-                        <option value="business">Business</option>
-                      </select>
-                    </Field>
+                    <div className="live-field">
+                      <span>Account type</span>
+                      <div className="account-type-picker" role="radiogroup" aria-label="Account type">
+                        <button
+                          type="button"
+                          role="radio"
+                          aria-checked={accountType === "creator"}
+                          className={cn(
+                            "account-type-option",
+                            accountType === "creator" && "active",
+                          )}
+                          onClick={() => setAccountType("creator")}
+                        >
+                          <strong>Creator</strong>
+                          <small>Publish under your own name and voice.</small>
+                        </button>
+                        <button
+                          type="button"
+                          role="radio"
+                          aria-checked={accountType === "business"}
+                          className={cn(
+                            "account-type-option",
+                            accountType === "business" && "active",
+                          )}
+                          onClick={() => setAccountType("business")}
+                        >
+                          <strong>Business</strong>
+                          <small>Publish for a brand or team workspace.</small>
+                        </button>
+                      </div>
+                    </div>
                   </>
                 )}
                 <Field label="Email">
