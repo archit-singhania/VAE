@@ -324,18 +324,33 @@ class AevraTheme {
         titleMedium: textTheme.titleMedium?.copyWith(
           fontSize: 14.5,
           fontWeight: FontWeight.w600,
-          letterSpacing: -0.1,
+          letterSpacing: -0.22,
+          height: 1.28,
         ),
         titleSmall: textTheme.titleSmall?.copyWith(
           fontSize: 12.5,
           fontWeight: FontWeight.w600,
-          letterSpacing: -0.05,
+          letterSpacing: -0.12,
+          height: 1.3,
         ),
-        bodyLarge: textTheme.bodyLarge?.copyWith(fontSize: 14.5, height: 1.55),
+        bodyLarge: textTheme.bodyLarge?.copyWith(
+          fontSize: 14.5,
+          height: 1.55,
+          letterSpacing: -0.08,
+        ),
         bodyMedium:
-            textTheme.bodyMedium?.copyWith(fontSize: 13.5, height: 1.55),
+            textTheme.bodyMedium?.copyWith(
+              fontSize: 13.5,
+              height: 1.55,
+              letterSpacing: -0.06,
+            ),
         bodySmall: textTheme.bodySmall
-            ?.copyWith(fontSize: 11.5, height: 1.5, color: muted),
+            ?.copyWith(
+              fontSize: 11.5,
+              height: 1.5,
+              letterSpacing: -0.02,
+              color: muted,
+            ),
         labelLarge: textTheme.labelLarge?.copyWith(
           fontSize: 13,
           fontWeight: FontWeight.w600,

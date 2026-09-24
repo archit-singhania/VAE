@@ -1143,9 +1143,17 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
           <div className="hero-video-overlay" aria-hidden="true" />
           <GrainOverlay />
           <header className="landing-nav">
-            <div className="live-logo brand-lockup">
+            <div
+              className={cn(
+                "live-logo brand-lockup",
+                adminPortal ? "admin-brand" : "creator-brand",
+              )}
+            >
               {/* biome-ignore lint/performance/noImgElement: static brand SVG */}
-              <img src="/brand/vae-admin-icon.svg" alt="" />
+              <img
+                src={adminPortal ? "/brand/vae-admin-icon.svg" : "/brand/vae-creator-icon.svg"}
+                alt=""
+              />
               <span className="brand-wordmark" role="img" aria-label="VAE">
                 <b>V</b>
                 <em>AE</em>
@@ -3140,9 +3148,17 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
           )}
         </AnimatePresence>
         <aside className={cn("live-sidebar", sidebar && "open")}>
-          <div className="live-logo brand-lockup">
+          <div
+            className={cn(
+              "live-logo brand-lockup",
+              user?.is_admin ? "admin-brand" : "creator-brand",
+            )}
+          >
             {/* biome-ignore lint/performance/noImgElement: static brand SVG */}
-            <img src="/brand/vae-admin-icon.svg" alt="" />
+            <img
+              src={user?.is_admin ? "/brand/vae-admin-icon.svg" : "/brand/vae-creator-icon.svg"}
+              alt=""
+            />
             <span className="brand-wordmark" role="img" aria-label="VAE">
               <b>V</b>
               <em>AE</em>

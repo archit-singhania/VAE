@@ -67,6 +67,8 @@
     "Manrope", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-geist:
     "Manrope", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-display: "Playfair Display", "Iowan Old Style", "Baskerville", Georgia, serif;
+  --font-serif: var(--font-display);
   --font-mono: "JetBrains Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
 
   /* ---- geometry --------------------------------------------------- */
@@ -3083,6 +3085,64 @@ html[data-theme="light"] .brand-wordmark em {
     padding: 16px 18px;
   }
 }
+
+/* Premium typography pass shared by the public site and both portals.
+   The hierarchy is deliberately restrained: one editorial display face,
+   one highly legible interface face, and mono only where data benefits. */
+body {
+  font-family: var(--font-sans);
+  font-optical-sizing: auto;
+  font-kerning: normal;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+h1,
+h2,
+.live-hero h1,
+.live-auth-copy h1,
+.admin-heading h1,
+.landing-section-heading h2 {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-feature-settings:
+    "kern" 1,
+    "liga" 1,
+    "clig" 1;
+  letter-spacing: -0.035em;
+  text-wrap: balance;
+}
+
+h3,
+h4,
+button,
+input,
+textarea,
+select,
+.live-nav-item,
+.live-tab {
+  font-family: var(--font-sans);
+  font-kerning: normal;
+}
+
+p,
+li,
+label,
+input,
+textarea,
+select,
+button {
+  letter-spacing: -0.008em;
+}
+
+.eyebrow,
+.live-kicker,
+.admin-heading > span,
+.field-label {
+  font-family: var(--font-mono);
+  letter-spacing: 0.13em;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .brand-lockup > img,
   .brand-wordmark b,
@@ -8183,4 +8243,102 @@ main.live-auth > .live-auth-card {
     height: 36px;
     flex-basis: 36px;
   }
+}
+
+/* The legacy logo used a bare span as a rotated outline. The production
+   lockup also contains a span, so explicitly neutralize every old shape
+   property before applying the role-aware wordmark. */
+.live-logo .brand-wordmark,
+.brand-lockup .brand-wordmark {
+  width: auto;
+  height: auto;
+  min-width: 0;
+  display: inline-flex;
+  align-items: baseline;
+  border: 0;
+  border-radius: 0;
+  transform: none;
+  box-shadow: none !important;
+  background: transparent;
+  overflow: visible;
+  font-size: 31px;
+  letter-spacing: 0.08em;
+}
+.brand-lockup.creator-brand .brand-wordmark b {
+  color: #e5485d;
+}
+.brand-lockup.admin-brand .brand-wordmark b {
+  color: #4f8cff;
+}
+.brand-lockup .brand-wordmark em {
+  color: #fff;
+}
+html[data-theme="light"] .brand-lockup .brand-wordmark em {
+  color: #111318;
+}
+.brand-lockup.creator-brand > img {
+  filter: drop-shadow(0 7px 18px rgba(229, 72, 93, 0.3));
+}
+.brand-lockup.admin-brand > img {
+  filter: drop-shadow(0 7px 18px rgba(79, 140, 255, 0.3));
+}
+.brand-lockup.creator-brand:hover .brand-wordmark b {
+  text-shadow: 0 0 20px rgba(229, 72, 93, 0.48);
+}
+.brand-lockup.admin-brand:hover .brand-wordmark b {
+  text-shadow: 0 0 20px rgba(79, 140, 255, 0.48);
+}
+.landing-nav .brand-lockup > img {
+  width: 48px;
+  height: 48px;
+  flex-basis: 48px;
+}
+.landing-nav .brand-wordmark {
+  font-size: 33px;
+}
+.live-sidebar .brand-lockup > img {
+  width: 44px;
+  height: 44px;
+  flex-basis: 44px;
+}
+.live-sidebar .brand-wordmark {
+  font-size: 29px;
+}
+@media (max-width: 600px) {
+  .landing-nav .brand-lockup > img,
+  .live-sidebar .brand-lockup > img {
+    width: 38px;
+    height: 38px;
+    flex-basis: 38px;
+  }
+  .live-logo .brand-wordmark,
+  .landing-nav .brand-wordmark,
+  .live-sidebar .brand-wordmark {
+    font-size: 24px;
+  }
+}
+
+/* Final wordmark finish: this must remain after the legacy lockup
+   neutralizer above so older span geometry cannot widen the identity. */
+.live-logo .brand-wordmark,
+.brand-lockup .brand-wordmark {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-style: normal;
+  font-feature-settings:
+    "kern" 1,
+    "liga" 1,
+    "clig" 1;
+  letter-spacing: 0.015em;
+  line-height: 0.88;
+  text-rendering: geometricPrecision;
+  filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.06));
+}
+.brand-lockup .brand-wordmark b {
+  font-weight: 700;
+  margin-right: -0.025em;
+}
+.brand-lockup .brand-wordmark em {
+  font-weight: 500;
+  letter-spacing: 0.035em;
 }

@@ -137,10 +137,8 @@ class _AevraMarkPainter extends CustomPainter {
       old.color != color || old.ring != ring;
 }
 
-/// Mark + wordmark. The wordmark is set in the display serif with wide
-/// tracking: at this size the serif reads as an identity rather than as
-/// running text, and the tracking is what stops five capitals looking like
-/// an acronym.
+/// Mark + wordmark. The compact editorial setting makes the three letters
+/// read as a crafted identity instead of widely-spaced interface text.
 class AevraWordmark extends StatelessWidget {
   const AevraWordmark({
     super.key,
@@ -163,24 +161,30 @@ class AevraWordmark extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        AevraMark(size: markSize, admin: true),
+        AevraMark(size: markSize, admin: admin),
         SizedBox(width: markSize * .32),
         Text.rich(
           TextSpan(children: [
-            const TextSpan(
-                text: 'V', style: TextStyle(color: Color(0xFF4F8CFF))),
+            TextSpan(
+                text: 'V',
+                style: TextStyle(
+                    fontWeight: FontWeight.w500,
+                    color: admin
+                        ? const Color(0xFF4F8CFF)
+                        : const Color(0xFFE5485D))),
             TextSpan(
                 text: 'AE',
                 style: TextStyle(
+                    fontWeight: FontWeight.w500,
                     color: light ? const Color(0xFF111318) : Colors.white)),
           ]),
           semanticsLabel: 'VAE',
           style: TextStyle(
             fontFamily: 'PlayfairDisplay',
             fontSize: fontSize,
-            fontWeight: FontWeight.w600,
-            letterSpacing: fontSize * .08,
-            height: 1,
+            fontWeight: FontWeight.w500,
+            letterSpacing: fontSize * .015,
+            height: .92,
           ),
         ),
       ],
