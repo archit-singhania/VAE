@@ -1106,14 +1106,6 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
     return (
       <MotionConfig reducedMotion="user">
         <main className="live-auth">
-          <button
-            type="button"
-            className="landing-theme-toggle live-theme-toggle"
-            onClick={toggleTheme}
-          >
-            {theme === "dark" ? <Sun size={17} /> : <Moon size={17} />}{" "}
-            {theme === "dark" ? "Light" : "Dark"} mode
-          </button>
           <WebglBackground />
           <HeroVideo />
           <div className="hero-video-overlay" aria-hidden="true" />
@@ -1123,9 +1115,19 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
           >
-            <div className="live-logo">
-              <span />
-              <b>VAE</b>
+            <div className="live-auth-brand-row">
+              <div className="live-logo">
+                <span />
+                <b>VAE</b>
+              </div>
+              <button
+                type="button"
+                className="landing-theme-toggle live-theme-toggle"
+                onClick={toggleTheme}
+              >
+                {theme === "dark" ? <Sun size={17} /> : <Moon size={17} />}
+                {theme === "dark" ? "Light" : "Dark"} mode
+              </button>
             </div>
             <p className="live-kicker">
               {adminPortal ? "VAE administration" : "Your creative workspace"}
@@ -1381,7 +1383,7 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
               </div>
             )}
           </motion.form>
-          {!adminPortal && <LandingStory />}
+          <LandingStory audience={adminPortal ? "admin" : "creator"} />
         </main>
       </MotionConfig>
     );

@@ -6574,16 +6574,26 @@ html[data-theme="light"] {
   gap: 8px;
 }
 .landing-theme-toggle {
-  position: absolute;
-  z-index: 5;
-  top: 24px;
-  right: 28px;
+  position: static;
+  z-index: 2;
+  flex: 0 0 auto;
+  margin-left: auto;
   border: 1px solid var(--line);
   border-radius: 30px;
   padding: 12px 18px;
   background: var(--panel);
   color: var(--text);
   cursor: pointer;
+}
+.live-auth-brand-row {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  width: 100%;
+  margin-bottom: 26px;
+}
+.live-auth-brand-row .live-logo {
+  margin: 0;
 }
 .landing-story {
   grid-column: 1 / -1;
@@ -6933,9 +6943,12 @@ html[data-theme="light"] {
   .calendar-post-label {
     display: none;
   }
+  .live-auth-brand-row {
+    gap: 10px;
+    margin-bottom: 18px;
+  }
   .landing-theme-toggle {
-    top: 15px;
-    right: 15px;
+    padding: 10px 12px;
   }
 }
 @media (prefers-reduced-motion: reduce) {
