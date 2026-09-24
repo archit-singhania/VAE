@@ -239,6 +239,7 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
   const [profileAvatarBusy, setProfileAvatarBusy] = useState(false);
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const prefetchedSessionUser = useRef<User | null>(null);
+  const prefetchedSessionWorkspaces = useRef<Workspace[] | null>(null);
   const authCardRef = useRef<HTMLFormElement>(null);
   const focusAuthCard = useCallback((nextMode?: "login" | "register") => {
     if (nextMode) setMode(nextMode);
@@ -502,9 +503,11 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
         // especially noticeable when the API is waking from an idle deploy.
         const cachedUser = prefetchedSessionUser.current;
         prefetchedSessionUser.current = null;
+        const cachedWorkspaces = prefetchedSessionWorkspaces.current;
+        prefetchedSessionWorkspaces.current = null;
         const [me, workspaces] = await Promise.all([
           cachedUser ? Promise.resolve(cachedUser) : api.me(accessToken),
-          api.workspaces(accessToken),
+          cachedWorkspaces ? Promise.resolve(cachedWorkspaces) : api.workspaces(accessToken),
         ]);
         if (me.is_admin !== adminPortal) {
           window.location.replace(me.is_admin ? "/admin" : "/");
@@ -662,24 +665,36 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
     setBusy("auth");
     setError(null);
     try {
-      const result =
-        mode === "login"
-          ? await api.login(email, password, adminPortal)
-          : await api.register({
-              email,
-              password,
-              display_name: name,
-              organization_name: org,
-              workspace_name: "Content Studio",
-              account_type: accountType,
-              brand_name: org,
-              timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
-            });
-      if (
-        mode === "register" &&
-        "account_status" in result &&
-        result.account_status !== "approved"
-      ) {
+      if (mode === "login") {
+        const result = await api.login(email, password, adminPortal);
+        prefetchedSessionUser.current = result.user;
+        prefetchedSessionWorkspaces.current = result.workspaces;
+        const enterDashboard = () => {
+          setUser(result.user);
+          setWorkspace(result.workspaces[0] ?? null);
+          setToken(browserSession);
+        };
+        if (
+          document.startViewTransition &&
+          !window.matchMedia("(prefers-reduced-motion: reduce)").matches
+        ) {
+          document.startViewTransition(() => flushSync(enterDashboard));
+        } else {
+          enterDashboard();
+        }
+        return;
+      }
+      const result = await api.register({
+        email,
+        password,
+        display_name: name,
+        organization_name: org,
+        workspace_name: "Content Studio",
+        account_type: accountType,
+        brand_name: org,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
+      });
+      if ("account_status" in result && result.account_status !== "approved") {
         if (result.onboarding_token) {
           setOnboarding({ token: result.onboarding_token, email });
           setPaymentInfo(await api.paymentInstructions());
@@ -1249,6 +1264,24 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
             animate={{ opacity: 1, y: 0, scale: 1 }}
             transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1], delay: 0.1 }}
           >
+            <div
+              className={cn(
+                "live-auth-card-brand brand-lockup",
+                adminPortal ? "admin-brand" : "creator-brand",
+              )}
+              role="img"
+              aria-label={adminPortal ? "VAE administrator" : "VAE creator"}
+            >
+              {/* biome-ignore lint/performance/noImgElement: static brand SVG */}
+              <img
+                src={adminPortal ? "/brand/vae-admin-icon.svg" : "/brand/vae-creator-icon.svg"}
+                alt=""
+              />
+              <span className="brand-wordmark" aria-hidden="true">
+                <b>V</b>
+                <em>AE</em>
+              </span>
+            </div>
             {onboarding && paymentInfo ? (
               <div className="live-payment-card">
                 {paymentStatus?.status === "approved" ? (

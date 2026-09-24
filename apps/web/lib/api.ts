@@ -405,14 +405,15 @@ export const api = {
       body: JSON.stringify({ draft, platform }),
     }),
   login: (email: string, password: string, admin = false) =>
-    request<{ access_token: string; expires_in: number }>(
-      admin ? "/auth/admin/login" : "/auth/login",
-      undefined,
-      {
-        method: "POST",
-        body: JSON.stringify({ email, password }),
-      },
-    ),
+    request<{
+      access_token: string;
+      expires_in: number;
+      user: User;
+      workspaces: Workspace[];
+    }>(admin ? "/auth/admin/login" : "/auth/login", undefined, {
+      method: "POST",
+      body: JSON.stringify({ email, password }),
+    }),
   register: (payload: {
     email: string;
     password: string;

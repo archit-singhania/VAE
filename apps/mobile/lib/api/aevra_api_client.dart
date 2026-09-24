@@ -24,6 +24,18 @@ class RegistrationResult {
   final String accountStatus;
 }
 
+class LoginResult {
+  const LoginResult({
+    required this.accessToken,
+    required this.user,
+    required this.workspaces,
+  });
+
+  final String accessToken;
+  final AevraUser user;
+  final List<Workspace> workspaces;
+}
+
 class PaymentInstructions {
   const PaymentInstructions(
       {required this.amount,
@@ -109,11 +121,21 @@ class AevraApiClient {
     return parse(jsonDecode(response.body));
   }
 
-  Future<String> login(String email, String password) => _request<String>(
+  Future<LoginResult> login(String email, String password) =>
+      _request<LoginResult>(
         '/auth/login',
         method: 'POST',
         body: {'email': email, 'password': password},
-        parse: (json) => json['access_token'] as String,
+        parse: (json) {
+          final payload = json as Map<String, dynamic>;
+          return LoginResult(
+            accessToken: payload['access_token'] as String,
+            user: AevraUser.fromJson(payload['user'] as Map<String, dynamic>),
+            workspaces: (payload['workspaces'] as List<dynamic>? ?? const [])
+                .map((item) => Workspace.fromJson(item as Map<String, dynamic>))
+                .toList(),
+          );
+        },
       );
 
   Future<RegistrationResult> register({

@@ -157,6 +157,10 @@ class _AuthScreenState extends State<AuthScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            const AevraWordmark(markSize: 32, fontSize: 20),
+                            const SizedBox(height: AevraSpace.md),
+                            Divider(color: Theme.of(context).dividerColor),
+                            const SizedBox(height: AevraSpace.sm),
                             Row(
                               children: [
                                 _Tab(

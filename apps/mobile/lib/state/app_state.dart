@@ -60,10 +60,18 @@ class AppState extends ChangeNotifier {
     error = null;
     notifyListeners();
     try {
-      final accessToken = await client.login(email, password);
-      await _storage.write(key: _tokenKey, value: accessToken);
-      token = accessToken;
-      await load();
+      final result = await client.login(email, password);
+      token = result.accessToken;
+      user = result.user;
+      workspace = result.workspaces.isEmpty ? null : result.workspaces.first;
+      // Switch to the shell as soon as authentication succeeds. Secure
+      // persistence and secondary dashboard collections continue after the
+      // first authenticated frame rather than holding the login screen open.
+      notifyListeners();
+      await _storage.write(key: _tokenKey, value: result.accessToken);
+      if (!result.user.isAdmin && workspace != null) {
+        await _loadWorkspaceData(result.accessToken, workspace!);
+      }
     } catch (caught) {
       error = caught.toString();
     } finally {
@@ -158,24 +166,7 @@ class AppState extends ChangeNotifier {
         return;
       }
       if (nextWorkspace == null) throw Exception('No active workspace found.');
-
-      final results = await Future.wait([
-        client.brands(currentToken, nextWorkspace.id),
-        Future.value(<Campaign>[]),
-        client.documents(currentToken, nextWorkspace.id),
-        client.media(currentToken, nextWorkspace.id),
-        client.accounts(currentToken, nextWorkspace.id),
-        client.scheduled(currentToken, nextWorkspace.id),
-        client.metrics(currentToken, nextWorkspace.id),
-      ]);
-
-      brands = results[0] as List<Brand>;
-      campaigns = results[1] as List<Campaign>;
-      documents = results[2] as List<KnowledgeDocument>;
-      assets = results[3] as List<MediaAsset>;
-      accounts = results[4] as List<SocialAccount>;
-      scheduled = results[5] as List<ScheduledPost>;
-      metrics = results[6] as List<PostMetric>;
+      await _loadWorkspaceData(currentToken, nextWorkspace);
     } catch (caught) {
       if (caught is ApiException && caught.status == 401) {
         await signOut();
@@ -185,6 +176,27 @@ class AppState extends ChangeNotifier {
       loading = false;
       notifyListeners();
     }
+  }
+
+  Future<void> _loadWorkspaceData(
+      String currentToken, Workspace nextWorkspace) async {
+    final results = await Future.wait([
+      client.brands(currentToken, nextWorkspace.id),
+      Future.value(<Campaign>[]),
+      client.documents(currentToken, nextWorkspace.id),
+      client.media(currentToken, nextWorkspace.id),
+      client.accounts(currentToken, nextWorkspace.id),
+      client.scheduled(currentToken, nextWorkspace.id),
+      client.metrics(currentToken, nextWorkspace.id),
+    ]);
+
+    brands = results[0] as List<Brand>;
+    campaigns = results[1] as List<Campaign>;
+    documents = results[2] as List<KnowledgeDocument>;
+    assets = results[3] as List<MediaAsset>;
+    accounts = results[4] as List<SocialAccount>;
+    scheduled = results[5] as List<ScheduledPost>;
+    metrics = results[6] as List<PostMetric>;
   }
 
   Future<void> decide(String campaignId, String decision) async {
