@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'screens/analytics_screen.dart';
 import 'screens/advanced_screen.dart';
 import 'screens/auth_screen.dart';
+import 'screens/campaigns_screen.dart';
 import 'screens/media_screen.dart';
 import 'screens/overview_screen.dart';
 import 'screens/schedule_screen.dart';
@@ -325,6 +326,12 @@ class _MobileShellState extends State<MobileShell> {
             onSignOut: _confirmSignOut));
   }
 
+  void _openCampaigns() {
+    widget.sound.tap();
+    Navigator.of(context).push(MaterialPageRoute<void>(
+        builder: (_) => CampaignsScreen(state: widget.state)));
+  }
+
   void _go(int next) {
     HapticFeedback.selectionClick();
     setState(() => index = next);
@@ -370,7 +377,8 @@ class _MobileShellState extends State<MobileShell> {
   Widget build(BuildContext context) {
     final wide = MediaQuery.sizeOf(context).width >= 720;
     final pages = [
-      OverviewScreen(state: widget.state, onNavigate: _go),
+      OverviewScreen(
+          state: widget.state, onNavigate: _go, onCampaigns: _openCampaigns),
       MediaScreen(state: widget.state, onPublish: () => _go(2)),
       ScheduleScreen(state: widget.state),
       AnalyticsScreen(state: widget.state),

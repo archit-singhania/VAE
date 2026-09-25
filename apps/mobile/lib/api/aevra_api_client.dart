@@ -42,15 +42,15 @@ class PaymentInstructions {
 /// same bearer-token auth. Point `baseUrl` at the same FastAPI workspace the
 /// web app talks to.
 ///
-/// Defaults to the Android emulator's host-loopback address; override with
-/// `--dart-define=API_BASE_URL=http://localhost:8000/api/v1` for iOS
-/// simulator / desktop, or a real host for a device on the network.
+/// Defaults to the iOS simulator's host-loopback address. Override with
+/// `--dart-define=API_BASE_URL=http://<mac-ip>:8000/api/v1` for a real iPhone
+/// connected to the same local network as the Mac.
 class AevraApiClient {
   AevraApiClient({String? baseUrl})
       : baseUrl = baseUrl ??
             const String.fromEnvironment(
               'API_BASE_URL',
-              defaultValue: 'http://10.0.2.2:8000/api/v1',
+              defaultValue: 'http://localhost:8000/api/v1',
             );
 
   final String baseUrl;

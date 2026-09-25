@@ -1,15 +1,10 @@
 # VAE Mobile
 
-The mobile client consumes the versioned VAE API and never contains publishing credentials
-or model access. The stabilized Phase 12 contract is:
+VAE Mobile is the Flutter app for the VAE API. It now has native macOS and iOS
+targets. On this Mac, follow the
+[Mac, iOS Simulator, and iPhone setup and manual test guide](../../docs/mobile-ios-manual-test.md).
 
-- `GET /api/v1/workspaces/{workspace_id}/campaigns`
-- `GET /api/v1/workspaces/{workspace_id}/media/assets`
-- `GET /api/v1/workspaces/{workspace_id}/publishing/accounts`
-- `GET /api/v1/workspaces/{workspace_id}/operations/schedule`
-- `GET /api/v1/workspaces/{workspace_id}/operations/metrics`
-- `GET /api/v1/workspaces/{workspace_id}/operations/audit`
-
-Write actions use the same bearer token and editor permissions as web. A future Flutter shell
-should add offline read caching, push notifications for failed jobs, and biometric re-authentication
-without duplicating provider logic.
+The guide starts the API locally with SQLite, signs in with the seeded demo
+account, runs the app on an iOS Simulator, and explains the extra Apple signing
+and network steps for a physical iPhone. Campaigns are created in the web/API
+workspace and can then be reviewed and approved in the mobile app.

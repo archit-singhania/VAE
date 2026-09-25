@@ -14,6 +14,22 @@ class AppState extends ChangeNotifier {
   final AevraApiClient client;
   final _storage = const FlutterSecureStorage();
   static const _tokenKey = 'aevra.mobile.access-token';
+  static String? _debugMacAccessToken;
+
+  /// Keychain Sharing needs a local Apple development signing identity on
+  /// macOS. Keep Debug desktop sessions in memory so this local preview can
+  /// be used without signing credentials; iOS and all non-Debug builds keep
+  /// using platform secure storage.
+  bool get _usesDebugMacSession =>
+      kDebugMode && defaultTargetPlatform == TargetPlatform.macOS;
+
+  Future<void> _saveAccessToken(String value) async {
+    if (_usesDebugMacSession) {
+      _debugMacAccessToken = value;
+    } else {
+      await _storage.write(key: _tokenKey, value: value);
+    }
+  }
 
   String? token;
   bool hydrated = false;
@@ -49,7 +65,9 @@ class AppState extends ChangeNotifier {
   bool get authenticated => token != null;
 
   Future<void> hydrate() async {
-    token = await _storage.read(key: _tokenKey);
+    token = _usesDebugMacSession
+        ? _debugMacAccessToken
+        : await _storage.read(key: _tokenKey);
     hydrated = true;
     notifyListeners();
     if (token != null) await load();
@@ -61,7 +79,7 @@ class AppState extends ChangeNotifier {
     notifyListeners();
     try {
       final accessToken = await client.login(email, password);
-      await _storage.write(key: _tokenKey, value: accessToken);
+      await _saveAccessToken(accessToken);
       token = accessToken;
       await load();
     } catch (caught) {
@@ -99,7 +117,7 @@ class AppState extends ChangeNotifier {
         paymentInfo = await client.paymentInstructions();
         error = null;
       } else {
-        await _storage.write(key: _tokenKey, value: registration.accessToken);
+        await _saveAccessToken(registration.accessToken!);
         token = registration.accessToken;
         await load();
       }
@@ -145,7 +163,7 @@ class AppState extends ChangeNotifier {
 
       final results = await Future.wait([
         client.brands(currentToken, nextWorkspace.id),
-        Future.value(<Campaign>[]),
+        client.campaigns(currentToken, nextWorkspace.id),
         client.documents(currentToken, nextWorkspace.id),
         client.media(currentToken, nextWorkspace.id),
         client.accounts(currentToken, nextWorkspace.id),
@@ -214,7 +232,11 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> signOut() async {
-    await _storage.delete(key: _tokenKey);
+    if (_usesDebugMacSession) {
+      _debugMacAccessToken = null;
+    } else {
+      await _storage.delete(key: _tokenKey);
+    }
     token = null;
     user = null;
     workspace = null;

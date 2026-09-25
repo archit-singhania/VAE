@@ -3,9 +3,11 @@ import '../state/app_state.dart';
 import '../widgets/vae_ui.dart';
 
 class OverviewScreen extends StatelessWidget {
-  const OverviewScreen({super.key, required this.state, this.onNavigate});
+  const OverviewScreen(
+      {super.key, required this.state, this.onNavigate, this.onCampaigns});
   final AppState state;
   final ValueChanged<int>? onNavigate;
+  final VoidCallback? onCampaigns;
   @override
   Widget build(BuildContext context) => AnimatedBuilder(
       animation: state,
@@ -13,12 +15,16 @@ class OverviewScreen extends StatelessWidget {
             VaePageHeader(
                 'Good to see you, ${state.user?.displayName.split(' ').first ?? 'there'}.',
                 'Create media, connect channels, and publish from one place.'),
-            Wrap(spacing: 12, children: [
+            Wrap(spacing: 12, runSpacing: 12, children: [
               VaePrimaryButton('Create media',
                   onPressed: () => onNavigate?.call(1)),
               OutlinedButton(
                   onPressed: () => onNavigate?.call(2),
-                  child: const Text('Publish'))
+                  child: const Text('Publish')),
+              OutlinedButton.icon(
+                  onPressed: onCampaigns,
+                  icon: const Icon(Icons.campaign_outlined),
+                  label: const Text('Campaigns')),
             ]),
             const SizedBox(height: 24),
             LayoutBuilder(

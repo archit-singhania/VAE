@@ -183,4 +183,6 @@ class GroqLLMProvider:
 
 
 def build_llm_provider(settings: Settings) -> LLMProvider:
-    return GroqLLMProvider(settings)
+    if settings.groq_api_key:
+        return GroqLLMProvider(settings)
+    return OllamaLLMProvider(settings)
