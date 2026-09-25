@@ -1,3 +1,4 @@
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter/material.dart';
 
 import '../state/app_state.dart';
@@ -69,19 +70,19 @@ class _AuthScreenState extends State<AuthScreen> {
             onPressed: widget.onToggleTheme,
             tooltip: 'Switch light / dark mode',
             icon: Icon(Theme.of(context).brightness == Brightness.dark
-                ? Icons.light_mode_outlined
-                : Icons.dark_mode_outlined))
+                ? LucideIcons.sun
+                : LucideIcons.moon))
       ]),
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Stack(
         children: [
-          if (Theme.of(context).brightness == Brightness.dark)
-            const Positioned.fill(
-                child: RepaintBoundary(child: ShaderBackground())),
+          const Positioned.fill(
+              child: RepaintBoundary(child: ShaderBackground())),
           // The original MOV artwork is optional and never blocks the first
           // frame. LandingVideo fades in only after local codec support is
           // confirmed; ShaderBackground remains the free fallback.
-          const Positioned.fill(child: LandingVideo()),
+          if (Theme.of(context).brightness == Brightness.dark)
+            const Positioned.fill(child: LandingVideo()),
           SafeArea(
             child: AnimatedBuilder(
               animation: widget.state,
@@ -110,8 +111,7 @@ class _AuthScreenState extends State<AuthScreen> {
                                 Theme.of(context).colorScheme.onSurfaceVariant),
                       ),
                       const SizedBox(height: AevraSpace.lg),
-                      // Three proof points, set as a mono rail. On a phone
-                      // these do the job the web hero's feature column does.
+                      // Match the web hero's Lucide check rail and proof tiles.
                       ...[
                         'Create media.',
                         'Connect channels.',
@@ -122,27 +122,36 @@ class _AuthScreenState extends State<AuthScreen> {
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Container(
-                                width: 4,
-                                height: 4,
-                                margin: const EdgeInsets.only(
-                                    top: 6, right: AevraSpace.sm),
-                                decoration: const BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: AevraColors.accent,
-                                ),
-                              ),
+                              Icon(LucideIcons.check,
+                                  size: 15,
+                                  color: Theme.of(context).colorScheme.primary),
+                              const SizedBox(width: AevraSpace.xs),
                               Expanded(
                                 child: Text(
                                   point,
-                                  style: const TextStyle(
-                                      fontSize: 12, color: AevraColors.muted),
+                                  style: TextStyle(
+                                      fontSize: 12,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurfaceVariant),
                                 ),
                               ),
                             ],
                           ),
                         ),
                       ),
+                      const SizedBox(height: AevraSpace.lg),
+                      Row(children: const [
+                        Expanded(
+                          child: _ProofTile(
+                              'One workspace', 'From idea to published post'),
+                        ),
+                        SizedBox(width: AevraSpace.xs),
+                        Expanded(
+                          child: _ProofTile(
+                              'AI, refined', 'Creative control stays with you'),
+                        ),
+                      ]),
                       const SizedBox(height: AevraSpace.xl),
                       // The one surface on this screen, so it gets the top
                       // tier — but no tilt. A tap-down tilt recogniser here
@@ -196,8 +205,10 @@ class _AuthScreenState extends State<AuthScreen> {
                               const SizedBox(height: AevraSpace.sm),
                               Text(
                                   'Scan with GPay, Paytm, BHIM, or any UPI app.',
-                                  style: const TextStyle(
-                                      color: AevraColors.textSoft)),
+                                  style: TextStyle(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurfaceVariant)),
                               if (widget.state.paymentInfo!.qrUrl.isNotEmpty)
                                 Image.network(widget.state.paymentInfo!.qrUrl,
                                     width: 160, height: 160),
@@ -282,6 +293,32 @@ class _AuthScreenState extends State<AuthScreen> {
   }
 }
 
+class _ProofTile extends StatelessWidget {
+  const _ProofTile(this.title, this.subtitle);
+
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.all(AevraSpace.sm),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface.withValues(alpha: .72),
+          border: Border.all(color: Theme.of(context).dividerColor),
+          borderRadius: BorderRadius.circular(AevraRadius.lg),
+        ),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(title, style: Theme.of(context).textTheme.titleSmall),
+          const SizedBox(height: AevraSpace.xxs),
+          Text(subtitle,
+              style: TextStyle(
+                  fontSize: 10.5,
+                  height: 1.45,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant)),
+        ]),
+      );
+}
+
 class _Tab extends StatelessWidget {
   const _Tab({required this.label, required this.active, required this.onTap});
   final String label;
@@ -342,14 +379,12 @@ class _FieldState extends State<_Field> {
             suffixIcon: widget.obscure
                 ? IconButton(
                     tooltip: hidden ? 'Show password' : 'Hide password',
-                    icon: Icon(hidden
-                        ? Icons.visibility_outlined
-                        : Icons.visibility_off_outlined),
+                    icon: Icon(hidden ? LucideIcons.eye : LucideIcons.eyeOff),
                     onPressed: () => setState(() => hidden = !hidden),
                   )
                 : null,
           ),
-          cursorColor: AevraColors.accent,
+          cursorColor: Theme.of(context).colorScheme.primary,
           style: TextStyle(
               fontSize: 13.5, color: Theme.of(context).colorScheme.onSurface),
         ),
@@ -365,25 +400,24 @@ class _ErrorBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final error = Theme.of(context).colorScheme.error;
     return Container(
       padding:
           const EdgeInsets.symmetric(horizontal: AevraSpace.sm, vertical: 10),
       decoration: BoxDecoration(
-        color: AevraColors.rose.withValues(alpha: 0.09),
-        border: Border.all(color: AevraColors.rose.withValues(alpha: 0.22)),
+        color: error.withValues(alpha: 0.09),
+        border: Border.all(color: error.withValues(alpha: 0.22)),
         borderRadius: BorderRadius.circular(AevraRadius.sm),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.error_outline_rounded,
-              size: 15, color: AevraColors.rose),
+          Icon(LucideIcons.circleAlert, size: 15, color: error),
           const SizedBox(width: AevraSpace.xs),
           Expanded(
             child: Text(
               message,
-              style: const TextStyle(
-                  fontSize: 11.5, height: 1.45, color: AevraColors.rose),
+              style: TextStyle(fontSize: 11.5, height: 1.45, color: error),
             ),
           ),
         ],

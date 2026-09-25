@@ -1,3 +1,4 @@
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter/material.dart';
 import '../state/app_state.dart';
 import '../widgets/vae_ui.dart';
@@ -61,7 +62,7 @@ class _MlInsightsScreenState extends State<MlInsightsScreen> {
             onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(
                 builder: (_) => AdvancedAnalyticsScreen(
                     state: widget.state, initialDraft: draft.text))),
-            icon: const Icon(Icons.insights),
+            icon: const Icon(LucideIcons.brainCircuit),
             label: const Text('Open 3 advanced labs')),
         const SizedBox(height: 12),
         TextField(

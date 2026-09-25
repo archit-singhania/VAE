@@ -16,14 +16,13 @@ dependencies:
   shared_preferences: ^2.3.3
   # Open-source local playback; no hosted video service or paid provider.
   video_player: ^2.9.2
+  lucide_icons_flutter: ^3.1.20
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
-  # One-time generators for the app icon and splash screen. These need the
-  # android/ and ios/ folders to exist first (`flutter create --platforms=
-  # android,ios .`) and the PNGs listed in assets/branding/README.md to be
-  # present. Neither is required to build or run the app.
+  # Native iOS icon and splash generators; the iOS project and brand PNGs
+  # are included in this checkout.
   flutter_launcher_icons: ^0.14.3
   flutter_native_splash: ^2.4.3
 flutter:
@@ -60,21 +59,21 @@ flutter_launcher_icons:
   # The adaptive foreground must be transparent with generous padding — Android
   # crops it to a circle/squircle. Pointing it at the opaque square icon would
   # get the mark clipped, so it has its own asset.
-  adaptive_icon_background: "#06070A"
+  adaptive_icon_background: "#171014"
   adaptive_icon_foreground: "assets/branding/aevra_icon_foreground_1024.png"
   remove_alpha_ios: true
   web:
     generate: false
 
 flutter_native_splash:
-  color: "#06070A"
+  color: "#F8F3F4"
   image: "assets/branding/aevra_splash_600.png"
-  color_dark: "#06070A"
+  color_dark: "#171014"
   image_dark: "assets/branding/aevra_splash_600.png"
   # Android 12+ masks the splash image to a circle and only the inner two
   # thirds survives, so it gets its own smaller-on-a-bigger-canvas asset.
   android_12:
-    color: "#06070A"
+    color: "#F8F3F4"
     image: "assets/branding/aevra_splash_android12_960.png"
-    color_dark: "#06070A"
+    color_dark: "#171014"
     image_dark: "assets/branding/aevra_splash_android12_960.png"

@@ -1,3 +1,4 @@
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../api/models.dart';
@@ -14,11 +15,16 @@ class CampaignsScreen extends StatelessWidget {
 
   /// One status vocabulary for the whole app: jade = done, amber = you owe
   /// it a decision, rose = it went wrong, grey = nothing has happened yet.
-  Color _statusColor(String status) => switch (status) {
-        'approved' || 'ready' || 'published' => AevraColors.jade,
-        'awaiting_approval' => AevraColors.amber,
-        'failed' || 'rejected' => AevraColors.rose,
-        _ => AevraColors.muted2,
+  Color _statusColor(BuildContext context, String status) => switch (status) {
+        'approved' ||
+        'ready' ||
+        'published' =>
+          Theme.of(context).colorScheme.secondary,
+        'awaiting_approval' => Theme.of(context).brightness == Brightness.light
+            ? AevraLightColors.amber
+            : AevraColors.amber,
+        'failed' || 'rejected' => Theme.of(context).colorScheme.error,
+        _ => Theme.of(context).colorScheme.onSurfaceVariant,
       };
 
   @override
@@ -29,8 +35,8 @@ class CampaignsScreen extends StatelessWidget {
         return AdaptiveGlassScroll(
           child: RefreshIndicator(
             onRefresh: state.load,
-            color: AevraColors.accent,
-            backgroundColor: AevraColors.panel,
+            color: Theme.of(context).colorScheme.primary,
+            backgroundColor: Theme.of(context).colorScheme.surface,
             child: ListView(
               padding: const EdgeInsets.fromLTRB(AevraSpace.gutter,
                   AevraSpace.md, AevraSpace.gutter, AevraSpace.xxl),
@@ -50,10 +56,12 @@ class CampaignsScreen extends StatelessWidget {
                             const SizedBox(height: AevraSpace.xxs),
                             Text(
                               '${state.campaigns.length} in this workspace · swipe a card to decide',
-                              style: const TextStyle(
+                              style: TextStyle(
                                   fontSize: 12,
                                   height: 1.45,
-                                  color: AevraColors.muted),
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant),
                             ),
                           ],
                         ),
@@ -72,27 +80,30 @@ class CampaignsScreen extends StatelessWidget {
                   // #4 — skeleton shimmer in place of the bare spinner.
                   const GlassCard(child: ShimmerList(count: 4))
                 else if (state.campaigns.isEmpty)
-                  const GlassCard(
-                    padding: EdgeInsets.symmetric(
+                  GlassCard(
+                    padding: const EdgeInsets.symmetric(
                         horizontal: AevraSpace.md, vertical: AevraSpace.xl),
                     child: Column(
                       children: [
-                        Icon(Icons.auto_awesome_outlined,
-                            size: 26, color: AevraColors.accent),
-                        SizedBox(height: AevraSpace.sm),
-                        Text(
+                        Icon(LucideIcons.sparkles,
+                            size: 26,
+                            color: Theme.of(context).colorScheme.primary),
+                        const SizedBox(height: AevraSpace.sm),
+                        const Text(
                           'Nothing in the pipeline',
                           style: TextStyle(
                               fontSize: 13, fontWeight: FontWeight.w700),
                         ),
-                        SizedBox(height: AevraSpace.xxs),
+                        const SizedBox(height: AevraSpace.xxs),
                         Text(
                           'Create a campaign from the web app and it will appear here for approval.',
                           textAlign: TextAlign.center,
                           style: TextStyle(
                               fontSize: 11.5,
                               height: 1.5,
-                              color: AevraColors.muted2),
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant),
                         ),
                       ],
                     ),
@@ -106,10 +117,10 @@ class CampaignsScreen extends StatelessWidget {
                         direction: c.status == 'awaiting_approval'
                             ? DismissDirection.horizontal
                             : DismissDirection.none,
-                        background:
-                            _swipeBackground(alignLeft: true, approve: true),
-                        secondaryBackground:
-                            _swipeBackground(alignLeft: false, approve: false),
+                        background: _swipeBackground(context,
+                            alignLeft: true, approve: true),
+                        secondaryBackground: _swipeBackground(context,
+                            alignLeft: false, approve: false),
                         confirmDismiss: (direction) async {
                           HapticFeedback.mediumImpact();
                           final decision =
@@ -151,7 +162,7 @@ class CampaignsScreen extends StatelessWidget {
                                   margin: const EdgeInsets.only(
                                       right: AevraSpace.sm),
                                   decoration: BoxDecoration(
-                                    color: _statusColor(c.status),
+                                    color: _statusColor(context, c.status),
                                     borderRadius:
                                         BorderRadius.circular(AevraRadius.pill),
                                   ),
@@ -182,19 +193,20 @@ class CampaignsScreen extends StatelessWidget {
                                   padding: const EdgeInsets.symmetric(
                                       horizontal: 9, vertical: 5),
                                   decoration: BoxDecoration(
-                                    color: _statusColor(c.status)
+                                    color: _statusColor(context, c.status)
                                         .withValues(alpha: 0.10),
                                     borderRadius:
                                         BorderRadius.circular(AevraRadius.pill),
                                     border: Border.all(
-                                      color: _statusColor(c.status)
+                                      color: _statusColor(context, c.status)
                                           .withValues(alpha: 0.26),
                                     ),
                                   ),
                                   child: Text(
                                     c.status.replaceAll('_', ' '),
                                     style: AevraType.mono(
-                                        size: 9, color: _statusColor(c.status)),
+                                        size: 9,
+                                        color: _statusColor(context, c.status)),
                                   ),
                                 ),
                               ],
@@ -219,16 +231,18 @@ class CampaignsScreen extends StatelessWidget {
             style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
       );
 
-  Widget _swipeBackground({required bool alignLeft, required bool approve}) {
+  Widget _swipeBackground(BuildContext context,
+      {required bool alignLeft, required bool approve}) {
+    final color = approve
+        ? Theme.of(context).colorScheme.secondary
+        : Theme.of(context).colorScheme.error;
     return Container(
       alignment: alignLeft ? Alignment.centerLeft : Alignment.centerRight,
       padding: const EdgeInsets.symmetric(horizontal: 22),
       decoration: BoxDecoration(
-        color: (approve ? AevraColors.jade : AevraColors.rose)
-            .withValues(alpha: 0.14),
+        color: color.withValues(alpha: 0.14),
         border: Border.all(
-          color: (approve ? AevraColors.jade : AevraColors.rose)
-              .withValues(alpha: 0.28),
+          color: color.withValues(alpha: 0.28),
         ),
         borderRadius: BorderRadius.circular(AevraRadius.md),
       ),
@@ -236,15 +250,14 @@ class CampaignsScreen extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
-            approve ? Icons.check_rounded : Icons.close_rounded,
+            approve ? LucideIcons.check : LucideIcons.x,
             size: 18,
-            color: approve ? AevraColors.jade : AevraColors.rose,
+            color: color,
           ),
           const SizedBox(width: AevraSpace.xs),
           Text(
             approve ? 'APPROVE' : 'REJECT',
-            style: AevraType.eyebrow(
-                color: approve ? AevraColors.jade : AevraColors.rose),
+            style: AevraType.eyebrow(color: color),
           ),
         ],
       ),
@@ -293,7 +306,7 @@ class _CampaignDetailSheet extends StatelessWidget {
           radius: AevraRadius.xl,
           padding: const EdgeInsets.all(AevraSpace.lg),
           adaptive: false,
-          borderColor: AevraColors.lineStrong,
+          borderColor: Theme.of(context).dividerColor,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -306,7 +319,7 @@ class _CampaignDetailSheet extends StatelessWidget {
                   height: 3,
                   margin: const EdgeInsets.only(bottom: AevraSpace.md),
                   decoration: BoxDecoration(
-                    color: AevraColors.lineStrong,
+                    color: Theme.of(context).dividerColor,
                     borderRadius: BorderRadius.circular(AevraRadius.pill),
                   ),
                 ),
@@ -321,14 +334,17 @@ class _CampaignDetailSheet extends StatelessWidget {
               const SizedBox(height: AevraSpace.xs),
               Text(
                 campaign.status.replaceAll('_', ' ').toUpperCase(),
-                style: AevraType.eyebrow(color: AevraColors.muted),
+                style: AevraType.eyebrow(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant),
               ),
               const SizedBox(height: AevraSpace.md),
               Flexible(
                 child: variants.isEmpty
-                    ? const Text('No generated variants yet.',
-                        style:
-                            TextStyle(fontSize: 12, color: AevraColors.muted2))
+                    ? Text('No generated variants yet.',
+                        style: TextStyle(
+                            fontSize: 12,
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant))
                     : ListView.separated(
                         // #7 — variants stagger in as the sheet opens.
                         shrinkWrap: true,
@@ -345,11 +361,14 @@ class _CampaignDetailSheet extends StatelessWidget {
                             child: Container(
                               padding: const EdgeInsets.all(AevraSpace.sm),
                               decoration: BoxDecoration(
-                                color: AevraColors.surface1
-                                    .withValues(alpha: 0.55),
+                                color: Theme.of(context)
+                                    .inputDecorationTheme
+                                    .fillColor
+                                    ?.withValues(alpha: 0.55),
                                 borderRadius:
                                     BorderRadius.circular(AevraRadius.sm),
-                                border: Border.all(color: AevraColors.line),
+                                border: Border.all(
+                                    color: Theme.of(context).dividerColor),
                               ),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -364,16 +383,20 @@ class _CampaignDetailSheet extends StatelessWidget {
                                         '${v.qualityScore.round()}/100',
                                         style: AevraType.mono(
                                             size: 9.5,
-                                            color: AevraColors.frost),
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .tertiary),
                                       ),
                                     ],
                                   ),
                                   const SizedBox(height: AevraSpace.xs),
                                   Text(
                                     v.caption,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                         fontSize: 12.5,
-                                        color: AevraColors.textSoft,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onSurfaceVariant,
                                         height: 1.5),
                                   ),
                                 ],

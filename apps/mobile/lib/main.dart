@@ -1,3 +1,6 @@
+import 'dart:ui';
+
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -82,10 +85,12 @@ class _AevraAppState extends State<AevraApp> {
             switchInCurve: Curves.easeOutCubic,
             switchOutCurve: Curves.easeInCubic,
             transitionBuilder: (child, animation) => FadeTransition(
-              opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
+              opacity:
+                  CurvedAnimation(parent: animation, curve: Curves.easeOut),
               child: ScaleTransition(
                 scale: Tween<double>(begin: .988, end: 1).animate(
-                  CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
+                  CurvedAnimation(
+                      parent: animation, curve: Curves.easeOutCubic),
                 ),
                 child: child,
               ),
@@ -239,50 +244,57 @@ class _MobileShellState extends State<MobileShell> {
       CommandAction(
           label: 'Brand knowledge & sources',
           hint: 'More',
-          icon: Icons.menu_book_outlined,
+          icon: LucideIcons.bookOpen,
           run: () => Navigator.of(context).push(MaterialPageRoute<void>(
               builder: (_) => AdvancedScreen(state: widget.state)))),
       if (widget.state.user?.isAdmin == true)
         CommandAction(
             label: 'Admin dashboard',
             hint: 'Admin',
-            icon: Icons.admin_panel_settings_outlined,
+            icon: LucideIcons.shieldCheck,
             run: () => Navigator.of(context).push(MaterialPageRoute<void>(
                 builder: (_) =>
                     AdvancedScreen(state: widget.state, admin: true)))),
       CommandAction(
           label: 'Profile',
           hint: 'Account and appearance',
-          icon: Icons.person_outline,
+          icon: LucideIcons.userRound,
           run: _openProfile),
       CommandAction(
         label: 'Go to Home',
         hint: 'Media, channel, and publishing summary',
-        icon: Icons.space_dashboard_outlined,
+        icon: LucideIcons.brainCircuit,
         run: () => _go(0),
       ),
       CommandAction(
         label: 'Go to Create',
         hint: 'Create images and captions',
-        icon: Icons.auto_awesome_outlined,
+        icon: LucideIcons.sparkles,
         run: () => _go(1),
       ),
       CommandAction(
         label: 'Go to Publish',
         hint: 'Upcoming scheduled posts',
-        icon: Icons.schedule_outlined,
+        icon: LucideIcons.calendarDays,
         run: () => _go(2),
       ),
       CommandAction(
         label: 'Go to Analytics',
         hint: 'Publishing and engagement signal',
-        icon: Icons.insights_outlined,
+        icon: LucideIcons.brainCircuit,
         run: () => _go(3),
       ),
+      if (widget.state.user?.isAdmin != true)
+        CommandAction(
+          label: 'ML insights',
+          hint: 'Explore recommendations and predictions',
+          icon: LucideIcons.sparkles,
+          run: () => _go(4),
+        ),
       CommandAction(
         label: 'Refresh VAE',
         hint: 'Re-fetch everything from the API',
-        icon: Icons.refresh_outlined,
+        icon: LucideIcons.refreshCw,
         run: () {
           widget.state.load();
           widget.sound.tap();
@@ -292,9 +304,7 @@ class _MobileShellState extends State<MobileShell> {
         label:
             widget.darkMode ? 'Switch to light theme' : 'Switch to dark theme',
         hint: 'Animated theme wipe',
-        icon: widget.darkMode
-            ? Icons.light_mode_outlined
-            : Icons.dark_mode_outlined,
+        icon: widget.darkMode ? LucideIcons.sun : LucideIcons.moon,
         run: _toggleThemeWithWipe,
       ),
       CommandAction(
@@ -302,15 +312,13 @@ class _MobileShellState extends State<MobileShell> {
             ? 'Mute feedback sounds'
             : 'Unmute feedback sounds',
         hint: 'Ambient chime on create and approve',
-        icon: widget.sound.enabled
-            ? Icons.volume_up_outlined
-            : Icons.volume_off_outlined,
+        icon: widget.sound.enabled ? LucideIcons.volume2 : LucideIcons.volumeX,
         run: () => widget.sound.toggle(),
       ),
       CommandAction(
         label: 'Replay the tour',
         hint: 'Show the three-step walkthrough again',
-        icon: Icons.school_outlined,
+        icon: LucideIcons.graduationCap,
         run: () async {
           await resetTour();
           _tourChecked = false;
@@ -320,7 +328,7 @@ class _MobileShellState extends State<MobileShell> {
       CommandAction(
         label: 'Sign out',
         hint: 'Clear the stored access token',
-        icon: Icons.logout_outlined,
+        icon: LucideIcons.logOut,
         run: () => widget.state.signOut(),
       ),
     ]);
@@ -364,7 +372,7 @@ class _MobileShellState extends State<MobileShell> {
               child: const Text('Cancel')),
           FilledButton.icon(
             onPressed: () => Navigator.pop(dialogContext, true),
-            icon: const Icon(Icons.logout_outlined),
+            icon: const Icon(LucideIcons.logOut),
             label: const Text('Sign out'),
           ),
         ],
@@ -400,7 +408,10 @@ class _MobileShellState extends State<MobileShell> {
                 state: widget.state, admin: true, adminSection: 'payments'),
           ]
         : [
-            OverviewScreen(state: widget.state, onNavigate: _go),
+            OverviewScreen(
+                state: widget.state,
+                onNavigate: _go,
+                onCampaigns: _openCampaigns),
             MediaScreen(state: widget.state, onPublish: () => _go(2)),
             ScheduleScreen(state: widget.state),
             AnalyticsScreen(state: widget.state),
@@ -410,11 +421,11 @@ class _MobileShellState extends State<MobileShell> {
         ? const ['Home', 'AI usage', 'Publishing', 'Analytics', 'Payments']
         : const ['Home', 'Create', 'Publish', 'Analytics', 'ML insights'];
     final icons = [
-      Icons.space_dashboard_outlined,
-      Icons.auto_awesome_outlined,
-      Icons.schedule_outlined,
-      Icons.insights_outlined,
-      admin ? Icons.verified_user_outlined : Icons.psychology_outlined,
+      LucideIcons.brainCircuit,
+      LucideIcons.sparkles,
+      LucideIcons.calendarDays,
+      LucideIcons.brainCircuit,
+      admin ? LucideIcons.shieldCheck : LucideIcons.sparkles,
     ];
     return Theme(
       data: admin ? AevraTheme.adminDark : Theme.of(context),
@@ -465,7 +476,12 @@ class _MobileShellState extends State<MobileShell> {
         ]),
         bottomNavigationBar: wide
             ? null
-            : VaeBottomNav(index: index, onSelected: _go, admin: admin),
+            : VaeBottomNav(
+                index: index,
+                onSelected: _go,
+                onProfile: _openProfile,
+                avatarUrl: widget.state.user?.avatarUrl,
+                admin: admin),
       ),
     );
   }
@@ -492,64 +508,74 @@ class _TopBar extends StatelessWidget {
     // A rule under the bar rather than a filled surface: the shader
     // background is the app's main visual asset, and a second opaque strip
     // above the content would cut it off at the top of every screen.
-    return Container(
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: AevraColors.line)),
-      ),
-      padding: const EdgeInsets.fromLTRB(AevraSpace.lg, 10, AevraSpace.xs, 10),
-      child: Row(
-        children: [
-          AevraWordmark(
-              markSize: 30, fontSize: 20, admin: state.user?.isAdmin == true),
-          const SizedBox(width: AevraSpace.sm),
-          Flexible(
-            child: Text(
-              title.toUpperCase(),
-              overflow: TextOverflow.ellipsis,
-              style: AevraType.eyebrow(
-                  color: Theme.of(context).colorScheme.onSurface),
-            ),
+    return ClipRect(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface.withValues(alpha: .86),
+            border: Border(
+                bottom: BorderSide(color: Theme.of(context).dividerColor)),
           ),
-          const Spacer(),
-          // #6 — the AI orb now reflects real request state instead of
-          // idling forever: it spins while the workspace is loading.
-          AnimatedBuilder(
-            animation: state,
-            builder: (context, _) => AiOrb(
-              size: 24,
-              state: state.loading ? AiOrbState.thinking : AiOrbState.idle,
-            ),
-          ),
-          const SizedBox(width: AevraSpace.xxs),
-          IconButton(
-            tooltip: 'Commands',
-            onPressed: onOpenPalette,
-            icon: const Icon(Icons.search_rounded, size: 20),
-            color: AevraColors.muted,
-          ),
-          Semantics(
-            button: true,
-            label: 'Open profile',
-            child: InkWell(
-              onTap: onOpenProfile,
-              customBorder: const CircleBorder(),
-              child: CircleAvatar(
-                radius: 17,
-                backgroundColor: Theme.of(context)
-                    .colorScheme
-                    .primary
-                    .withValues(alpha: .14),
-                backgroundImage: state.user?.avatarUrl == null
-                    ? null
-                    : NetworkImage(state.user!.avatarUrl!),
-                child: state.user?.avatarUrl == null
-                    ? const Icon(Icons.person_outline, size: 18)
-                    : null,
+          padding:
+              const EdgeInsets.fromLTRB(AevraSpace.lg, 10, AevraSpace.xs, 10),
+          child: Row(
+            children: [
+              AevraWordmark(
+                  markSize: 30,
+                  fontSize: 20,
+                  admin: state.user?.isAdmin == true),
+              const SizedBox(width: AevraSpace.sm),
+              Flexible(
+                child: Text(
+                  title.toUpperCase(),
+                  overflow: TextOverflow.ellipsis,
+                  style: AevraType.eyebrow(
+                      color: Theme.of(context).colorScheme.onSurface),
+                ),
               ),
-            ),
+              const Spacer(),
+              // #6 — the AI orb now reflects real request state instead of
+              // idling forever: it spins while the workspace is loading.
+              AnimatedBuilder(
+                animation: state,
+                builder: (context, _) => AiOrb(
+                  size: 24,
+                  state: state.loading ? AiOrbState.thinking : AiOrbState.idle,
+                ),
+              ),
+              const SizedBox(width: AevraSpace.xxs),
+              IconButton(
+                tooltip: 'Commands',
+                onPressed: onOpenPalette,
+                icon: const Icon(LucideIcons.search, size: 20),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+              Semantics(
+                button: true,
+                label: 'Open profile',
+                child: InkWell(
+                  onTap: onOpenProfile,
+                  customBorder: const CircleBorder(),
+                  child: CircleAvatar(
+                    radius: 17,
+                    backgroundColor: Theme.of(context)
+                        .colorScheme
+                        .primary
+                        .withValues(alpha: .14),
+                    backgroundImage: state.user?.avatarUrl == null
+                        ? null
+                        : NetworkImage(state.user!.avatarUrl!),
+                    child: state.user?.avatarUrl == null
+                        ? const Icon(LucideIcons.userRound, size: 18)
+                        : null,
+                  ),
+                ),
+              ),
+              const SizedBox(width: AevraSpace.sm),
+            ],
           ),
-          const SizedBox(width: AevraSpace.sm),
-        ],
+        ),
       ),
     );
   }

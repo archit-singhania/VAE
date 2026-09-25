@@ -1,3 +1,4 @@
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../api/models.dart';
@@ -29,16 +30,29 @@ class VaeGlassCard extends StatelessWidget {
 }
 
 class VaeMetricCard extends StatelessWidget {
-  const VaeMetricCard(this.label, this.value, {super.key});
+  const VaeMetricCard(this.label, this.value,
+      {super.key, this.icon, this.hint});
   final String label, value;
+  final IconData? icon;
+  final String? hint;
   @override
   Widget build(BuildContext context) => VaeGlassCard(
           child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(value, style: Theme.of(context).textTheme.headlineMedium),
-          const SizedBox(height: 8),
-          Text(label)
+          if (icon != null) ...[
+            Icon(icon, size: 18, color: Theme.of(context).colorScheme.primary),
+            const SizedBox(height: 10),
+          ],
+          Text(label, style: Theme.of(context).textTheme.bodySmall),
+          const SizedBox(height: 5),
+          Text(value,
+              style: AevraType.metric(28,
+                  color: Theme.of(context).colorScheme.onSurface)),
+          if (hint != null) ...[
+            const SizedBox(height: 5),
+            Text(hint!, style: Theme.of(context).textTheme.bodySmall),
+          ],
         ],
       ));
 }
@@ -50,7 +64,7 @@ class VaeEmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) => VaeGlassCard(
           child: Column(children: [
-        Icon(Icons.auto_awesome_outlined,
+        Icon(LucideIcons.sparkles,
             color: Theme.of(context).colorScheme.primary),
         const SizedBox(height: 16),
         Text(title, style: Theme.of(context).textTheme.titleMedium),
@@ -134,7 +148,7 @@ class VaeAssetTile extends StatelessWidget {
                                           child: IconButton(
                                               tooltip: 'Close preview',
                                               color: Colors.white,
-                                              icon: const Icon(Icons.close),
+                                              icon: const Icon(LucideIcons.x),
                                               onPressed: () =>
                                                   Navigator.pop(context))),
                                       Expanded(
@@ -149,8 +163,8 @@ class VaeAssetTile extends StatelessWidget {
                                                       errorBuilder: (_, error,
                                                               stack) =>
                                                           const Icon(
-                                                              Icons
-                                                                  .broken_image,
+                                                              LucideIcons
+                                                                  .imageOff,
                                                               color: Colors
                                                                   .white))))),
                                     ]))),
@@ -170,11 +184,10 @@ class VaeAssetTile extends StatelessWidget {
                                     const SizedBox(
                                         width: 72,
                                         height: 72,
-                                        child: Icon(
-                                            Icons.broken_image_outlined)))),
+                                        child: Icon(LucideIcons.imageOff)))),
                       )))
             else
-              const Icon(Icons.image_outlined),
+              const Icon(LucideIcons.image),
             const SizedBox(width: 16),
             Expanded(
                 child: Text(asset.filename,
@@ -217,40 +230,116 @@ class VaeBottomNav extends StatelessWidget {
       {super.key,
       required this.index,
       required this.onSelected,
+      required this.onProfile,
+      this.avatarUrl,
       this.admin = false});
   final int index;
   final ValueChanged<int> onSelected;
+  final VoidCallback onProfile;
+  final String? avatarUrl;
   final bool admin;
+
   @override
-  Widget build(BuildContext context) => NavigationBar(
-        selectedIndex: index,
-        onDestinationSelected: onSelected,
-        backgroundColor: Theme.of(context).colorScheme.surface,
-        destinations: admin
-            ? const [
-                NavigationDestination(
-                    icon: Icon(Icons.space_dashboard_outlined), label: 'Home'),
-                NavigationDestination(
-                    icon: Icon(Icons.auto_awesome_outlined), label: 'AI usage'),
-                NavigationDestination(
-                    icon: Icon(Icons.schedule_outlined), label: 'Publishing'),
-                NavigationDestination(
-                    icon: Icon(Icons.insights_outlined), label: 'Analytics'),
-                NavigationDestination(
-                    icon: Icon(Icons.verified_user_outlined),
-                    label: 'Payments'),
-              ]
-            : const [
-                NavigationDestination(
-                    icon: Icon(Icons.space_dashboard_outlined), label: 'Home'),
-                NavigationDestination(
-                    icon: Icon(Icons.auto_awesome_outlined), label: 'Create'),
-                NavigationDestination(
-                    icon: Icon(Icons.schedule_outlined), label: 'Publish'),
-                NavigationDestination(
-                    icon: Icon(Icons.insights_outlined), label: 'Analytics'),
-                NavigationDestination(
-                    icon: Icon(Icons.psychology_outlined), label: 'ML'),
-              ],
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    // Match the web app's phone rail: Home, Publish, Create, Analytics,
+    // Profile. The desktop/admin rail still exposes the full page list.
+    final destinations = admin
+        ? const <(String, IconData, int)>[
+            ('Home', LucideIcons.brainCircuit, 0),
+            ('AI usage', LucideIcons.sparkles, 1),
+            ('Publishing', LucideIcons.calendarDays, 2),
+            ('Analytics', LucideIcons.brainCircuit, 3),
+            ('Payments', LucideIcons.shieldCheck, 4),
+          ]
+        : const <(String, IconData, int)>[
+            ('Home', LucideIcons.brainCircuit, 0),
+            ('Publish', LucideIcons.calendarDays, 2),
+            ('Create', LucideIcons.sparkles, 1),
+            ('Analytics', LucideIcons.brainCircuit, 3),
+          ];
+
+    Widget item(String label, IconData icon, VoidCallback onTap,
+        {bool selected = false, bool primary = false, Widget? leading}) {
+      final foreground = primary
+          ? colors.onPrimary
+          : selected
+              ? colors.primary
+              : colors.onSurfaceVariant;
+      return Expanded(
+        child: Semantics(
+          button: true,
+          selected: selected,
+          label: label,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(AevraRadius.sm),
+            child: Container(
+              constraints: const BoxConstraints(minHeight: 52),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(AevraRadius.sm),
+                color: primary
+                    ? colors.primary
+                    : selected
+                        ? colors.primary.withValues(alpha: .10)
+                        : Colors.transparent,
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 6),
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+                leading ?? Icon(icon, size: 20, color: foreground),
+                const SizedBox(height: 4),
+                Text(label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                        fontFamily: 'Manrope',
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        color: foreground)),
+              ]),
+            ),
+          ),
+        ),
       );
+    }
+
+    return ClipRect(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+        child: Container(
+          decoration: BoxDecoration(
+            color: colors.surface.withValues(alpha: .94),
+            border:
+                Border(top: BorderSide(color: Theme.of(context).dividerColor)),
+          ),
+          child: SafeArea(
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
+              child: Row(children: [
+                for (final (label, icon, page) in destinations)
+                  item(label, icon, () => onSelected(page),
+                      selected: index == page, primary: !admin && page == 1),
+                item('Edit profile', LucideIcons.userRound, onProfile,
+                    leading: avatarUrl == null
+                        ? null
+                        : ClipOval(
+                            child: Image.network(
+                              avatarUrl!,
+                              width: 20,
+                              height: 20,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, error, stack) => Icon(
+                                  LucideIcons.userRound,
+                                  size: 20,
+                                  color: colors.onSurfaceVariant),
+                            ),
+                          )),
+              ]),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }

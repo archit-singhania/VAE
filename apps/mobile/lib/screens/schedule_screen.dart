@@ -1,3 +1,4 @@
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../api/models.dart';
@@ -263,7 +264,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                                 }))),
                 OutlinedButton.icon(
                     onPressed: busy ? null : upload,
-                    icon: const Icon(Icons.upload),
+                    icon: const Icon(LucideIcons.upload),
                     label: const Text('Upload an asset')),
                 const SizedBox(height: 24),
                 const Text('2. Choose channels'),
@@ -302,7 +303,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                               setState(() => caption.text = value);
                             }
                           },
-                    icon: const Icon(Icons.auto_awesome),
+                    icon: const Icon(LucideIcons.sparkles),
                     label: const Text('Generate or import caption')),
                 const SizedBox(height: 16),
                 Wrap(spacing: 12, children: [

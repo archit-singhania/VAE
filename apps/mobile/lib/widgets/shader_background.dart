@@ -59,6 +59,16 @@ class _ShaderBackgroundState extends State<ShaderBackground>
     if (_shader != null && !_ticker.isActive && mounted) _maybeStart();
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (Theme.of(context).brightness == Brightness.light) {
+      _pause();
+    } else if (_shader != null && !_ticker.isActive) {
+      _maybeStart();
+    }
+  }
+
   Future<void> _load() async {
     try {
       final program =
@@ -74,7 +84,7 @@ class _ShaderBackgroundState extends State<ShaderBackground>
   void _maybeStart() {
     final reduceMotion =
         MediaQuery.maybeOf(context)?.disableAnimations ?? false;
-    if (!reduceMotion) {
+    if (!reduceMotion && Theme.of(context).brightness == Brightness.dark) {
       _ticker.start();
     }
   }
@@ -94,9 +104,12 @@ class _ShaderBackgroundState extends State<ShaderBackground>
 
   @override
   Widget build(BuildContext context) {
-    if (_failed) return const _StaticFallback();
+    if (Theme.of(context).brightness == Brightness.light) {
+      return const _LightBackground();
+    }
+    if (_failed) return _StaticFallback(admin: widget.admin);
     final shader = _shader;
-    if (shader == null) return const _StaticFallback();
+    if (shader == null) return _StaticFallback(admin: widget.admin);
 
     return IgnorePointer(
       child: RepaintBoundary(
@@ -139,30 +152,34 @@ class _ShaderPainter extends CustomPainter {
 }
 
 class _StaticFallback extends StatelessWidget {
-  const _StaticFallback();
+  const _StaticFallback({required this.admin});
+
+  final bool admin;
 
   @override
   Widget build(BuildContext context) {
-    // Two stacked radial washes rather than one: a warm copper bloom high
-    // right and a cool jade one low left. A single centred gradient reads as
-    // a vignette; two offset ones read as light in a room, which is what the
-    // live shader produces and what this has to stand in for.
-    return const DecoratedBox(
-      decoration: BoxDecoration(color: AevraColors.bg),
+    // Mirror the web shell's creator crimson and administrator cobalt washes.
+    return DecoratedBox(
+      decoration: BoxDecoration(
+          color: admin ? const Color(0xFF080E1A) : AevraColors.bg),
       child: DecoratedBox(
         decoration: BoxDecoration(
           gradient: RadialGradient(
-            center: Alignment(0.55, -0.72),
+            center: const Alignment(0.64, -0.76),
             radius: 1.15,
-            colors: [Color(0x24E5485D), Color(0x0006070A)],
+            colors: admin
+                ? const [Color(0x334F8CFF), Colors.transparent]
+                : const [Color(0x29E5485D), Colors.transparent],
           ),
         ),
         child: DecoratedBox(
           decoration: BoxDecoration(
             gradient: RadialGradient(
-              center: Alignment(-0.7, 0.85),
+              center: const Alignment(-0.70, 0.85),
               radius: 1.05,
-              colors: [Color(0x164E9C82), Color(0x0006070A)],
+              colors: admin
+                  ? const [Color(0x24346689), Colors.transparent]
+                  : const [Color(0x1C5E1124), Colors.transparent],
             ),
           ),
           child: SizedBox.expand(),
@@ -170,4 +187,32 @@ class _StaticFallback extends StatelessWidget {
       ),
     );
   }
+}
+
+class _LightBackground extends StatelessWidget {
+  const _LightBackground();
+
+  @override
+  Widget build(BuildContext context) => const DecoratedBox(
+        decoration: BoxDecoration(color: AevraLightColors.bg),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: RadialGradient(
+              center: Alignment(-0.76, -1.15),
+              radius: 1.1,
+              colors: [Color(0x218D6B2C), Colors.transparent],
+            ),
+          ),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: RadialGradient(
+                center: Alignment(0.84, 1.0),
+                radius: 1.15,
+                colors: [Color(0x1C2D5B4B), Colors.transparent],
+              ),
+            ),
+            child: SizedBox.expand(),
+          ),
+        ),
+      );
 }

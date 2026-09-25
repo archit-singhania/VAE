@@ -1,3 +1,4 @@
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter/material.dart';
 import '../state/app_state.dart';
 import '../api/models.dart';
@@ -96,11 +97,11 @@ class _MediaScreenState extends State<MediaScreen> {
                         ButtonSegment(
                             value: 'image',
                             label: Text('Image'),
-                            icon: Icon(Icons.image_outlined)),
+                            icon: Icon(LucideIcons.image)),
                         ButtonSegment(
                             value: 'text',
                             label: Text('Text'),
-                            icon: Icon(Icons.notes))
+                            icon: Icon(LucideIcons.fileText))
                       ],
                       selected: {
                         mode
@@ -187,7 +188,7 @@ class _MediaScreenState extends State<MediaScreen> {
                   }),
                   TextButton.icon(
                       onPressed: () => pair(a),
-                      icon: const Icon(Icons.edit_note),
+                      icon: const Icon(LucideIcons.notebookPen),
                       label: const Text('Caption & hashtags'))
                 ])),
             if (widget.state.assets.length > limit)

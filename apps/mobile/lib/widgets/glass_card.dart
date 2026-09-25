@@ -43,17 +43,21 @@ class ScoreRing extends StatelessWidget {
     super.key,
     required this.value,
     this.label = '/100',
-    this.color = AevraColors.frost,
+    this.color,
     this.size = 66,
   });
 
   final int value;
   final String label;
-  final Color color;
+  final Color? color;
   final double size;
 
   @override
   Widget build(BuildContext context) {
+    final ringColor = color ?? Theme.of(context).colorScheme.tertiary;
+    final trackColor = Theme.of(context).brightness == Brightness.light
+        ? AevraLightColors.surface4
+        : AevraColors.surface4;
     return SizedBox(
       width: size,
       height: size,
@@ -71,8 +75,8 @@ class ScoreRing extends StatelessWidget {
                 value: progress,
                 strokeWidth: size * 0.055,
                 strokeCap: StrokeCap.round,
-                backgroundColor: AevraColors.surface4,
-                valueColor: AlwaysStoppedAnimation(color),
+                backgroundColor: trackColor,
+                valueColor: AlwaysStoppedAnimation(ringColor),
               ),
             ),
             Column(

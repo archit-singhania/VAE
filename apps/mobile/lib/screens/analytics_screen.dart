@@ -1,3 +1,4 @@
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter/material.dart';
 import '../state/app_state.dart';
 import '../widgets/vae_ui.dart';
@@ -34,7 +35,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
               onPressed: () => Navigator.of(context).push(
                   MaterialPageRoute<void>(
                       builder: (_) => MlInsightsScreen(state: s))),
-              icon: const Icon(Icons.auto_awesome),
+              icon: const Icon(LucideIcons.sparkles),
               label: const Text('Explore ML insights')),
           const SizedBox(height: 16),
           Wrap(spacing: 16, children: [

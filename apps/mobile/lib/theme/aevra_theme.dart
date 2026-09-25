@@ -98,8 +98,10 @@ class AevraLightColors {
   static const muted = Color(0xFF6A7180);
   static const muted2 = Color(0xFF62665E);
 
-  static const accent = VaeTokens.lightAccent;
-  static const accentStrong = Color(0xFFE5485D);
+  // The web app's final creator palette uses the same crimson in both
+  // themes; its lighter token is retained for legacy CSS only.
+  static const accent = VaeTokens.darkAccent;
+  static const accentStrong = Color(0xFFFF6378);
   static const accentInk = Color(0xFFFFF8F9);
 
   static const jade = VaeTokens.lightSuccess;
@@ -155,7 +157,7 @@ class AevraType {
   /// Serif display. [size] is the optical size you actually want on screen.
   static TextStyle display(
     double size, {
-    Color color = AevraColors.text,
+    Color? color,
     FontWeight weight = FontWeight.w500,
     double? height,
   }) {
@@ -181,7 +183,7 @@ class AevraType {
   }
 
   /// Big tabular figures — metrics, scores, counters.
-  static TextStyle metric(double size, {Color color = AevraColors.text}) {
+  static TextStyle metric(double size, {Color? color}) {
     return TextStyle(
       fontFamily: 'Manrope',
       fontSize: size,
@@ -226,6 +228,7 @@ class AevraTheme {
         line: const Color(0x24709FFF),
         lineStrong: const Color(0x52709FFF),
         text: const Color(0xFFF4F8FF),
+        textSoft: const Color(0xFF94A5C2),
         muted: const Color(0xFF94A5C2),
         muted2: const Color(0xFF7D8DA8),
         accent: const Color(0xFF4F8CFF),
@@ -243,6 +246,7 @@ class AevraTheme {
         line: AevraColors.line,
         lineStrong: AevraColors.lineStrong,
         text: AevraColors.text,
+        textSoft: AevraColors.textSoft,
         muted: AevraColors.muted,
         muted2: AevraColors.muted2,
         accent: AevraColors.accent,
@@ -260,6 +264,7 @@ class AevraTheme {
         line: AevraLightColors.line,
         lineStrong: AevraLightColors.lineStrong,
         text: AevraLightColors.text,
+        textSoft: AevraLightColors.textSoft,
         muted: AevraLightColors.muted,
         muted2: AevraLightColors.muted2,
         accent: AevraLightColors.accent,
@@ -280,6 +285,7 @@ class AevraTheme {
     required Color line,
     required Color lineStrong,
     required Color text,
+    required Color textSoft,
     required Color muted,
     required Color muted2,
     required Color accent,
@@ -301,6 +307,7 @@ class AevraTheme {
         onTertiary: accentInk,
         surface: surface,
         onSurface: text,
+        onSurfaceVariant: textSoft,
         error: error,
         onError: accentInk,
       ),
@@ -338,19 +345,17 @@ class AevraTheme {
           height: 1.55,
           letterSpacing: -0.08,
         ),
-        bodyMedium:
-            textTheme.bodyMedium?.copyWith(
-              fontSize: 13.5,
-              height: 1.55,
-              letterSpacing: -0.06,
-            ),
-        bodySmall: textTheme.bodySmall
-            ?.copyWith(
-              fontSize: 11.5,
-              height: 1.5,
-              letterSpacing: -0.02,
-              color: muted,
-            ),
+        bodyMedium: textTheme.bodyMedium?.copyWith(
+          fontSize: 13.5,
+          height: 1.55,
+          letterSpacing: -0.06,
+        ),
+        bodySmall: textTheme.bodySmall?.copyWith(
+          fontSize: 11.5,
+          height: 1.5,
+          letterSpacing: -0.02,
+          color: muted,
+        ),
         labelLarge: textTheme.labelLarge?.copyWith(
           fontSize: 13,
           fontWeight: FontWeight.w600,
@@ -495,6 +500,24 @@ class AevraTheme {
         color: accent,
         linearTrackColor: line,
         circularTrackColor: line,
+      ),
+
+      segmentedButtonTheme: SegmentedButtonThemeData(
+        style: ButtonStyle(
+          backgroundColor: WidgetStateProperty.resolveWith((states) =>
+              states.contains(WidgetState.selected)
+                  ? accent.withValues(alpha: .13)
+                  : fieldFill),
+          foregroundColor: WidgetStateProperty.resolveWith((states) =>
+              states.contains(WidgetState.selected) ? accent : muted),
+          side: WidgetStatePropertyAll(BorderSide(color: lineStrong)),
+          shape: WidgetStatePropertyAll(RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AevraRadius.sm))),
+          textStyle: const WidgetStatePropertyAll(TextStyle(
+              fontFamily: 'Manrope',
+              fontSize: 12,
+              fontWeight: FontWeight.w600)),
+        ),
       ),
 
       navigationBarTheme: NavigationBarThemeData(

@@ -9,14 +9,11 @@ not needed.
 - Flutter 3.44.1 and Dart 3.12.1
 - Xcode 26.6
 - A native macOS Flutter target
-- iOS Simulator runtimes 18.2 and 18.4, including iPhone 16 simulators
+- iOS 26.5 Simulator runtime and a VAE iPhone 16 Pro simulator
 - CocoaPods 1.16.2 under Ruby 3.2.0
 - Ollama and FFmpeg
 
-The app targets iOS 15 and newer. The native macOS target is ready to run. This
-Mac's iOS 18.4 Simulator devices are visible to `simctl` but Xcode 26.6 does not
-accept them as build destinations; using an iOS Simulator on this Mac requires
-the iOS 26.5 runtime download in Xcode.
+The app targets iOS 15 and newer. The native macOS target is ready to run.
 
 ## 1. Download a local text model
 
@@ -116,16 +113,16 @@ cd ..
 flutter devices
 ```
 
-If the iOS 26.5 runtime has been installed and `flutter devices` lists your
-simulator, start the app with its exact name or device ID:
+Once `flutter devices` lists the simulator, start the app with its exact name
+or device ID:
 
 ```sh
-flutter run -d "iPhone 16 Pro"
+flutter run -d "VAE iPhone 16 Pro"
 ```
 
 The iOS Simulator reaches the Mac API at `http://localhost:8000/api/v1`, which
 is the app's default API address. If you selected a different simulator, replace
-`iPhone 16 Pro` with the exact name shown by `flutter devices`.
+`VAE iPhone 16 Pro` with the exact name shown by `flutter devices`.
 
 ## 5. Run on a physical iPhone
 
@@ -171,9 +168,11 @@ For example, if the Mac address is `192.168.1.20`, use
 
 Start with the demo email and password above.
 
-1. **Sign in and onboarding:** enter the credentials and submit. On the first
-   successful sign-in, step through the welcome tour and tap its final button.
-   The iOS app stays signed in after relaunch. The macOS Debug app asks you to
+1. **Sign in and onboarding:** on an iPhone, swipe up on the landing page to
+   reach the sign-in fields below the introduction. Enter the credentials and
+   submit. On the first successful sign-in, step through the welcome tour and
+   tap its final button. The iOS app stays signed in after relaunch. The macOS
+   Debug app asks you to
    sign in again after restart. Use the top-right sign-out button to return to
    the login screen.
 2. **Home:** check the greeting and the media, channel, schedule, and engagement
@@ -188,7 +187,7 @@ Start with the demo email and password above.
 4. **Create a caption:** select **Text**, enter a short post idea, then tap
    **Generate caption**. Qwen writes the result locally. Tap **Use for
    publishing** to open Publish with the caption filled in.
-5. **Upload media:** in Create, tap **Upload an asset** and choose a small image
+5. **Upload media:** in Publish, tap **Upload an asset** and choose a small image
    or video from Files. It should appear in the asset library. The app rejects
    files over 50 MB.
 6. **Brand knowledge and search:** tap the search/command icon in the top bar,
@@ -219,21 +218,41 @@ Start with the demo email and password above.
     tour**, **Profile**, and theme/sound actions. The seeded administrator also
     gets an **Admin dashboard** command.
 
+### Visual checks on Mac and iPhone
+
+- The creator theme uses a deep plum background (`#171014`) in dark mode and
+  warm paper (`#F8F3F4`) in light mode. Its action color is crimson (`#E5485D`).
+  The administrator accent is cobalt blue (`#4F8CFF`).
+- The VAE mark should appear in the app icon and launch screen. Controls and
+  navigation use the same Lucide icon family as the web workspace.
+- On a narrow iPhone screen, the bottom bar shows **Home**, **Publish**, a
+  prominent crimson **Create** button, **Analytics**, and **Profile**. The
+  administrator sees **Home**, **AI usage**, **Publishing**, **Analytics**,
+  **Payments**, and **Profile**.
+- Home opens with a greeting and action buttons, then metric cards, upcoming
+  work, recent media, and next actions. A new local database can show zero
+  metrics and empty states; these are expected until content exists.
+- Switch between dark and light mode and visit Home, Create, Publish, Analytics,
+  and Profile. Text, icons, sheets, and status labels should stay readable in
+  both themes. The landing video is intentionally outside the UI comparison.
+
 ## Common fixes
 
 - **Login says it cannot connect:** confirm the API Terminal is still running
   and that `/health` loads in Safari on the same device. For a real phone, use
   the Mac's Wi-Fi IP in `API_BASE_URL`, keep both devices on the same network,
   and allow VAE under **Settings → Privacy & Security → Local Network**.
-- **`flutter run` cannot build an iOS simulator:** the current Xcode 26.6
-  installation reports that iOS 26.5 is not installed. Open **Xcode → Settings
-  → Components** and install the iOS 26.5 Simulator runtime, then run `open -a
-  Simulator` and `flutter devices` again. The older 18.2/18.4 simulator entries
-  currently listed on this Mac are not accepted by its Xcode build destination
-  resolver. The native macOS app can be tested without that download.
+- **`flutter run` cannot see the iPhone simulator:** open **Xcode → Settings →
+  Components** and check that the iOS 26.5 Simulator runtime is installed. Run
+  `open -a Simulator`, select **VAE iPhone 16 Pro** from **File → Open
+  Simulator**, then run `flutter devices` again.
 - **CocoaPods is not found:** this checkout pins the installed project Ruby in
   `apps/mobile/.ruby-version`. From `apps/mobile`, run `rbenv version` and
   `pod --version`, then try `cd ios && pod install` again.
+- **Xcode says “No space left on device”:** the simulator runtime and first
+  iOS build need several gigabytes of free disk space. Check with `df -h /`.
+  If your npm download cache is large, `npm cache clean --force` safely clears
+  downloaded package copies; then retry `flutter run`.
 - **Text generation reports Ollama unavailable:** leave `ollama serve` running,
   then check `ollama list` contains `qwen3:1.7b` and that the API Terminal has
   `AEVRA_OLLAMA_MODEL=qwen3:1.7b` set before starting the API.

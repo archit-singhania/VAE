@@ -1,3 +1,4 @@
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -68,10 +69,10 @@ class _ShimmerBoxState extends State<ShimmerBox>
             gradient: LinearGradient(
               begin: Alignment(-1 + t * 3, 0),
               end: Alignment(0 + t * 3, 0),
-              colors: const [
-                AevraColors.line,
-                AevraColors.lineStrong,
-                AevraColors.line
+              colors: [
+                Theme.of(context).dividerColor,
+                Theme.of(context).colorScheme.onSurface.withValues(alpha: .15),
+                Theme.of(context).dividerColor,
               ],
             ),
           ),
@@ -140,7 +141,8 @@ class ShimmerList extends StatelessWidget {
         for (var i = 0; i < count; i++) ...[
           const Padding(
               padding: EdgeInsets.symmetric(vertical: 12), child: ShimmerRow()),
-          if (i != count - 1) const Divider(height: 1, color: AevraColors.line),
+          if (i != count - 1)
+            Divider(height: 1, color: Theme.of(context).dividerColor),
         ],
       ],
     );
@@ -205,14 +207,14 @@ class _AiOrbState extends State<AiOrb> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     final color = switch (widget.state) {
-      AiOrbState.success => AevraColors.jade,
-      AiOrbState.thinking => AevraColors.accent,
-      AiOrbState.idle => AevraColors.accent,
+      AiOrbState.success => Theme.of(context).colorScheme.secondary,
+      AiOrbState.thinking => Theme.of(context).colorScheme.primary,
+      AiOrbState.idle => Theme.of(context).colorScheme.primary,
     };
     final icon = switch (widget.state) {
-      AiOrbState.thinking => Icons.autorenew_rounded,
-      AiOrbState.success => Icons.check_rounded,
-      AiOrbState.idle => Icons.auto_awesome,
+      AiOrbState.thinking => LucideIcons.refreshCw,
+      AiOrbState.success => LucideIcons.check,
+      AiOrbState.idle => LucideIcons.sparkles,
     };
     return AnimatedBuilder(
       animation: Listenable.merge([_pulse, _spin]),
@@ -423,6 +425,7 @@ class _ParticleFieldState extends State<ParticleField>
 
   void _onPulse() {
     if (!mounted || reduceMotion(context)) return;
+    final colors = Theme.of(context).colorScheme;
     setState(() {
       _particles = List.generate(22, (_) {
         final angle = _rng.nextDouble() * math.pi * 2;
@@ -432,7 +435,7 @@ class _ParticleFieldState extends State<ParticleField>
               0.32 + (_rng.nextDouble() - 0.5) * 0.1),
           Offset(math.cos(angle) * speed, math.sin(angle) * speed - 30),
           1 + _rng.nextDouble() * 2,
-          _rng.nextBool() ? AevraColors.accent : AevraColors.frost,
+          _rng.nextBool() ? colors.primary : colors.tertiary,
         );
       });
     });
@@ -632,9 +635,10 @@ class _CommandPaletteState extends State<_CommandPalette> {
           color: Colors.transparent,
           child: Container(
             decoration: BoxDecoration(
-              color: AevraColors.panel.withValues(alpha: 0.97),
+              color:
+                  Theme.of(context).colorScheme.surface.withValues(alpha: 0.97),
               borderRadius: BorderRadius.circular(AevraRadius.lg),
-              border: Border.all(color: AevraColors.lineStrong),
+              border: Border.all(color: Theme.of(context).dividerColor),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.55),
@@ -652,34 +656,41 @@ class _CommandPaletteState extends State<_CommandPalette> {
                   child: TextField(
                     controller: _controller,
                     autofocus: true,
-                    style:
-                        const TextStyle(fontSize: 14, color: AevraColors.text),
-                    cursorColor: AevraColors.accent,
-                    decoration: const InputDecoration(
+                    style: TextStyle(
+                        fontSize: 14,
+                        color: Theme.of(context).colorScheme.onSurface),
+                    cursorColor: Theme.of(context).colorScheme.primary,
+                    decoration: InputDecoration(
                       isDense: true,
                       filled: false,
                       border: InputBorder.none,
                       enabledBorder: InputBorder.none,
                       focusedBorder: InputBorder.none,
                       hintText: 'Type a command…',
-                      hintStyle:
-                          TextStyle(color: AevraColors.muted2, fontSize: 14),
-                      prefixIcon: Icon(Icons.search_rounded,
-                          size: 18, color: AevraColors.muted),
-                      prefixIconConstraints: BoxConstraints(minWidth: 30),
+                      hintStyle: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          fontSize: 14),
+                      prefixIcon: Icon(LucideIcons.search,
+                          size: 18,
+                          color:
+                              Theme.of(context).colorScheme.onSurfaceVariant),
+                      prefixIconConstraints: const BoxConstraints(minWidth: 30),
                     ),
                     onChanged: (value) => setState(() => _query = value),
                   ),
                 ),
-                const Divider(height: 1, color: AevraColors.line),
+                Divider(height: 1, color: Theme.of(context).dividerColor),
                 ConstrainedBox(
                   constraints: const BoxConstraints(maxHeight: 320),
                   child: results.isEmpty
-                      ? const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 26),
+                      ? Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 26),
                           child: Text('No matching commands',
                               style: TextStyle(
-                                  fontSize: 12, color: AevraColors.muted2)),
+                                  fontSize: 12,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant)),
                         )
                       : ListView.builder(
                           shrinkWrap: true,
@@ -690,14 +701,18 @@ class _CommandPaletteState extends State<_CommandPalette> {
                             return ListTile(
                               dense: true,
                               leading: Icon(action.icon,
-                                  size: 18, color: AevraColors.accent),
+                                  size: 18,
+                                  color: Theme.of(context).colorScheme.primary),
                               title: Text(action.label,
                                   style: const TextStyle(
                                       fontSize: 13,
                                       fontWeight: FontWeight.w500)),
                               subtitle: Text(action.hint,
-                                  style: const TextStyle(
-                                      fontSize: 10, color: AevraColors.muted2)),
+                                  style: TextStyle(
+                                      fontSize: 10,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurfaceVariant)),
                               onTap: () {
                                 Navigator.of(context).pop();
                                 action.run();
@@ -776,9 +791,9 @@ class _OnboardingSheetState extends State<OnboardingSheet> {
       child: Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: AevraColors.panel.withValues(alpha: 0.96),
+          color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.96),
           borderRadius: BorderRadius.circular(AevraRadius.xl),
-          border: Border.all(color: AevraColors.lineStrong),
+          border: Border.all(color: Theme.of(context).dividerColor),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.5),
@@ -805,8 +820,10 @@ class _OnboardingSheetState extends State<OnboardingSheet> {
             const SizedBox(height: AevraSpace.xs),
             Text(
               _steps[step].body,
-              style: const TextStyle(
-                  fontSize: 13.5, height: 1.55, color: AevraColors.textSoft),
+              style: TextStyle(
+                  fontSize: 13.5,
+                  height: 1.55,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant),
             ),
             const SizedBox(height: 22),
             Row(
@@ -816,8 +833,10 @@ class _OnboardingSheetState extends State<OnboardingSheet> {
                     await markTourComplete();
                     widget.onDone();
                   },
-                  child: const Text('Skip',
-                      style: TextStyle(color: AevraColors.muted2)),
+                  child: Text('Skip',
+                      style: TextStyle(
+                          color:
+                              Theme.of(context).colorScheme.onSurfaceVariant)),
                 ),
                 const Spacer(),
                 Row(
@@ -830,8 +849,8 @@ class _OnboardingSheetState extends State<OnboardingSheet> {
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: i == step
-                            ? AevraColors.accent
-                            : AevraColors.lineStrong,
+                            ? Theme.of(context).colorScheme.primary
+                            : Theme.of(context).dividerColor,
                       ),
                     ),
                   ),

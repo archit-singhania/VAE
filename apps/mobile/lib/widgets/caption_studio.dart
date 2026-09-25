@@ -1,3 +1,4 @@
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter/material.dart';
 import '../state/app_state.dart';
 import '../api/models.dart';
@@ -105,11 +106,11 @@ class _CaptionStudioState extends State<CaptionStudio> {
                 Wrap(spacing: 8, children: [
                   TextButton.icon(
                       onPressed: busy ? null : () => prepare(true),
-                      icon: const Icon(Icons.auto_awesome),
+                      icon: const Icon(LucideIcons.sparkles),
                       label: const Text('Generate')),
                   TextButton.icon(
                       onPressed: busy ? null : () => prepare(false),
-                      icon: const Icon(Icons.upload_file),
+                      icon: const Icon(LucideIcons.upload),
                       label: const Text('Import PDF / TXT / MD'))
                 ]),
                 const Text(

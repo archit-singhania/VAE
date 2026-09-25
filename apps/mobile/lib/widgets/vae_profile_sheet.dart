@@ -1,3 +1,4 @@
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter/material.dart';
 import '../state/app_state.dart';
 import 'vae_ui.dart';
@@ -115,7 +116,7 @@ class _VaeProfileSheetState extends State<VaeProfileSheet> {
                           IconButton(
                               tooltip: 'Close profile',
                               onPressed: () => Navigator.pop(context),
-                              icon: const Icon(Icons.close))
+                              icon: const Icon(LucideIcons.x))
                         ]),
                         Center(
                             child: CircleAvatar(
@@ -124,7 +125,7 @@ class _VaeProfileSheetState extends State<VaeProfileSheet> {
                                     ? null
                                     : NetworkImage(avatar!),
                                 child: avatar == null
-                                    ? const Icon(Icons.person_outline)
+                                    ? const Icon(LucideIcons.userRound)
                                     : null)),
                         TextButton(
                             onPressed: busy ? null : upload,
