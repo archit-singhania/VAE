@@ -14,12 +14,14 @@ import {
   Image,
   LogOut,
   Menu,
+  Moon,
   Plus,
   RefreshCw,
   Search,
   Send,
   ShieldCheck,
   Sparkles,
+  Sun,
   Upload,
   UserRound,
   X,
@@ -55,7 +57,10 @@ import {
 import { GrainOverlay } from "@/components/background/grain-overlay";
 import { HeroVideo } from "@/components/background/hero-video";
 import { WebglBackground } from "@/components/background/webgl-background";
+import { CaptionEditor } from "@/components/caption-editor";
+import { LandingStory } from "@/components/landing-story";
 import { MlStudio } from "@/components/ml-studio";
+import { PublishingCalendar } from "@/components/publishing-calendar";
 
 const AreaChart = dynamic(() => import("@/components/charts").then((m) => m.AreaChart));
 const BarChart = dynamic(() => import("@/components/charts").then((m) => m.BarChart));
@@ -233,6 +238,16 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
   const [profileAvatar, setProfileAvatar] = useState("");
   const [profileAvatarBusy, setProfileAvatarBusy] = useState(false);
   const avatarInputRef = useRef<HTMLInputElement>(null);
+  const prefetchedSessionUser = useRef<User | null>(null);
+  const prefetchedSessionWorkspaces = useRef<Workspace[] | null>(null);
+  const authCardRef = useRef<HTMLFormElement>(null);
+  const focusAuthCard = useCallback((nextMode?: "login" | "register") => {
+    if (nextMode) setMode(nextMode);
+    authCardRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    window.setTimeout(() => {
+      authCardRef.current?.querySelector<HTMLInputElement>("input")?.focus();
+    }, 260);
+  }, []);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [brandName, setBrandName] = useState("VAE");
@@ -258,6 +273,9 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
   const [publishReview, setPublishReview] = useState<boolean | null>(null);
   const [mediaMode, setMediaMode] = useState<"image" | "text">("image");
   const [generatedText, setGeneratedText] = useState("");
+  const [captionAsset, setCaptionAsset] = useState<MediaAsset | null>(null);
+  const [assetCaption, setAssetCaption] = useState("");
+  const [extraAssetIds, setExtraAssetIds] = useState<string[]>([]);
   const [uploadingMedia, setUploadingMedia] = useState(false);
   const [publishAssetId, setPublishAssetId] = useState("");
   const [publishAccounts, setPublishAccounts] = useState<string[]>([]);
@@ -312,6 +330,7 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
     setProfileAvatar(user.avatar_url ?? "");
   }, [user]);
   const themeTransition = useRef(false);
+  const submissionKeys = useRef(new Map<string, string>());
   const [soundEnabled, setSoundEnabled] = useState(false);
   const [pulse, setPulse] = useState(0);
   const [scrolled, setScrolled] = useState(false);
@@ -330,6 +349,7 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
     if (
       !(
         profileOpen ||
+        captionAsset ||
         previewAsset ||
         signOutOpen ||
         paletteOpen ||
@@ -364,6 +384,7 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
       if (event.key === "Escape" && !signingOut) {
         setProfileOpen(false);
         setPreviewAsset(null);
+        setCaptionAsset(null);
         setSignOutOpen(false);
         setPaletteOpen(false);
         setPublishReview(null);
@@ -390,7 +411,16 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
       document.removeEventListener("keydown", keyboard);
       previous?.focus();
     };
-  }, [profileOpen, previewAsset, signOutOpen, paletteOpen, tourOpen, publishReview, signingOut]);
+  }, [
+    profileOpen,
+    captionAsset,
+    previewAsset,
+    signOutOpen,
+    paletteOpen,
+    tourOpen,
+    publishReview,
+    signingOut,
+  ]);
   const currentCampaign = campaigns.find((item) => item.id === selected);
   const playTone = useCallback(() => {
     if (!soundEnabled || typeof window === "undefined") return;
@@ -468,17 +498,31 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
     async (accessToken: string) => {
       setBusy("load");
       try {
-        const me = await api.me(accessToken);
+        // Identity and workspace membership are independent requests. Starting
+        // them together removes a full network round-trip from sign-in,
+        // especially noticeable when the API is waking from an idle deploy.
+        const cachedUser = prefetchedSessionUser.current;
+        prefetchedSessionUser.current = null;
+        const cachedWorkspaces = prefetchedSessionWorkspaces.current;
+        prefetchedSessionWorkspaces.current = null;
+        const [me, workspaces] = await Promise.all([
+          cachedUser ? Promise.resolve(cachedUser) : api.me(accessToken),
+          cachedWorkspaces ? Promise.resolve(cachedWorkspaces) : api.workspaces(accessToken),
+        ]);
         if (me.is_admin !== adminPortal) {
           window.location.replace(me.is_admin ? "/admin" : "/");
           return;
         }
         setUser(me);
-        const workspaces = await api.workspaces(accessToken);
         if (me.is_admin) {
           setWorkspace(workspaces[0] ?? null);
-          const overview = await api.adminOverview(accessToken);
-          setAdminOverview(overview);
+          setBusy(null);
+          void api
+            .adminOverview(accessToken)
+            .then(setAdminOverview)
+            .catch((caught) =>
+              setError(caught instanceof Error ? caught.message : "Unable to load admin report."),
+            );
           return;
         }
         const nextWorkspace = workspaces[0];
@@ -534,7 +578,10 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
     window.localStorage.removeItem(legacyTokenKey);
     api
       .me(browserSession)
-      .then(() => setToken(browserSession))
+      .then((me) => {
+        prefetchedSessionUser.current = me;
+        setToken(browserSession);
+      })
       .catch(() => setToken(null));
   }, []);
   useEffect(() => {
@@ -618,24 +665,36 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
     setBusy("auth");
     setError(null);
     try {
-      const result =
-        mode === "login"
-          ? await api.login(email, password, adminPortal)
-          : await api.register({
-              email,
-              password,
-              display_name: name,
-              organization_name: org,
-              workspace_name: "Content Studio",
-              account_type: accountType,
-              brand_name: org,
-              timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
-            });
-      if (
-        mode === "register" &&
-        "account_status" in result &&
-        result.account_status !== "approved"
-      ) {
+      if (mode === "login") {
+        const result = await api.login(email, password, adminPortal);
+        prefetchedSessionUser.current = result.user;
+        prefetchedSessionWorkspaces.current = result.workspaces;
+        const enterDashboard = () => {
+          setUser(result.user);
+          setWorkspace(result.workspaces[0] ?? null);
+          setToken(browserSession);
+        };
+        if (
+          document.startViewTransition &&
+          !window.matchMedia("(prefers-reduced-motion: reduce)").matches
+        ) {
+          document.startViewTransition(() => flushSync(enterDashboard));
+        } else {
+          enterDashboard();
+        }
+        return;
+      }
+      const result = await api.register({
+        email,
+        password,
+        display_name: name,
+        organization_name: org,
+        workspace_name: "Content Studio",
+        account_type: accountType,
+        brand_name: org,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
+      });
+      if ("account_status" in result && result.account_status !== "approved") {
         if (result.onboarding_token) {
           setOnboarding({ token: result.onboarding_token, email });
           setPaymentInfo(await api.paymentInstructions());
@@ -721,7 +780,7 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
   const uploadProfileAvatar = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     event.target.value = "";
-    if (!file || !token) return;
+    if (!file || !token || !user) return;
     if (!workspace) {
       setError("A workspace is required to upload a profile picture.");
       return;
@@ -732,7 +791,15 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
       const uploaded = await api.uploadMedia(token, workspace.id, null, file);
       if (!uploaded.download_url) throw new Error("The avatar upload did not return a preview.");
       setProfileAvatar(uploaded.download_url);
-      setNotice("Profile image uploaded. Save your profile to keep it.");
+      const updated = await api.updateProfile(token, {
+        display_name: profileName || user.display_name,
+        email: profileEmail || user.email,
+        account_type: user.account_type,
+        brand_name: profileBrand || null,
+        avatar_url: uploaded.download_url,
+      });
+      setUser(updated);
+      setNotice("Profile picture updated.");
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Profile image upload failed.");
     } finally {
@@ -879,12 +946,17 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
         const result = await api.generateImage(token, workspace.id, {
           campaign_id: null,
           prompt: enhancedPrompt,
+          name_prompt: mediaPrompt,
           platforms: ["instagram"],
           aspect_ratio: aspectRatio,
           brand_overlay: true,
           brand_text: brands[0]?.name ?? "VAE",
         });
         setAssets((items) => [...result.assets, ...items]);
+        if (output === 0 && result.assets[0]) {
+          setCaptionAsset(result.assets[0]);
+          setAssetCaption(generatedText || publishText);
+        }
       }
       setNotice("Visual asset generated.");
       setPulse((value) => value + 1);
@@ -910,22 +982,6 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
       setPublishText(content);
       setNotice("Text generated and copied into publishing.");
     });
-  };
-  const uploadMedia = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file || !token || !workspace) return;
-    setUploadingMedia(true);
-    setError(null);
-    try {
-      const asset = await api.uploadMedia(token, workspace.id, "", file);
-      setAssets((items) => [asset, ...items]);
-      setNotice(`${file.name} uploaded to the media library.`);
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Media upload failed.");
-    } finally {
-      setUploadingMedia(false);
-      event.target.value = "";
-    }
   };
   const downloadAsset = async (asset: MediaAsset) => {
     if (!token || !asset.download_url) return;
@@ -981,8 +1037,8 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
   };
   const publish = async (shouldSchedule: boolean) => {
     if (!token || !workspace) return;
-    if (!publishAccounts.length || !(publishText.trim() || publishAssetId)) {
-      setError("Select a connected channel and add media or a caption.");
+    if (!publishAccounts.length || !publishText.trim()) {
+      setError("Select a connected channel and write or generate a caption.");
       return;
     }
     if (shouldSchedule && (!scheduleAt || new Date(scheduleAt).getTime() <= Date.now())) {
@@ -992,39 +1048,57 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
     setPublishReview(null);
     setDelivery({});
     await run(shouldSchedule ? "schedule" : "publish", async () => {
-      const asset = assets.find((item) => item.id === publishAssetId);
+      const selectedIds = [...new Set([publishAssetId, ...extraAssetIds].filter(Boolean))];
+      const batch = selectedIds.length ? selectedIds : [""];
       const results = await Promise.all(
-        publishAccounts.map(async (accountId) => {
-          try {
-            const payload = {
-              campaign_id: null,
-              social_account_id: accountId,
-              idempotency_key: idempotency(),
-              text: publishText,
-              media_urls: asset?.download_url ? [asset.download_url] : [],
-            };
-            const result = shouldSchedule
-              ? await api.schedule(token, workspace.id, {
-                  ...payload,
-                  scheduled_for: new Date(scheduleAt).toISOString(),
-                })
-              : await api.publish(token, workspace.id, payload);
-            setDelivery((current) => ({ ...current, [accountId]: result.status }));
-            if (shouldSchedule) setScheduled((current) => [result as ScheduledPost, ...current]);
-            return result.status !== "failed";
-          } catch (reason) {
-            setDelivery((current) => ({
-              ...current,
-              [accountId]:
-                reason instanceof Error ? `Failed: ${reason.message}` : "Failed. Try again.",
-            }));
-            return false;
-          }
-        }),
+        publishAccounts.flatMap((accountId) =>
+          batch.map(async (assetId) => {
+            const asset = assets.find((item) => item.id === assetId);
+            const deliveryId = `${accountId}:${assetId}`;
+            try {
+              const fingerprint = JSON.stringify([
+                workspace.id,
+                accountId,
+                assetId,
+                publishText,
+                shouldSchedule ? scheduleAt : "now",
+              ]);
+              const submissionKey = submissionKeys.current.get(fingerprint) ?? idempotency();
+              submissionKeys.current.set(fingerprint, submissionKey);
+              const payload = {
+                campaign_id: null,
+                social_account_id: accountId,
+                idempotency_key: submissionKey,
+                text: publishText,
+                media_urls: asset?.download_url ? [asset.download_url] : [],
+              };
+              const result = shouldSchedule
+                ? await api.schedule(token, workspace.id, {
+                    ...payload,
+                    scheduled_for: new Date(scheduleAt).toISOString(),
+                  })
+                : await api.publish(token, workspace.id, payload);
+              setDelivery((current) => ({ ...current, [deliveryId]: result.status }));
+              if (shouldSchedule)
+                setScheduled((current) => [
+                  result as ScheduledPost,
+                  ...current.filter((p) => p.id !== result.id),
+                ]);
+              return result.status !== "failed";
+            } catch (reason) {
+              setDelivery((current) => ({
+                ...current,
+                [deliveryId]:
+                  reason instanceof Error ? `Failed: ${reason.message}` : "Failed. Try again.",
+              }));
+              return false;
+            }
+          }),
+        ),
       );
       const succeeded = results.filter(Boolean).length;
       setNotice(
-        `${succeeded} of ${results.length} channels ${shouldSchedule ? "scheduled" : "submitted"}. See delivery status below.`,
+        `${succeeded} of ${results.length} posts ${shouldSchedule ? "scheduled" : "submitted"}. See delivery status below.`,
       );
     });
   };
@@ -1032,12 +1106,17 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
     const file = event.target.files?.[0];
     event.target.value = "";
     if (!file || !token || !workspace) return;
+    if ([publishAssetId, ...extraAssetIds].filter(Boolean).length >= 4) {
+      setError("Select up to four assets per batch.");
+      return;
+    }
     setUploadingMedia(true);
     try {
       const asset = await api.uploadMedia(token, workspace.id, null, file);
       setAssets((items) => [asset, ...items]);
-      setPublishAssetId(asset.id);
-      setNotice("Asset uploaded and selected for publishing.");
+      if (publishAssetId) setExtraAssetIds((ids) => [...ids, asset.id]);
+      else setPublishAssetId(asset.id);
+      setNotice("Asset uploaded and added to your publishing batch.");
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Asset upload failed.");
     } finally {
@@ -1073,20 +1152,70 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
   if (!token)
     return (
       <MotionConfig reducedMotion="user">
-        <main className="live-auth">
-          <WebglBackground />
+        <main className={cn("live-auth", adminPortal && "admin-auth")}>
+          <WebglBackground variant={adminPortal ? "admin" : "creator"} />
           <HeroVideo />
           <div className="hero-video-overlay" aria-hidden="true" />
           <GrainOverlay />
+          <header className="landing-nav">
+            <div
+              className={cn(
+                "live-logo brand-lockup",
+                adminPortal ? "admin-brand" : "creator-brand",
+              )}
+            >
+              {/* biome-ignore lint/performance/noImgElement: static brand SVG */}
+              <img
+                src={adminPortal ? "/brand/vae-admin-icon.svg" : "/brand/vae-creator-icon.svg"}
+                alt=""
+              />
+              <span className="brand-wordmark" role="img" aria-label="VAE">
+                <b>V</b>
+                <em>AE</em>
+              </span>
+            </div>
+            <div className="landing-nav-links">
+              <button
+                type="button"
+                className="landing-nav-cta"
+                onClick={toggleTheme}
+                aria-label={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
+              >
+                {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
+                <span className="nav-label">{theme === "dark" ? "Light" : "Dark"}</span>
+              </button>
+              {!adminPortal && (
+                <button
+                  type="button"
+                  className="landing-nav-cta"
+                  onClick={() => focusAuthCard("login")}
+                >
+                  <span className="nav-long">Creator / Business sign in</span>
+                  <span className="nav-short">Sign in</span>
+                </button>
+              )}
+              <button
+                type="button"
+                className="landing-nav-cta primary"
+                onClick={() => focusAuthCard(adminPortal ? undefined : "register")}
+              >
+                <span className="nav-long">
+                  {adminPortal ? "Administrator sign in" : "Get started"}
+                </span>
+                <span className="nav-short">{adminPortal ? "Sign in" : "Get started"}</span>
+              </button>
+              <a className="landing-nav-cta nav-secondary" href={adminPortal ? "/" : "/admin"}>
+                <ShieldCheck size={14} />
+                <span>{adminPortal ? "Creator sign in" : "Admin sign in"}</span>
+              </a>
+            </div>
+          </header>
           <motion.section
+            className="landing-hero-copy"
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
           >
-            <div className="live-logo">
-              <span />
-              <b>VAE</b>
-            </div>
             <p className="live-kicker">
               {adminPortal ? "VAE administration" : "Your creative workspace"}
             </p>
@@ -1109,8 +1238,25 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
                 <Check size={15} /> {adminPortal ? "Payment review." : "Publish on schedule."}
               </span>
             </div>
+            <section className="landing-proof" aria-label="Platform highlights">
+              <span>
+                <strong>One workspace</strong>
+                <small>
+                  {adminPortal ? "Complete operational control" : "From idea to published post"}
+                </small>
+              </span>
+              <span>
+                <strong>{adminPortal ? "Live clarity" : "AI, refined"}</strong>
+                <small>
+                  {adminPortal
+                    ? "Signals that support decisions"
+                    : "Creative control stays with you"}
+                </small>
+              </span>
+            </section>
           </motion.section>
           <motion.form
+            ref={authCardRef}
             className="live-auth-card"
             onSubmit={authenticate}
             onMouseMove={handleGlow}
@@ -1118,6 +1264,24 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
             animate={{ opacity: 1, y: 0, scale: 1 }}
             transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1], delay: 0.1 }}
           >
+            <div
+              className={cn(
+                "live-auth-card-brand brand-lockup",
+                adminPortal ? "admin-brand" : "creator-brand",
+              )}
+              role="img"
+              aria-label={adminPortal ? "VAE administrator" : "VAE creator"}
+            >
+              {/* biome-ignore lint/performance/noImgElement: static brand SVG */}
+              <img
+                src={adminPortal ? "/brand/vae-admin-icon.svg" : "/brand/vae-creator-icon.svg"}
+                alt=""
+              />
+              <span className="brand-wordmark" aria-hidden="true">
+                <b>V</b>
+                <em>AE</em>
+              </span>
+            </div>
             {onboarding && paymentInfo ? (
               <div className="live-payment-card">
                 {paymentStatus?.status === "approved" ? (
@@ -1235,7 +1399,7 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
                       className={cn(mode === "register" && "active")}
                       onClick={() => setMode("register")}
                     >
-                      Get started
+                      Creator / Business sign up
                     </button>
                   </div>
                 )}
@@ -1249,7 +1413,9 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
                 <p>
                   {adminPortal
                     ? "Access customer operations and payment review with your administrator account."
-                    : "Your creator workspace starts here."}
+                    : mode === "login"
+                      ? "Your creator workspace starts here."
+                      : "Choose Creator or Business below to set up your workspace."}
                 </p>
                 {notice && mode === "login" && (
                   <div role="status" className="live-alert success">
@@ -1279,17 +1445,43 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
                         placeholder="Acme Studio"
                       />
                     </Field>
-                    <Field label="Account type">
-                      <select
-                        value={accountType}
-                        onChange={(event) =>
-                          setAccountType(event.target.value as "creator" | "business")
-                        }
+                    <div className="live-field">
+                      <span>Account type</span>
+                      <div
+                        className="account-type-picker"
+                        role="radiogroup"
+                        aria-label="Account type"
                       >
-                        <option value="creator">Creator</option>
-                        <option value="business">Business</option>
-                      </select>
-                    </Field>
+                        {/* biome-ignore lint/a11y/useSemanticElements: card-style selector preserves button keyboard behavior inside the form. */}
+                        <button
+                          type="button"
+                          role="radio"
+                          aria-checked={accountType === "creator"}
+                          className={cn(
+                            "account-type-option",
+                            accountType === "creator" && "active",
+                          )}
+                          onClick={() => setAccountType("creator")}
+                        >
+                          <strong>Creator</strong>
+                          <small>Publish under your own name and voice.</small>
+                        </button>
+                        {/* biome-ignore lint/a11y/useSemanticElements: card-style selector preserves button keyboard behavior inside the form. */}
+                        <button
+                          type="button"
+                          role="radio"
+                          aria-checked={accountType === "business"}
+                          className={cn(
+                            "account-type-option",
+                            accountType === "business" && "active",
+                          )}
+                          onClick={() => setAccountType("business")}
+                        >
+                          <strong>Business</strong>
+                          <small>Publish for a brand or team workspace.</small>
+                        </button>
+                      </div>
+                    </div>
                   </>
                 )}
                 <Field label="Email">
@@ -1341,12 +1533,13 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
               </div>
             )}
           </motion.form>
+          <LandingStory audience={adminPortal ? "admin" : "creator"} />
         </main>
       </MotionConfig>
     );
   if (!user)
     return (
-      <main className="live-auth">
+      <main className={cn("live-auth", adminPortal && "admin-auth")}>
         <section role="status">
           <h1>Loading your workspace</h1>
           {error ? (
@@ -1389,9 +1582,7 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
         </div>
         <div className="live-hero-tools">
           <AiOrb state={busy === "load" ? "thinking" : notice ? "success" : "idle"} />
-          <span className="live-connected">
-            <i /> API connected
-          </span>
+
           <Button onClick={() => setView("media")}>
             Create media <Plus size={14} />
           </Button>
@@ -1501,6 +1692,7 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
               <Image size={16} />
               <span>
                 <b>{asset.filename}</b>
+
                 <small>
                   {asset.media_type} · {date(asset.created_at)}
                 </small>
@@ -1915,19 +2107,6 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
               </button>
             </div>
           )}
-          <label className="upload-dropzone">
-            <Upload size={16} />
-            <span>{uploadingMedia ? "Uploading…" : "Upload an asset"}</span>
-            <small>
-              Keep your visual references and finished images together in the private library.
-            </small>
-            <input
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              disabled={uploadingMedia}
-              onChange={uploadMedia}
-            />
-          </label>
         </form>
       </section>
       <section className="live-panel">
@@ -1971,11 +2150,22 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
               <Image size={22} />
               <Status value={asset.status} />
               <b>{asset.filename}</b>
+              <button
+                type="button"
+                onClick={() => {
+                  setCaptionAsset(asset);
+                  setAssetCaption(asset.asset_metadata?.caption || generatedText || publishText);
+                }}
+              >
+                <FileText size={14} />
+                {asset.asset_metadata?.caption ? "Edit paired caption" : "Add caption & hashtags"}
+              </button>
               {asset.status === "ready" && (
                 <button
                   type="button"
                   onClick={() => {
                     setPublishAssetId(asset.id);
+                    if (asset.asset_metadata?.caption) setPublishText(asset.asset_metadata.caption);
                     setView("publishing");
                   }}
                 >
@@ -1996,7 +2186,7 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
           <Empty
             icon={Image}
             title="Your library is empty"
-            body="Describe a visual above or upload your own media."
+            body="Describe a visual above. Bring your own media in Publish."
           />
         )}
       </section>
@@ -2010,7 +2200,15 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
           <h2>Publish or schedule</h2>
           <div className="live-form">
             <Field label="Media asset (optional)">
-              <select value={publishAssetId} onChange={(e) => setPublishAssetId(e.target.value)}>
+              <select
+                value={publishAssetId}
+                onChange={(e) => {
+                  setPublishAssetId(e.target.value);
+                  setExtraAssetIds((ids) => ids.filter((id) => id !== e.target.value));
+                  const asset = assets.find((a) => a.id === e.target.value);
+                  if (asset?.asset_metadata?.caption) setPublishText(asset.asset_metadata.caption);
+                }}
+              >
                 <option value="">Text-only post</option>
                 {assets
                   .filter((asset) => asset.status === "ready")
@@ -2021,6 +2219,33 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
                   ))}
               </select>
             </Field>
+            <fieldset className="batch-assets">
+              <legend>Add to this batch · up to 4 assets</legend>
+              <p className="live-helper">
+                Mix generated images and uploads. Each asset becomes a separate post on each
+                selected channel.
+              </p>
+              {assets
+                .filter((a) => a.status === "ready" && a.id !== publishAssetId)
+                .map((a) => (
+                  <label key={a.id}>
+                    <input
+                      type="checkbox"
+                      checked={extraAssetIds.includes(a.id)}
+                      disabled={
+                        !extraAssetIds.includes(a.id) &&
+                        extraAssetIds.length + (publishAssetId ? 1 : 0) >= 4
+                      }
+                      onChange={() =>
+                        setExtraAssetIds((ids) =>
+                          ids.includes(a.id) ? ids.filter((id) => id !== a.id) : [...ids, a.id],
+                        )
+                      }
+                    />
+                    <span>{a.filename}</span>
+                  </label>
+                ))}
+            </fieldset>
             <label className="profile-upload-control publishing-upload">
               <Upload size={15} />
               <span>{uploadingMedia ? "Uploading…" : "Upload an asset"}</span>
@@ -2057,14 +2282,19 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
                 <small className="live-helper">Connect a channel before publishing.</small>
               )}
             </fieldset>
-            <Field label="Post copy">
-              <textarea
+            {workspace && (
+              <CaptionEditor
+                token={token}
+                workspaceId={workspace.id}
                 value={publishText}
-                onChange={(e) => setPublishText(e.target.value)}
-                placeholder="Write a caption for your audience…"
+                onChange={setPublishText}
+                prompt={assets.find((a) => a.id === publishAssetId)?.prompt || mediaPrompt}
+                previous={generatedText}
               />
-            </Field>
-            <Field label={`Schedule time · ${workspace?.timezone ?? "UTC"}`}>
+            )}
+            <Field
+              label={`Schedule time · ${Intl.DateTimeFormat().resolvedOptions().timeZone} (device time)`}
+            >
               <input
                 type="datetime-local"
                 value={scheduleAt}
@@ -2093,7 +2323,9 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
           <h2>Scheduled posts</h2>
           {Object.entries(delivery).map(([id, status]) => (
             <div className="live-list-row" key={id} role="status">
-              <span>{accounts.find((a) => a.id === id)?.display_name ?? "Channel"}</span>
+              <span>
+                {accounts.find((a) => a.id === id.split(":")[0])?.display_name ?? "Channel"}
+              </span>
               <span>{status}</span>
             </div>
           ))}
@@ -2148,76 +2380,79 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
           )}
         </section>
       </div>
-      <section className="live-panel">
-        <Reveal3D>
-          <p className="live-kicker">Channel connector</p>
-          <h2>Connect publisher</h2>
-        </Reveal3D>
-        <p className="live-helper">Choose a provider to securely connect your social channel.</p>
-        <fieldset className="oauth-connect-grid">
-          <legend className="sr-only">Secure publisher connections</legend>
-          {(["facebook", "instagram", "threads", "youtube", "linkedin"] as const).map(
-            (provider) => (
-              <button
-                type="button"
-                className="oauth-connect-button"
-                key={provider}
-                disabled={busy === `oauth-${provider}`}
-                onClick={() => void startOAuth(provider)}
-              >
-                <span className="oauth-connect-mark">{provider.slice(0, 1).toUpperCase()}</span>
-                <span>
-                  <strong>{provider === "youtube" ? "YouTube" : provider}</strong>
-                  <small>Connect channel</small>
-                </span>
-                <ArrowRight size={14} />
-              </button>
-            ),
-          )}
-        </fieldset>
-        <div className="live-divider" />
-        <p className="live-helper">
-          Connect through the provider consent screen. VAE never asks you to paste a token or
-          account ID.
-        </p>
-        {accounts.map((account) => (
-          <div className="live-list-row" key={account.id}>
-            <Send size={15} />
-            <span>
-              <b>{account.display_name}</b>
-              <small>
-                {account.platform} · Verified {date(account.last_verified_at)}
-              </small>
-            </span>
-            <Status value={account.status} />
-            {account.status === "revoked" && account.platform !== "x" && (
-              <button onClick={() => void startOAuth(account.platform as Exclude<Platform, "x">)}>
-                Reconnect
-              </button>
+      <div className="live-stack">
+        <PublishingCalendar posts={scheduled} onChoose={setScheduleAt} />
+        <section className="live-panel">
+          <Reveal3D>
+            <p className="live-kicker">Channel connector</p>
+            <h2>Connect publisher</h2>
+          </Reveal3D>
+          <p className="live-helper">Choose a provider to securely connect your social channel.</p>
+          <fieldset className="oauth-connect-grid">
+            <legend className="sr-only">Secure publisher connections</legend>
+            {(["facebook", "instagram", "threads", "youtube", "linkedin"] as const).map(
+              (provider) => (
+                <button
+                  type="button"
+                  className="oauth-connect-button"
+                  key={provider}
+                  disabled={busy === `oauth-${provider}`}
+                  onClick={() => void startOAuth(provider)}
+                >
+                  <span className="oauth-connect-mark">{provider.slice(0, 1).toUpperCase()}</span>
+                  <span>
+                    <strong>{provider === "youtube" ? "YouTube" : provider}</strong>
+                    <small>Connect channel</small>
+                  </span>
+                  <ArrowRight size={14} />
+                </button>
+              ),
             )}
-            {account.platform === "linkedin" || account.platform === "youtube" ? (
+          </fieldset>
+          <div className="live-divider" />
+          <p className="live-helper">
+            Connect through the provider consent screen. VAE never asks you to paste a token or
+            account ID.
+          </p>
+          {accounts.map((account) => (
+            <div className="live-list-row" key={account.id}>
+              <Send size={15} />
+              <span>
+                <b>{account.display_name}</b>
+                <small>
+                  {account.platform} · Verified {date(account.last_verified_at)}
+                </small>
+              </span>
+              <Status value={account.status} />
+              {account.status === "revoked" && account.platform !== "x" && (
+                <button onClick={() => void startOAuth(account.platform as Exclude<Platform, "x">)}>
+                  Reconnect
+                </button>
+              )}
+              {account.platform === "linkedin" || account.platform === "youtube" ? (
+                <button
+                  type="button"
+                  className="icon-button"
+                  aria-label={`Refresh ${account.display_name}`}
+                  onClick={() => void refreshAccount(account)}
+                  disabled={busy === `refresh-${account.id}` || account.status === "revoked"}
+                >
+                  <RefreshCw size={14} />
+                </button>
+              ) : null}
               <button
                 type="button"
                 className="icon-button"
-                aria-label={`Refresh ${account.display_name}`}
-                onClick={() => void refreshAccount(account)}
-                disabled={busy === `refresh-${account.id}` || account.status === "revoked"}
+                aria-label={`Disconnect ${account.display_name}`}
+                onClick={() => void revokeAccount(account)}
+                disabled={busy === `revoke-${account.id}` || account.status === "revoked"}
               >
-                <RefreshCw size={14} />
+                <X size={14} />
               </button>
-            ) : null}
-            <button
-              type="button"
-              className="icon-button"
-              aria-label={`Disconnect ${account.display_name}`}
-              onClick={() => void revokeAccount(account)}
-              disabled={busy === `revoke-${account.id}` || account.status === "revoked"}
-            >
-              <X size={14} />
-            </button>
-          </div>
-        ))}
-      </section>
+            </div>
+          ))}
+        </section>
+      </div>
     </div>
   );
   const statusCounts = campaigns.reduce(
@@ -2664,7 +2899,7 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
       adminView
     ) : (
       <AdminDashboard
-        onRefresh={() => void load(token)}
+        onRefresh={() => load(token)}
         data={adminOverview}
         section={
           (["overview", "media", "publishing", "analytics"].includes(view)
@@ -2726,7 +2961,7 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
         className={cn("live-app", `view-${view}`, user?.is_admin && "admin-app")}
         data-theme={theme}
       >
-        {!user?.is_admin && <WebglBackground />}
+        <WebglBackground variant={user?.is_admin ? "admin" : "creator"} />
         <GrainOverlay />
         {paletteOpen && (
           <CommandPalette items={paletteItems} onClose={() => setPaletteOpen(false)} />
@@ -2946,15 +3181,34 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
           )}
         </AnimatePresence>
         <aside className={cn("live-sidebar", sidebar && "open")}>
-          <div className="live-logo">
-            <span />
-            <b>VAE</b>
+          <div
+            className={cn(
+              "live-logo brand-lockup",
+              user?.is_admin ? "admin-brand" : "creator-brand",
+            )}
+          >
+            {/* biome-ignore lint/performance/noImgElement: static brand SVG */}
+            <img
+              src={user?.is_admin ? "/brand/vae-admin-icon.svg" : "/brand/vae-creator-icon.svg"}
+              alt=""
+            />
+            <span className="brand-wordmark" role="img" aria-label="VAE">
+              <b>V</b>
+              <em>AE</em>
+            </span>
             <button onClick={() => setSidebar(false)} aria-label="Close">
               <X size={17} />
             </button>
           </div>
           <div className="live-workspace">
-            <div>{initial(user?.brand_name || user?.display_name)}</div>
+            <div>
+              {user?.avatar_url ? (
+                // biome-ignore lint/performance/noImgElement: user-provided remote avatar URLs are dynamic.
+                <img src={user.avatar_url} alt="" />
+              ) : (
+                <UserRound size={18} />
+              )}
+            </div>
             <span>
               <b>{user?.brand_name || user?.display_name}</b>
               <small>
@@ -2981,26 +3235,19 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
                 <span>{item.label}</span>
               </button>
             ))}
-            <button className="edit-profile-trigger" onClick={() => setProfileOpen(true)}>
-              <UserRound size={17} />
-              <span>Edit profile</span>
-            </button>
             <button onClick={() => setPaletteOpen(true)}>
               <Menu size={17} />
               <span>More / Command</span>
             </button>
           </nav>
           <div className="live-sidebar-foot">
-            <button onClick={toggleTheme}>
-              {theme === "dark" ? "Light appearance" : "Dark appearance"}
-            </button>
             <button className="live-user profile-trigger" onClick={() => setProfileOpen(true)}>
               <div>
                 {user?.avatar_url ? (
                   // biome-ignore lint/performance/noImgElement: user-provided remote avatar URLs are dynamic.
                   <img src={user.avatar_url} alt="" />
                 ) : (
-                  initial(user?.display_name)
+                  <UserRound size={18} />
                 )}
               </div>
               <span>
@@ -3035,11 +3282,63 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
               <span>{item.label}</span>
             </button>
           ))}
-          <button onClick={() => setProfileOpen(true)}>
-            <UserRound size={20} />
+          <button className="bottom-profile" onClick={() => setProfileOpen(true)}>
+            {user?.avatar_url ? (
+              // biome-ignore lint/performance/noImgElement: user-provided remote avatar URLs are dynamic.
+              <img src={user.avatar_url} alt="" />
+            ) : (
+              <UserRound size={20} />
+            )}
             <span>Edit profile</span>
           </button>
         </nav>
+        {captionAsset && workspace && (
+          <div className="confirm-layer">
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-label="Pair caption with asset"
+              className="confirm-dialog caption-dialog"
+            >
+              <p className="live-kicker">Complete your creative</p>
+              <h2>Give this visual a voice</h2>
+              <p>{captionAsset.filename}</p>
+              <CaptionEditor
+                key={captionAsset.id}
+                token={token}
+                workspaceId={workspace.id}
+                value={assetCaption}
+                onChange={setAssetCaption}
+                prompt={captionAsset.prompt || mediaPrompt}
+                previous={generatedText}
+              />
+              <div className="confirm-actions">
+                <Button variant="secondary" onClick={() => setCaptionAsset(null)}>
+                  Later
+                </Button>
+                <Button
+                  disabled={busy === "save-caption"}
+                  onClick={() =>
+                    void run("save-caption", async () => {
+                      const asset = await api.saveAssetCaption(
+                        token,
+                        workspace.id,
+                        captionAsset.id,
+                        assetCaption,
+                      );
+                      setAssets((items) => items.map((a) => (a.id === asset.id ? asset : a)));
+                      setPublishText(assetCaption);
+                      setCaptionAsset(null);
+                      setNotice("Caption and hashtags saved with your asset.");
+                    })
+                  }
+                >
+                  Save pairing
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
         {publishReview !== null && (
           <div className="confirm-layer">
             <div
@@ -3050,7 +3349,18 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
             >
               <p className="live-kicker">Review your post</p>
               <h2>{publishReview ? "Schedule this post?" : "Publish this post?"}</h2>
-              <p>{assets.find((a) => a.id === publishAssetId)?.filename ?? "Text post"}</p>
+              <p>
+                {[publishAssetId, ...extraAssetIds]
+                  .filter(Boolean)
+                  .map((id) => assets.find((a) => a.id === id)?.filename)
+                  .join(" · ") || "Text post"}
+              </p>
+              <p>
+                {Math.max(1, [publishAssetId, ...extraAssetIds].filter(Boolean).length) *
+                  publishAccounts.length}{" "}
+                separate posts will be submitted. The caption below applies to every post in this
+                batch.
+              </p>
               <p>{publishText || "No caption"}</p>
               <p>
                 {accounts
@@ -3082,6 +3392,7 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
               </button>
               <SoundToggle enabled={soundEnabled} onChange={setSoundEnabled} />
               <button className="live-theme-toggle" onClick={toggleTheme}>
+                {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
                 {theme === "dark" ? "Light" : "Dark"}
               </button>
               <button

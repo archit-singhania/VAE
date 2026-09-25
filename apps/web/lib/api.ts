@@ -115,6 +115,74 @@ export type MlReport = {
   };
 };
 
+export type AdvancedReport = {
+  version: string;
+  generated_at: string;
+  platform: string;
+  timezone: string;
+  content_map: {
+    status: string;
+    explanation: string;
+    sample_count: number;
+    capped: boolean;
+    explained_variance: number | null;
+    clusters: Array<{ id: number; label: string; count: number }>;
+    points: Array<{
+      id: string;
+      caption: string;
+      platform: string;
+      cluster: number;
+      x: number;
+      y: number;
+      engagement_rate: number | null;
+    }>;
+  };
+  comparison: {
+    status: string;
+    explanation: string;
+    prediction_a: number | null;
+    prediction_b: number | null;
+    delta: number | null;
+    delta_range: [number, number] | null;
+    bootstrap_samples: number;
+    week_blocks: number;
+    diagnostics: Record<string, string | number>;
+  };
+  data_quality: {
+    coverage_percent: number | null;
+    mature_posts: number | null;
+    matched_posts: number | null;
+    metric_samples: number | null;
+    latest_metric_at: string | null;
+    freshness_hours: number | null;
+    observed_days: number;
+    missing_days: number;
+    history_capped: boolean;
+    explanation: string;
+    timeline: Array<{ date: string; observed_posts: number }>;
+    drift: {
+      status: string;
+      explanation: string;
+      previous_samples: number;
+      recent_samples: number;
+      previous_start: string;
+      recent_start: string;
+      window_end: string;
+      ks_distance: number | null;
+      permutation_p: number | null;
+      previous_median: number | null;
+      recent_median: number | null;
+    };
+  };
+  audit: {
+    scope: string;
+    external_requests: number;
+    automatic_actions: boolean;
+    drafts_saved: boolean;
+    history_capped: boolean;
+  };
+};
+
 export type Workspace = {
   id: string;
   organization_id: string;
@@ -199,6 +267,7 @@ export type Citation = {
 };
 
 export type MediaAsset = {
+  asset_metadata?: { caption?: string };
   id: string;
   campaign_id: string | null;
   media_type: "image" | "video";
@@ -319,20 +388,32 @@ export async function request<T>(
 }
 
 export const api = {
+  advancedInsights: (
+    token: string,
+    workspaceId: string,
+    draft: string,
+    alternativeDraft: string,
+    platform: Platform,
+  ) =>
+    request<AdvancedReport>(`/workspaces/${workspaceId}/ml/advanced`, token, {
+      method: "POST",
+      body: JSON.stringify({ draft, alternative_draft: alternativeDraft, platform }),
+    }),
   mlInsights: (token: string, workspaceId: string, draft: string, platform: Platform) =>
     request<MlReport>(`/workspaces/${workspaceId}/ml/insights`, token, {
       method: "POST",
       body: JSON.stringify({ draft, platform }),
     }),
   login: (email: string, password: string, admin = false) =>
-    request<{ access_token: string; expires_in: number }>(
-      admin ? "/auth/admin/login" : "/auth/login",
-      undefined,
-      {
-        method: "POST",
-        body: JSON.stringify({ email, password }),
-      },
-    ),
+    request<{
+      access_token: string;
+      expires_in: number;
+      user: User;
+      workspaces: Workspace[];
+    }>(admin ? "/auth/admin/login" : "/auth/login", undefined, {
+      method: "POST",
+      body: JSON.stringify({ email, password }),
+    }),
   register: (payload: {
     email: string;
     password: string;
@@ -547,6 +628,31 @@ export const api = {
     );
     if (!response.ok) throw new ApiError("Media upload failed.", response.status);
     return (await response.json()) as MediaAsset;
+  },
+  saveAssetCaption: (token: string, workspaceId: string, assetId: string, caption: string) =>
+    request<MediaAsset>(`/workspaces/${workspaceId}/media/assets/${assetId}/caption`, token, {
+      method: "PATCH",
+      body: JSON.stringify({ caption }),
+    }),
+  extractCaption: async (token: string, workspaceId: string, file: File) => {
+    if (file.size > 2 * 1024 * 1024) throw new Error("Choose a file of 2 MB or smaller.");
+    const form = new FormData();
+    form.append("file", file);
+    const response = await fetch(apiUrl(`/workspaces/${workspaceId}/media/captions/extract`), {
+      method: "POST",
+      body: form,
+      credentials: "include",
+      headers: token !== "cookie" ? { Authorization: `Bearer ${token}` } : undefined,
+    });
+    if (!response.ok) {
+      const body = await response.json().catch(() => ({}));
+      throw new Error(
+        body.detail?.message ||
+          (typeof body.detail === "string" ? body.detail : body.error?.message) ||
+          "File could not be read. Use a text PDF, UTF-8 TXT, or Markdown file.",
+      );
+    }
+    return (await response.json()) as { text: string; filename: string };
   },
   attachMedia: (token: string, workspaceId: string, assetId: string, campaignId: string) =>
     request<MediaAsset>(`/workspaces/${workspaceId}/media/assets/${assetId}/attach`, token, {

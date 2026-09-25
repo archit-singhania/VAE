@@ -21,6 +21,7 @@ from aevra_api.publishing.contracts import PublishRequest as ProviderRequest
 from aevra_api.repositories.publishing import PublishingRepository
 from aevra_api.repositories.tenancy import TenancyRepository
 from aevra_api.schemas.publishing import PublishRequest, SocialAccountCreateRequest
+from aevra_api.services.media_delivery import delivery_urls
 from aevra_api.token_vault import LocalTokenVault, TokenVaultError
 
 EDIT_ROLES = {"owner", "admin", "member"}
@@ -205,9 +206,9 @@ class PublishingService:
         if account is None or account.status != "connected":
             raise NotFoundError("Connected social account not found")
         existing = self.repository.job_by_key(workspace_id, request.idempotency_key)
-        if existing is not None:
+        if existing is not None and existing.status != "queued":
             return existing
-        job = PublishJob(
+        job = existing or PublishJob(
             workspace_id=workspace_id,
             campaign_id=request.campaign_id,
             social_account_id=account.id,
@@ -217,6 +218,10 @@ class PublishingService:
             payload={"text": request.text, "media_urls": request.media_urls},
             attempts=1,
         )
+        if existing is not None:
+            job.status = "publishing"
+            job.attempts += 1
+            job.error_message = None
         self.session.add(job)
         self.session.flush()
         try:
@@ -226,7 +231,11 @@ class PublishingService:
                     request.idempotency_key,
                     account.external_account_id,
                     request.text,
-                    tuple(request.media_urls),
+                    tuple(
+                        delivery_urls(
+                            self.session, self.settings, user_id, workspace_id, request.media_urls
+                        )
+                    ),
                 ),
                 access_token=self._provider_token(account.access_token_ref),
             )

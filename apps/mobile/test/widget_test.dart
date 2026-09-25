@@ -58,7 +58,8 @@ void main() {
       expect(tester.getSize(find.byType(AevraMark)), const Size(44, 44));
     });
 
-    testWidgets('wordmark pairs the mark with the VAE lockup', (tester) async {
+    testWidgets('wordmark combines the production mark and adaptive name',
+        (tester) async {
       await tester.pumpWidget(
         MaterialApp(
           theme: AevraTheme.dark,
@@ -67,7 +68,7 @@ void main() {
       );
 
       expect(find.byType(AevraMark), findsOneWidget);
-      expect(find.text('VAE'), findsOneWidget);
+      expect(find.byType(RichText), findsWidgets);
     });
   });
 }

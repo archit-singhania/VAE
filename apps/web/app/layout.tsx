@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 // Kept in sync with --bg in globals.css (the Nocturne obsidian ground), so
 // the browser chrome on mobile matches the app rather than sitting a few
 // shades off it.
-export const viewport: Viewport = { themeColor: "#191a19", colorScheme: "dark" };
+export const viewport: Viewport = { themeColor: "#171014", colorScheme: "dark" };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (

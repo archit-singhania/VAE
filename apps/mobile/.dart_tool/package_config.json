@@ -69,7 +69,7 @@
     },
     {
       "name": "cross_file",
-      "rootUri": "file:///Users/architsinghania/.pub-cache/hosted/pub.dev/cross_file-0.3.5+5",
+      "rootUri": "file:///C:/Users/dell/AppData/Local/Pub/Cache/hosted/pub.dev/cross_file-0.3.5+5",
       "packageUri": "lib/",
       "languageVersion": "3.10"
     },
@@ -93,7 +93,7 @@
     },
     {
       "name": "dbus",
-      "rootUri": "file:///Users/architsinghania/.pub-cache/hosted/pub.dev/dbus-0.7.15",
+      "rootUri": "file:///C:/Users/dell/AppData/Local/Pub/Cache/hosted/pub.dev/dbus-0.7.15",
       "packageUri": "lib/",
       "languageVersion": "2.17"
     },
@@ -117,7 +117,13 @@
     },
     {
       "name": "file_picker",
-      "rootUri": "file:///Users/architsinghania/.pub-cache/hosted/pub.dev/file_picker-10.3.10",
+      "rootUri": "file:///C:/Users/dell/AppData/Local/Pub/Cache/hosted/pub.dev/file_picker-10.3.10",
+      "packageUri": "lib/",
+      "languageVersion": "3.4"
+    },
+    {
+      "name": "flutter",
+      "rootUri": "file:///C:/Users/dell/develop/flutter/packages/flutter",
       "packageUri": "lib/",
       "languageVersion": "3.4"
     },
@@ -147,7 +153,7 @@
     },
     {
       "name": "flutter_plugin_android_lifecycle",
-      "rootUri": "file:///Users/architsinghania/.pub-cache/hosted/pub.dev/flutter_plugin_android_lifecycle-2.0.35",
+      "rootUri": "file:///C:/Users/dell/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_plugin_android_lifecycle-2.0.35",
       "packageUri": "lib/",
       "languageVersion": "3.10"
     },
@@ -495,19 +501,55 @@
     },
     {
       "name": "url_launcher",
-      "rootUri": "file:///Users/architsinghania/.pub-cache/hosted/pub.dev/url_launcher-6.3.2",
+      "rootUri": "file:///C:/Users/dell/AppData/Local/Pub/Cache/hosted/pub.dev/url_launcher-6.3.2",
       "packageUri": "lib/",
       "languageVersion": "3.6"
     },
     {
       "name": "url_launcher_android",
-      "rootUri": "file:///Users/architsinghania/.pub-cache/hosted/pub.dev/url_launcher_android-6.3.33",
+      "rootUri": "file:///C:/Users/dell/AppData/Local/Pub/Cache/hosted/pub.dev/url_launcher_android-6.3.33",
       "packageUri": "lib/",
       "languageVersion": "3.12"
     },
     {
       "name": "url_launcher_ios",
-      "rootUri": "file:///Users/architsinghania/.pub-cache/hosted/pub.dev/url_launcher_ios-6.4.2",
+      "rootUri": "file:///C:/Users/dell/AppData/Local/Pub/Cache/hosted/pub.dev/url_launcher_ios-6.4.2",
+      "packageUri": "lib/",
+      "languageVersion": "3.10"
+    },
+    {
+      "name": "url_launcher_linux",
+      "rootUri": "file:///C:/Users/dell/AppData/Local/Pub/Cache/hosted/pub.dev/url_launcher_linux-3.2.3",
+      "packageUri": "lib/",
+      "languageVersion": "3.10"
+    },
+    {
+      "name": "url_launcher_macos",
+      "rootUri": "file:///C:/Users/dell/AppData/Local/Pub/Cache/hosted/pub.dev/url_launcher_macos-3.2.6",
+      "packageUri": "lib/",
+      "languageVersion": "3.10"
+    },
+    {
+      "name": "url_launcher_platform_interface",
+      "rootUri": "file:///C:/Users/dell/AppData/Local/Pub/Cache/hosted/pub.dev/url_launcher_platform_interface-2.3.2",
+      "packageUri": "lib/",
+      "languageVersion": "3.1"
+    },
+    {
+      "name": "url_launcher_web",
+      "rootUri": "file:///C:/Users/dell/AppData/Local/Pub/Cache/hosted/pub.dev/url_launcher_web-2.4.3",
+      "packageUri": "lib/",
+      "languageVersion": "3.10"
+    },
+    {
+      "name": "url_launcher_windows",
+      "rootUri": "file:///C:/Users/dell/AppData/Local/Pub/Cache/hosted/pub.dev/url_launcher_windows-3.1.6",
+      "packageUri": "lib/",
+      "languageVersion": "3.10"
+    },
+    {
+      "name": "vector_math",
+      "rootUri": "file:///C:/Users/dell/AppData/Local/Pub/Cache/hosted/pub.dev/vector_math-2.4.0",
       "packageUri": "lib/",
       "languageVersion": "3.10"
     },

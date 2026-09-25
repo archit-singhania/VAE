@@ -25,7 +25,7 @@ from aevra_api.publishing.contracts import PublisherError
 from aevra_api.schemas.publishing import PublishRequest
 from aevra_api.services.analytics_polling import AnalyticsPoller
 from aevra_api.services.publishing import PublishingService
-from sqlalchemy import delete, select
+from sqlalchemy import delete, select, update
 
 from services.workers.celery_app import celery_app
 
@@ -63,9 +63,17 @@ def dispatch_due_posts(_task_instance: Any) -> dict[str, str | int]:
             .all()
         )
         for item in due:
-            item.status = "processing"
-            item.attempts += 1
+            # Compare-and-set claim prevents overlapping workers dispatching one schedule.
+            claimed = session.execute(
+                update(ScheduledPost)
+                .where(ScheduledPost.id == item.id, ScheduledPost.status == "scheduled")
+                .values(status="processing", attempts=ScheduledPost.attempts + 1)
+                .execution_options(synchronize_session=False)
+            )
             session.commit()
+            if claimed.rowcount != 1:
+                continue
+            session.refresh(item)
             payload = item.payload if isinstance(item.payload, dict) else {}
             media_payload = payload.get("media_urls", [])
             media_urls = (

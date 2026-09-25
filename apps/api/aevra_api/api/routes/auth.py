@@ -16,6 +16,7 @@ from aevra_api.schemas.tenancy import (
     AccountDeletionCreateRequest,
     AccountDeletionResponse,
     AdminPaymentResponse,
+    LoginResponse,
     LoginRequest,
     OnboardingStatusRequest,
     OrganizationResponse,
@@ -104,31 +105,43 @@ def register(
     )
 
 
-@router.post("/login", response_model=TokenResponse)
+@router.post("/login", response_model=LoginResponse)
 def login(
     request: LoginRequest,
     session: SessionDep,
     settings: SettingsDep,
     response: Response,
-) -> TokenResponse:
+) -> LoginResponse:
     user = TenancyService(session).authenticate(request.email, request.password)
     token, expires_in = create_access_token(user.id, settings)
     set_session_cookie(response, token, expires_in, settings)
-    return TokenResponse(access_token=token, expires_in=expires_in)
+    workspaces = TenancyService(session).list_workspaces(user.id)
+    return LoginResponse(
+        access_token=token,
+        expires_in=expires_in,
+        user=UserResponse.model_validate(user),
+        workspaces=[WorkspaceResponse.model_validate(item) for item in workspaces],
+    )
 
 
-@router.post("/admin/login", response_model=TokenResponse)
+@router.post("/admin/login", response_model=LoginResponse)
 def admin_login(
     request: LoginRequest,
     session: SessionDep,
     settings: SettingsDep,
     response: Response,
-) -> TokenResponse:
+) -> LoginResponse:
     user = TenancyService(session).authenticate(request.email, request.password)
     _require_admin(user)
     token, expires_in = create_access_token(user.id, settings)
     set_session_cookie(response, token, expires_in, settings)
-    return TokenResponse(access_token=token, expires_in=expires_in)
+    workspaces = TenancyService(session).list_workspaces(user.id)
+    return LoginResponse(
+        access_token=token,
+        expires_in=expires_in,
+        user=UserResponse.model_validate(user),
+        workspaces=[WorkspaceResponse.model_validate(item) for item in workspaces],
+    )
 
 
 @router.get("/onboarding/payment-instructions", response_model=PaymentInstructionsResponse)

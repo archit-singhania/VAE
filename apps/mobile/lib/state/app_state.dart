@@ -78,10 +78,15 @@ class AppState extends ChangeNotifier {
     error = null;
     notifyListeners();
     try {
-      final accessToken = await client.login(email, password);
-      await _saveAccessToken(accessToken);
-      token = accessToken;
-      await load();
+      final result = await client.login(email, password);
+      token = result.accessToken;
+      user = result.user;
+      workspace = result.workspaces.isEmpty ? null : result.workspaces.first;
+      notifyListeners();
+      await _storage.write(key: _tokenKey, value: result.accessToken);
+      if (!result.user.isAdmin && workspace != null) {
+        await _loadWorkspaceData(result.accessToken, workspace!);
+      }
     } catch (caught) {
       error = caught.toString();
     } finally {
@@ -156,30 +161,27 @@ class AppState extends ChangeNotifier {
     error = null;
     notifyListeners();
     try {
-      final me = await client.me(currentToken);
-      final workspaces = await client.workspaces(currentToken);
-      final nextWorkspace = workspaces.isNotEmpty ? workspaces.first : null;
-      if (nextWorkspace == null) throw Exception('No active workspace found.');
-
-      final results = await Future.wait([
-        client.brands(currentToken, nextWorkspace.id),
-        client.campaigns(currentToken, nextWorkspace.id),
-        client.documents(currentToken, nextWorkspace.id),
-        client.media(currentToken, nextWorkspace.id),
-        client.accounts(currentToken, nextWorkspace.id),
-        client.scheduled(currentToken, nextWorkspace.id),
-        client.metrics(currentToken, nextWorkspace.id),
+      final identity = await Future.wait([
+        client.me(currentToken),
+        client.workspaces(currentToken),
       ]);
-
+      final me = identity[0] as AevraUser;
+      final workspaces = identity[1] as List<Workspace>;
+      final nextWorkspace = workspaces.isNotEmpty ? workspaces.first : null;
       user = me;
       workspace = nextWorkspace;
-      brands = results[0] as List<Brand>;
-      campaigns = results[1] as List<Campaign>;
-      documents = results[2] as List<KnowledgeDocument>;
-      assets = results[3] as List<MediaAsset>;
-      accounts = results[4] as List<SocialAccount>;
-      scheduled = results[5] as List<ScheduledPost>;
-      metrics = results[6] as List<PostMetric>;
+      if (me.isAdmin) {
+        brands = [];
+        campaigns = [];
+        documents = [];
+        assets = [];
+        accounts = [];
+        scheduled = [];
+        metrics = [];
+        return;
+      }
+      if (nextWorkspace == null) throw Exception('No active workspace found.');
+      await _loadWorkspaceData(currentToken, nextWorkspace);
     } catch (caught) {
       if (caught is ApiException && caught.status == 401) {
         await signOut();
@@ -189,6 +191,27 @@ class AppState extends ChangeNotifier {
       loading = false;
       notifyListeners();
     }
+  }
+
+  Future<void> _loadWorkspaceData(
+      String currentToken, Workspace nextWorkspace) async {
+    final results = await Future.wait([
+      client.brands(currentToken, nextWorkspace.id),
+      Future.value(<Campaign>[]),
+      client.documents(currentToken, nextWorkspace.id),
+      client.media(currentToken, nextWorkspace.id),
+      client.accounts(currentToken, nextWorkspace.id),
+      client.scheduled(currentToken, nextWorkspace.id),
+      client.metrics(currentToken, nextWorkspace.id),
+    ]);
+
+    brands = results[0] as List<Brand>;
+    campaigns = results[1] as List<Campaign>;
+    documents = results[2] as List<KnowledgeDocument>;
+    assets = results[3] as List<MediaAsset>;
+    accounts = results[4] as List<SocialAccount>;
+    scheduled = results[5] as List<ScheduledPost>;
+    metrics = results[6] as List<PostMetric>;
   }
 
   Future<void> decide(String campaignId, String decision) async {

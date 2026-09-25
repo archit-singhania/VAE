@@ -93,7 +93,7 @@ const BACKDROP_FRAG = /* glsl */ `
     // Nocturne palette, matching --bg / --accent / --jade / --frost in
     // globals.css and apps/mobile/shaders/background.frag.
     vec3 bg = vec3(0.024, 0.027, 0.039);
-    vec3 copper = vec3(0.769, 0.522, 0.353);
+    vec3 copper = vec3(0.898, 0.282, 0.365);
     vec3 jade = vec3(0.306, 0.612, 0.510);
     vec3 frost = vec3(0.561, 0.655, 0.761);
 
@@ -187,7 +187,7 @@ const SHARD_FRAG = /* glsl */ `
   uniform float uIntensity;
 
   void main() {
-    vec3 copper = vec3(0.769, 0.522, 0.353);
+    vec3 copper = vec3(0.898, 0.282, 0.365);
     vec3 frost = vec3(0.561, 0.655, 0.761);
     vec3 jade = vec3(0.306, 0.612, 0.510);
 
@@ -231,7 +231,7 @@ function initialTier(): Tier {
   return 2;
 }
 
-export function WebglScene() {
+export function WebglScene({ variant = "creator" }: { variant?: "creator" | "admin" }) {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -469,7 +469,7 @@ export function WebglScene() {
   return (
     <div
       ref={containerRef}
-      className="webgl-background"
+      className={`webgl-background webgl-${variant}`}
       aria-hidden="true"
       data-testid="webgl-background"
     />

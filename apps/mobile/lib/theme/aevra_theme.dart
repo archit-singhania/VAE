@@ -8,7 +8,7 @@ import 'design_tokens.dart';
 /// mirroring the CSS custom properties in apps/web/app/globals.css so the
 /// two clients read as one product rather than two ports of it.
 ///
-/// Direction: cool obsidian ground, porcelain type, a single warm copper
+/// Direction: cool obsidian ground, porcelain type, a premium crimson
 /// signal, and jade / frost / amber / rose carrying state. Chroma is kept
 /// deliberately low everywhere except the one accent, which is what makes
 /// the accent read as information instead of decoration.
@@ -48,13 +48,13 @@ class AevraColors {
   static const muted2 = Color(0xFF95998F);
 
   // ---- Signal ------------------------------------------------------
-  /// Copper. The single warm note against the cold ground — the whole
+  /// Crimson. The single warm note against the cold ground — the whole
   /// palette is built so this is the only thing that can shout.
   static const accent = VaeTokens.darkAccent;
-  static const accentStrong = Color(0xFFE0A87D);
+  static const accentStrong = Color(0xFFFF6378);
 
   /// Text/iconography placed on top of a filled accent surface.
-  static const accentInk = Color(0xFF180C05);
+  static const accentInk = Color(0xFFFFF8F9);
 
   /// Positive / approved / connected.
   static const jade = VaeTokens.darkSuccess;
@@ -99,8 +99,8 @@ class AevraLightColors {
   static const muted2 = Color(0xFF62665E);
 
   static const accent = VaeTokens.lightAccent;
-  static const accentStrong = Color(0xFF7C4722);
-  static const accentInk = Color(0xFFFFF8F1);
+  static const accentStrong = Color(0xFFE5485D);
+  static const accentInk = Color(0xFFFFF8F9);
 
   static const jade = VaeTokens.lightSuccess;
   static const frost = VaeTokens.lightInfo;
@@ -214,9 +214,26 @@ class AevraTheme {
   // a rebuild happens to pass through the root.
   static ThemeData? _darkCache;
   static ThemeData? _lightCache;
+  static ThemeData? _adminDarkCache;
 
   static ThemeData get dark => _darkCache ??= _buildDark();
   static ThemeData get light => _lightCache ??= _buildLight();
+  static ThemeData get adminDark => _adminDarkCache ??= _build(
+        brightness: Brightness.dark,
+        background: const Color(0xFF080E1A),
+        surface: const Color(0xFF111C30),
+        fieldFill: const Color(0xFF0D1728),
+        line: const Color(0x24709FFF),
+        lineStrong: const Color(0x52709FFF),
+        text: const Color(0xFFF4F8FF),
+        muted: const Color(0xFF94A5C2),
+        muted2: const Color(0xFF7D8DA8),
+        accent: const Color(0xFF4F8CFF),
+        accentInk: const Color(0xFFF7FAFF),
+        secondary: const Color(0xFF58C7AA),
+        tertiary: const Color(0xFF8BB6FF),
+        error: const Color(0xFFEF6678),
+      );
 
   static ThemeData _buildDark() => _build(
         brightness: Brightness.dark,
@@ -307,18 +324,33 @@ class AevraTheme {
         titleMedium: textTheme.titleMedium?.copyWith(
           fontSize: 14.5,
           fontWeight: FontWeight.w600,
-          letterSpacing: -0.1,
+          letterSpacing: -0.22,
+          height: 1.28,
         ),
         titleSmall: textTheme.titleSmall?.copyWith(
           fontSize: 12.5,
           fontWeight: FontWeight.w600,
-          letterSpacing: -0.05,
+          letterSpacing: -0.12,
+          height: 1.3,
         ),
-        bodyLarge: textTheme.bodyLarge?.copyWith(fontSize: 14.5, height: 1.55),
+        bodyLarge: textTheme.bodyLarge?.copyWith(
+          fontSize: 14.5,
+          height: 1.55,
+          letterSpacing: -0.08,
+        ),
         bodyMedium:
-            textTheme.bodyMedium?.copyWith(fontSize: 13.5, height: 1.55),
+            textTheme.bodyMedium?.copyWith(
+              fontSize: 13.5,
+              height: 1.55,
+              letterSpacing: -0.06,
+            ),
         bodySmall: textTheme.bodySmall
-            ?.copyWith(fontSize: 11.5, height: 1.5, color: muted),
+            ?.copyWith(
+              fontSize: 11.5,
+              height: 1.5,
+              letterSpacing: -0.02,
+              color: muted,
+            ),
         labelLarge: textTheme.labelLarge?.copyWith(
           fontSize: 13,
           fontWeight: FontWeight.w600,

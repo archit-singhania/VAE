@@ -214,23 +214,43 @@ class VaeScaffold extends StatelessWidget {
 
 class VaeBottomNav extends StatelessWidget {
   const VaeBottomNav(
-      {super.key, required this.index, required this.onSelected});
+      {super.key,
+      required this.index,
+      required this.onSelected,
+      this.admin = false});
   final int index;
   final ValueChanged<int> onSelected;
+  final bool admin;
   @override
   Widget build(BuildContext context) => NavigationBar(
         selectedIndex: index,
         onDestinationSelected: onSelected,
         backgroundColor: Theme.of(context).colorScheme.surface,
-        destinations: const [
-          NavigationDestination(
-              icon: Icon(Icons.space_dashboard_outlined), label: 'Home'),
-          NavigationDestination(
-              icon: Icon(Icons.auto_awesome_outlined), label: 'Create'),
-          NavigationDestination(
-              icon: Icon(Icons.schedule_outlined), label: 'Publish'),
-          NavigationDestination(
-              icon: Icon(Icons.insights_outlined), label: 'Analytics'),
-        ],
+        destinations: admin
+            ? const [
+                NavigationDestination(
+                    icon: Icon(Icons.space_dashboard_outlined), label: 'Home'),
+                NavigationDestination(
+                    icon: Icon(Icons.auto_awesome_outlined), label: 'AI usage'),
+                NavigationDestination(
+                    icon: Icon(Icons.schedule_outlined), label: 'Publishing'),
+                NavigationDestination(
+                    icon: Icon(Icons.insights_outlined), label: 'Analytics'),
+                NavigationDestination(
+                    icon: Icon(Icons.verified_user_outlined),
+                    label: 'Payments'),
+              ]
+            : const [
+                NavigationDestination(
+                    icon: Icon(Icons.space_dashboard_outlined), label: 'Home'),
+                NavigationDestination(
+                    icon: Icon(Icons.auto_awesome_outlined), label: 'Create'),
+                NavigationDestination(
+                    icon: Icon(Icons.schedule_outlined), label: 'Publish'),
+                NavigationDestination(
+                    icon: Icon(Icons.insights_outlined), label: 'Analytics'),
+                NavigationDestination(
+                    icon: Icon(Icons.psychology_outlined), label: 'ML'),
+              ],
       );
 }

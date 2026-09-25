@@ -3,9 +3,14 @@ import '../state/app_state.dart';
 import '../widgets/vae_ui.dart';
 
 class AdvancedScreen extends StatefulWidget {
-  const AdvancedScreen({super.key, required this.state, this.admin = false});
+  const AdvancedScreen(
+      {super.key,
+      required this.state,
+      this.admin = false,
+      this.adminSection = 'overview'});
   final AppState state;
   final bool admin;
+  final String adminSection;
   @override
   State<AdvancedScreen> createState() => _AdvancedScreenState();
 }
@@ -183,10 +188,139 @@ class _AdvancedScreenState extends State<AdvancedScreen> {
     }
   }
 
+  List<MapEntry<String, Object>> get adminMetrics {
+    final totals = Map<String, dynamic>.from(overview?['totals'] as Map? ?? {});
+    return switch (widget.adminSection) {
+      'media' => [
+          MapEntry('Generation runs', totals['generation_runs'] ?? 0),
+          MapEntry('Generated assets', totals['generated_assets'] ?? 0),
+          MapEntry('Input tokens', totals['prompt_tokens'] ?? 0),
+          MapEntry('Output tokens', totals['completion_tokens'] ?? 0),
+        ],
+      'publishing' => [
+          MapEntry('Channels', totals['channels'] ?? 0),
+          MapEntry('Upcoming schedules', totals['scheduled'] ?? 0),
+          MapEntry('Published posts', totals['published'] ?? 0),
+          MapEntry('Failed jobs', totals['failed'] ?? 0),
+        ],
+      'analytics' => [
+          MapEntry('Measured posts', totals['measured_posts'] ?? 0),
+          MapEntry('Impressions', totals['impressions'] ?? 0),
+          MapEntry('Engagements', totals['engagements'] ?? 0),
+          MapEntry('Clicks', totals['clicks'] ?? 0),
+        ],
+      'payments' => [
+          MapEntry('Awaiting review',
+              payments.where((p) => p['status'] == 'under_review').length),
+          MapEntry('Approved',
+              payments.where((p) => p['status'] == 'approved').length),
+          MapEntry('Rejected',
+              payments.where((p) => p['status'] == 'rejected').length),
+          MapEntry('Total submissions', payments.length),
+        ],
+      _ => [
+          MapEntry('Customers', overview?['users_total'] ?? 0),
+          MapEntry('Approved', overview?['users_approved'] ?? 0),
+          MapEntry('Generated assets', totals['generated_assets'] ?? 0),
+          MapEntry('Published posts', totals['published'] ?? 0),
+        ],
+    };
+  }
+
+  String get adminTitle => switch (widget.adminSection) {
+        'media' => 'AI & media usage',
+        'publishing' => 'Publishing operations',
+        'analytics' => 'Customer analytics',
+        'payments' => 'Payment review',
+        _ => 'Customer overview',
+      };
+
+  Widget adminBody(BuildContext context) {
+    final detailItems = widget.adminSection == 'payments'
+        ? const []
+        : widget.adminSection == 'media'
+            ? (overview?['models'] as List? ?? const [])
+            : (overview?['platforms'] as List? ?? const []);
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      VaePageHeader(adminTitle,
+          'Live operational reporting across customers and workspaces.'),
+      Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          children: adminMetrics
+              .map((entry) => SizedBox(
+                  width: 230,
+                  child: VaeMetricCard(entry.key, '${entry.value}')))
+              .toList()),
+      const SizedBox(height: 24),
+      if (detailItems.isNotEmpty)
+        VaeGlassCard(
+            child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+              Text(
+                  widget.adminSection == 'media'
+                      ? 'Provider & model activity'
+                      : 'Platform performance',
+                  style: Theme.of(context).textTheme.headlineSmall),
+              const SizedBox(height: 12),
+              ...detailItems.map((raw) {
+                final item = Map<String, dynamic>.from(raw as Map);
+                final title = widget.adminSection == 'media'
+                    ? '${item['provider'] ?? 'Provider'} · ${item['model'] ?? 'Model'}'
+                    : '${item['platform'] ?? 'Platform'}';
+                final subtitle = widget.adminSection == 'media'
+                    ? '${item['requests'] ?? 0} requests · ${item['failed'] ?? 0} failed'
+                    : '${item['channels'] ?? 0} channels · ${item['published'] ?? 0} published · ${item['engagements'] ?? 0} engagements';
+                return ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(title),
+                    subtitle: Text(subtitle));
+              })
+            ])),
+      const SizedBox(height: 24),
+      if (widget.adminSection == 'payments') ...[
+        Text('Payment review',
+            style: Theme.of(context).textTheme.headlineSmall),
+        const SizedBox(height: 12),
+        if (payments.isEmpty)
+          const VaeEmptyState('No payment submissions',
+              'New manual payment reviews will appear here.'),
+        ...payments.map((p) => ListTile(
+            title: Text(p['display_name'] as String? ?? 'Account'),
+            subtitle: Text('${p['amount']} · ${p['status']}'),
+            trailing: PopupMenuButton<String>(
+                enabled: !busy,
+                onSelected: (v) => review(p, v),
+                itemBuilder: (_) => const [
+                      PopupMenuItem(value: 'approve', child: Text('Approve')),
+                      PopupMenuItem(value: 'reject', child: Text('Reject'))
+                    ]))),
+      ],
+      if (widget.adminSection != 'overview') ...[
+        Text('Customer usage',
+            style: Theme.of(context).textTheme.headlineSmall),
+        ...(overview?['users'] as List? ?? const []).map((raw) {
+          final user = Map<String, dynamic>.from(raw as Map);
+          return ExpansionTile(
+              title: Text(user['display_name'] as String? ?? 'Account'),
+              subtitle: Text(user['account_status'] as String? ?? ''),
+              children: user.entries
+                  .where((entry) => entry.value is num)
+                  .map((entry) => ListTile(
+                      title: Text(entry.key.replaceAll('_', ' ')),
+                      trailing: Text('${entry.value}')))
+                  .toList());
+        }),
+      ],
+    ]);
+  }
+
   @override
   Widget build(BuildContext context) => Scaffold(
-      appBar: AppBar(
-          title: Text(widget.admin ? 'Admin dashboard' : 'Brand knowledge')),
+      backgroundColor: Colors.transparent,
+      appBar:
+          widget.admin ? null : AppBar(title: const Text('Brand knowledge')),
       body: VaeScaffold(children: [
         if (busy) const LinearProgressIndicator(),
         if (error != null)
@@ -194,47 +328,10 @@ class _AdvancedScreenState extends State<AdvancedScreen> {
               style: TextStyle(color: Theme.of(context).colorScheme.error)),
         if (notice != null) Semantics(liveRegion: true, child: Text(notice!)),
         if (widget.admin && widget.state.user?.isAdmin == true) ...[
-          const VaePageHeader('Operations',
-              'Account usage, payments, and publishing activity.'),
-          if (overview != null)
-            ...[
-              'users_total',
-              'users_approved',
-              'assets_total',
-              'channels_total'
-            ].map((key) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: VaeMetricCard(
-                    key.replaceAll('_', ' '), '${overview![key] ?? 0}'))),
-          if (overview != null)
-            ...(overview!['users'] as List? ?? []).map((entry) {
-              final user = entry as Map<String, dynamic>;
-              return ExpansionTile(
-                  title: Text(user['display_name'] as String? ?? 'Account'),
-                  subtitle: Text(user['account_status'] as String? ?? ''),
-                  children: [
-                    for (final key in [
-                      'assets',
-                      'channels',
-                      'scheduled',
-                      'published',
-                      'engagements'
-                    ])
-                      ListTile(
-                          title: Text(key),
-                          trailing: Text('${user[key] ?? 0}')),
-                  ]);
-            }),
-          ...payments.map((p) => ListTile(
-              title: Text(p['display_name'] as String? ?? 'Account'),
-              subtitle: Text('${p['amount']} · ${p['status']}'),
-              trailing: PopupMenuButton<String>(
-                  enabled: !busy,
-                  onSelected: (v) => review(p, v),
-                  itemBuilder: (_) => const [
-                        PopupMenuItem(value: 'approve', child: Text('Approve')),
-                        PopupMenuItem(value: 'reject', child: Text('Reject'))
-                      ]))),
+          if (overview == null && !busy)
+            VaeEmptyState('Reporting is unavailable',
+                'Refresh to load the latest administrator report.'),
+          if (overview != null) adminBody(context),
         ] else if (widget.admin) ...[
           const VaeEmptyState('Admin access required',
               'This account does not have access to operational tools.'),

@@ -14,7 +14,9 @@ import '../theme/aevra_theme.dart';
 /// reduced-motion preference, in which case the animation simply stops on
 /// its first frame instead of looping.
 class ShaderBackground extends StatefulWidget {
-  const ShaderBackground({super.key});
+  const ShaderBackground({super.key, this.admin = false});
+
+  final bool admin;
 
   @override
   State<ShaderBackground> createState() => _ShaderBackgroundState();
@@ -99,7 +101,8 @@ class _ShaderBackgroundState extends State<ShaderBackground>
     return IgnorePointer(
       child: RepaintBoundary(
         child: CustomPaint(
-          painter: _ShaderPainter(shader: shader, time: _time),
+          painter:
+              _ShaderPainter(shader: shader, time: _time, admin: widget.admin),
           size: Size.infinite,
         ),
       ),
@@ -108,11 +111,13 @@ class _ShaderBackgroundState extends State<ShaderBackground>
 }
 
 class _ShaderPainter extends CustomPainter {
-  _ShaderPainter({required this.shader, required this.time})
+  _ShaderPainter(
+      {required this.shader, required this.time, required this.admin})
       : super(repaint: time);
 
   final ui.FragmentShader shader;
   final ValueNotifier<double> time;
+  final bool admin;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -121,13 +126,16 @@ class _ShaderPainter extends CustomPainter {
     shader
       ..setFloat(0, size.width)
       ..setFloat(1, size.height)
-      ..setFloat(2, time.value);
+      ..setFloat(2, time.value)
+      ..setFloat(3, admin ? 1 : 0);
     canvas.drawRect(Offset.zero & size, Paint()..shader = shader);
   }
 
   @override
   bool shouldRepaint(covariant _ShaderPainter oldDelegate) =>
-      oldDelegate.shader != shader || oldDelegate.time != time;
+      oldDelegate.shader != shader ||
+      oldDelegate.time != time ||
+      oldDelegate.admin != admin;
 }
 
 class _StaticFallback extends StatelessWidget {
@@ -146,7 +154,7 @@ class _StaticFallback extends StatelessWidget {
           gradient: RadialGradient(
             center: Alignment(0.55, -0.72),
             radius: 1.15,
-            colors: [Color(0x1FC4855A), Color(0x0006070A)],
+            colors: [Color(0x24E5485D), Color(0x0006070A)],
           ),
         ),
         child: DecoratedBox(

@@ -16,7 +16,12 @@ import '../theme/aevra_theme.dart';
 /// Everything is proportional to [size], so the same painter is correct at
 /// 22px in a top bar and 96px on a splash.
 class AevraMark extends StatelessWidget {
-  const AevraMark({super.key, this.size = 26, this.color, this.ringColor});
+  const AevraMark(
+      {super.key,
+      this.size = 26,
+      this.color,
+      this.ringColor,
+      this.admin = false});
 
   final double size;
 
@@ -25,18 +30,30 @@ class AevraMark extends StatelessWidget {
 
   /// The aperture ring colour. Defaults to the cool specular tint.
   final Color? ringColor;
+  final bool admin;
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
+    if (color != null || ringColor != null) {
+      return SizedBox(
+        width: size,
+        height: size,
+        child: CustomPaint(
+          painter: _AevraMarkPainter(
+            color: color ?? AevraColors.accent,
+            ring: ringColor ?? AevraColors.sheen,
+          ),
+        ),
+      );
+    }
+    return Image.asset(
+      admin
+          ? 'assets/branding/vae_admin_icon_256.png'
+          : 'assets/branding/vae_creator_icon_256.png',
       width: size,
       height: size,
-      child: CustomPaint(
-        painter: _AevraMarkPainter(
-          color: color ?? AevraColors.accent,
-          ring: ringColor ?? AevraColors.sheen,
-        ),
-      ),
+      fit: BoxFit.contain,
+      filterQuality: FilterQuality.medium,
     );
   }
 }
@@ -120,10 +137,8 @@ class _AevraMarkPainter extends CustomPainter {
       old.color != color || old.ring != ring;
 }
 
-/// Mark + wordmark. The wordmark is set in the display serif with wide
-/// tracking: at this size the serif reads as an identity rather than as
-/// running text, and the tracking is what stops five capitals looking like
-/// an acronym.
+/// Mark + wordmark. The compact editorial setting makes the three letters
+/// read as a crafted identity instead of widely-spaced interface text.
 class AevraWordmark extends StatelessWidget {
   const AevraWordmark({
     super.key,
@@ -131,29 +146,45 @@ class AevraWordmark extends StatelessWidget {
     this.fontSize = 17,
     this.color,
     this.markColor,
+    this.admin = false,
   });
 
   final double markSize;
   final double fontSize;
   final Color? color;
   final Color? markColor;
+  final bool admin;
 
   @override
   Widget build(BuildContext context) {
+    final light = Theme.of(context).brightness == Brightness.light;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        AevraMark(size: markSize, color: markColor),
-        SizedBox(width: markSize * 0.42),
-        Text(
-          'VAE',
+        AevraMark(size: markSize, admin: admin),
+        SizedBox(width: markSize * .32),
+        Text.rich(
+          TextSpan(children: [
+            TextSpan(
+                text: 'V',
+                style: TextStyle(
+                    fontWeight: FontWeight.w500,
+                    color: admin
+                        ? const Color(0xFF4F8CFF)
+                        : const Color(0xFFE5485D))),
+            TextSpan(
+                text: 'AE',
+                style: TextStyle(
+                    fontWeight: FontWeight.w500,
+                    color: light ? const Color(0xFF111318) : Colors.white)),
+          ]),
+          semanticsLabel: 'VAE',
           style: TextStyle(
             fontFamily: 'PlayfairDisplay',
             fontSize: fontSize,
-            fontWeight: FontWeight.w600,
-            letterSpacing: fontSize * 0.26,
-            height: 1,
-            color: color ?? AevraColors.text,
+            fontWeight: FontWeight.w500,
+            letterSpacing: fontSize * .015,
+            height: .92,
           ),
         ),
       ],

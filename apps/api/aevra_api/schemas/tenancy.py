@@ -93,6 +93,18 @@ class WorkspaceResponse(BaseModel):
     created_at: datetime
 
 
+class LoginResponse(TokenResponse):
+    """Token plus the minimum dashboard bootstrap payload.
+
+    Returning these together avoids two additional round trips after the
+    password has already been verified. Native clients that only read the
+    token remain backwards compatible because the token fields are unchanged.
+    """
+
+    user: UserResponse
+    workspaces: list[WorkspaceResponse]
+
+
 class RegistrationResponse(BaseModel):
     user: UserResponse
     organization: OrganizationResponse

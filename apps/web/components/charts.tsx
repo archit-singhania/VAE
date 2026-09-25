@@ -26,13 +26,13 @@ import { useId, useMemo } from "react";
  * custom property resolves to a string the interpolation maths can't use.
  */
 const PALETTE = [
-  "#c4855a", // copper — primary signal
+  "#e5485d", // crimson — primary signal
   "#4e9c82", // jade — positive
   "#8fa7c2", // frost — informational
   "#d4a244", // amber — pending
-  "#7a6a5e", // ash copper
+  "#8a4d58", // ash crimson
   "#5f7a72", // ash jade
-  "#e0a87d", // copper, lifted
+  "#ff6378", // crimson, lifted
 ];
 
 function colorAt(i: number) {

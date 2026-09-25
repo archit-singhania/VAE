@@ -7,7 +7,7 @@ import math
 import re
 import uuid
 from collections import Counter, defaultdict
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
@@ -59,6 +59,7 @@ class History:
     daily: dict
     timezone: str = "UTC"
     truncated: bool = False
+    quality: dict = field(default_factory=dict)
 
 
 def load_history(session: Session, user_id: uuid.UUID, workspace_id: uuid.UUID) -> History:
@@ -116,6 +117,9 @@ def load_history(session: Session, user_id: uuid.UUID, workspace_id: uuid.UUID) 
         # Descending sample order makes the first sample the last one that day.
         daily[day].setdefault(key, engagements)
     texts, posts = [], []
+    mature_jobs = 0
+    mature_matches = 0
+    now = datetime.now(UTC)
     seen_posts = set()
     for job, platform in jobs[:MAX_POSTS]:
         key = (job.social_account_id, job.external_post_id)
@@ -124,6 +128,8 @@ def load_history(session: Session, user_id: uuid.UUID, workspace_id: uuid.UUID) 
         seen_posts.add(key)
         text = str((job.payload or {}).get("text") or "")[:6000]
         published = utc(job.published_at)
+        mature = published <= now - timedelta(days=8)
+        mature_jobs += int(mature)
         texts.append({"id": str(job.id), "text": text, "platform": platform})
         candidates = [
             sample
@@ -131,6 +137,7 @@ def load_history(session: Session, user_id: uuid.UUID, workspace_id: uuid.UUID) 
             if 6 <= (sample[0] - published).total_seconds() / 86400 <= 8 and sample[1] > 0
         ]
         if candidates:
+            mature_matches += int(mature)
             sample = min(
                 candidates, key=lambda row: abs((row[0] - published).total_seconds() - 7 * 86400)
             )
@@ -166,6 +173,12 @@ def load_history(session: Session, user_id: uuid.UUID, workspace_id: uuid.UUID) 
         posts=sorted(posts, key=lambda row: (row["published"], row["id"])),
         daily=dict(daily),
         timezone=workspace.timezone,
+        quality={
+            "mature_published_posts": mature_jobs,
+            "mature_matched_posts": mature_matches,
+            "metric_samples": min(len(samples), MAX_METRICS),
+            "latest_metric_at": utc(samples[0][2]).isoformat() if samples else None,
+        },
         truncated=(
             len(jobs) > MAX_POSTS
             or len(variants) > 500

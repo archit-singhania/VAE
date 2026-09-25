@@ -6,6 +6,7 @@ import 'screens/advanced_screen.dart';
 import 'screens/auth_screen.dart';
 import 'screens/campaigns_screen.dart';
 import 'screens/media_screen.dart';
+import 'screens/ml_insights_screen.dart';
 import 'screens/overview_screen.dart';
 import 'screens/schedule_screen.dart';
 import 'state/app_state.dart';
@@ -77,11 +78,18 @@ class _AevraAppState extends State<AevraApp> {
             return const _BootScreen();
           }
           return AnimatedSwitcher(
-            duration: const Duration(milliseconds: 320),
+            duration: const Duration(milliseconds: 420),
             switchInCurve: Curves.easeOutCubic,
             switchOutCurve: Curves.easeInCubic,
-            transitionBuilder: (child, animation) =>
-                FadeTransition(opacity: animation, child: child),
+            transitionBuilder: (child, animation) => FadeTransition(
+              opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
+              child: ScaleTransition(
+                scale: Tween<double>(begin: .988, end: 1).animate(
+                  CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
+                ),
+                child: child,
+              ),
+            ),
             child: state.authenticated
                 ? MobileShell(
                     key: const ValueKey('shell'),
@@ -91,7 +99,10 @@ class _AevraAppState extends State<AevraApp> {
                     darkMode: darkMode,
                     onToggleTheme: _toggleTheme,
                   )
-                : AuthScreen(key: const ValueKey('auth'), state: state),
+                : AuthScreen(
+                    key: const ValueKey('auth'),
+                    state: state,
+                    onToggleTheme: _toggleTheme),
           );
         },
       ),
@@ -320,10 +331,8 @@ class _MobileShellState extends State<MobileShell> {
         context: context,
         isScrollControlled: true,
         useSafeArea: true,
-        builder: (context) => VaeProfileSheet(
-            state: widget.state,
-            onTheme: widget.onToggleTheme,
-            onSignOut: _confirmSignOut));
+        builder: (context) =>
+            VaeProfileSheet(state: widget.state, onSignOut: _confirmSignOut));
   }
 
   void _openCampaigns() {
@@ -376,68 +385,90 @@ class _MobileShellState extends State<MobileShell> {
   @override
   Widget build(BuildContext context) {
     final wide = MediaQuery.sizeOf(context).width >= 720;
-    final pages = [
-      OverviewScreen(
-          state: widget.state, onNavigate: _go, onCampaigns: _openCampaigns),
-      MediaScreen(state: widget.state, onPublish: () => _go(2)),
-      ScheduleScreen(state: widget.state),
-      AnalyticsScreen(state: widget.state),
-    ];
-    const icons = [
+    final admin = widget.state.user?.isAdmin == true;
+    final pages = admin
+        ? [
+            AdvancedScreen(
+                state: widget.state, admin: true, adminSection: 'overview'),
+            AdvancedScreen(
+                state: widget.state, admin: true, adminSection: 'media'),
+            AdvancedScreen(
+                state: widget.state, admin: true, adminSection: 'publishing'),
+            AdvancedScreen(
+                state: widget.state, admin: true, adminSection: 'analytics'),
+            AdvancedScreen(
+                state: widget.state, admin: true, adminSection: 'payments'),
+          ]
+        : [
+            OverviewScreen(state: widget.state, onNavigate: _go),
+            MediaScreen(state: widget.state, onPublish: () => _go(2)),
+            ScheduleScreen(state: widget.state),
+            AnalyticsScreen(state: widget.state),
+            MlInsightsScreen(state: widget.state),
+          ];
+    final titles = admin
+        ? const ['Home', 'AI usage', 'Publishing', 'Analytics', 'Payments']
+        : const ['Home', 'Create', 'Publish', 'Analytics', 'ML insights'];
+    final icons = [
       Icons.space_dashboard_outlined,
       Icons.auto_awesome_outlined,
       Icons.schedule_outlined,
-      Icons.insights_outlined
+      Icons.insights_outlined,
+      admin ? Icons.verified_user_outlined : Icons.psychology_outlined,
     ];
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: SafeArea(
-          child: Column(children: [
-        _TopBar(
-            title: _titles[index],
-            state: widget.state,
-            sound: widget.sound,
-            darkMode: widget.darkMode,
-            themeButtonKey: _themeButtonKey,
-            onToggleTheme: _toggleThemeWithWipe,
-            onOpenPalette: _openCommandPalette,
-            onSignOut: _confirmSignOut),
-        if (widget.state.loading) const LinearProgressIndicator(minHeight: 2),
-        if (widget.state.error != null)
-          Padding(
-              padding: const EdgeInsets.all(12),
-              child: Semantics(
-                  liveRegion: true,
-                  child: Text(widget.state.error!,
-                      style: TextStyle(
-                          color: Theme.of(context).colorScheme.error)))),
-        Expanded(
-            child: Row(children: [
-          if (wide)
-            NavigationRail(
-                selectedIndex: index,
-                onDestinationSelected: _go,
-                labelType: NavigationRailLabelType.all,
-                destinations: [
-                  for (var i = 0; i < 4; i++)
-                    NavigationRailDestination(
-                        icon: Icon(icons[i]), label: Text(_titles[i]))
-                ]),
-          Expanded(
-              child: AnimatedSwitcher(
-            duration: MediaQuery.disableAnimationsOf(context)
-                ? Duration.zero
-                : const Duration(milliseconds: 260),
-            child: KeyedSubtree(key: ValueKey(index), child: pages[index]),
-          )),
-        ])),
-      ])),
-      bottomNavigationBar:
-          wide ? null : VaeBottomNav(index: index, onSelected: _go),
+    return Theme(
+      data: admin ? AevraTheme.adminDark : Theme.of(context),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: Stack(children: [
+          Positioned.fill(
+              child: RepaintBoundary(child: ShaderBackground(admin: admin))),
+          SafeArea(
+              child: Column(children: [
+            _TopBar(
+                title: titles[index],
+                state: widget.state,
+                sound: widget.sound,
+                onOpenPalette: _openCommandPalette,
+                onOpenProfile: _openProfile),
+            if (widget.state.loading)
+              const LinearProgressIndicator(minHeight: 2),
+            if (widget.state.error != null)
+              Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Semantics(
+                      liveRegion: true,
+                      child: Text(widget.state.error!,
+                          style: TextStyle(
+                              color: Theme.of(context).colorScheme.error)))),
+            Expanded(
+                child: Row(children: [
+              if (wide)
+                NavigationRail(
+                    selectedIndex: index,
+                    onDestinationSelected: _go,
+                    labelType: NavigationRailLabelType.all,
+                    destinations: [
+                      for (var i = 0; i < 5; i++)
+                        NavigationRailDestination(
+                            icon: Icon(icons[i]), label: Text(titles[i]))
+                    ]),
+              Expanded(
+                  child: AnimatedSwitcher(
+                duration: MediaQuery.disableAnimationsOf(context)
+                    ? Duration.zero
+                    : const Duration(milliseconds: 260),
+                child: KeyedSubtree(key: ValueKey(index), child: pages[index]),
+              )),
+            ])),
+          ])),
+        ]),
+        bottomNavigationBar: wide
+            ? null
+            : VaeBottomNav(index: index, onSelected: _go, admin: admin),
+      ),
     );
   }
-
-  static const _titles = ['Home', 'Create', 'Publish', 'Analytics'];
 }
 
 /// Custom glass top bar — the mobile equivalent of the web app's `.topbar`.
@@ -446,21 +477,15 @@ class _TopBar extends StatelessWidget {
     required this.title,
     required this.state,
     required this.sound,
-    required this.darkMode,
-    required this.themeButtonKey,
-    required this.onToggleTheme,
     required this.onOpenPalette,
-    required this.onSignOut,
+    required this.onOpenProfile,
   });
 
   final String title;
   final AppState state;
   final AevraSound sound;
-  final bool darkMode;
-  final GlobalKey themeButtonKey;
-  final VoidCallback onToggleTheme;
   final VoidCallback onOpenPalette;
-  final VoidCallback onSignOut;
+  final VoidCallback onOpenProfile;
 
   @override
   Widget build(BuildContext context) {
@@ -474,7 +499,8 @@ class _TopBar extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(AevraSpace.lg, 10, AevraSpace.xs, 10),
       child: Row(
         children: [
-          const AevraMark(size: 25),
+          AevraWordmark(
+              markSize: 30, fontSize: 20, admin: state.user?.isAdmin == true),
           const SizedBox(width: AevraSpace.sm),
           Flexible(
             child: Text(
@@ -501,21 +527,28 @@ class _TopBar extends StatelessWidget {
             icon: const Icon(Icons.search_rounded, size: 20),
             color: AevraColors.muted,
           ),
-          IconButton(
-            key: themeButtonKey,
-            tooltip: darkMode ? 'Use light theme' : 'Use dark theme',
-            onPressed: onToggleTheme,
-            icon: Icon(
-                darkMode ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
-                size: 20),
-            color: AevraColors.muted,
+          Semantics(
+            button: true,
+            label: 'Open profile',
+            child: InkWell(
+              onTap: onOpenProfile,
+              customBorder: const CircleBorder(),
+              child: CircleAvatar(
+                radius: 17,
+                backgroundColor: Theme.of(context)
+                    .colorScheme
+                    .primary
+                    .withValues(alpha: .14),
+                backgroundImage: state.user?.avatarUrl == null
+                    ? null
+                    : NetworkImage(state.user!.avatarUrl!),
+                child: state.user?.avatarUrl == null
+                    ? const Icon(Icons.person_outline, size: 18)
+                    : null,
+              ),
+            ),
           ),
-          IconButton(
-            tooltip: 'Sign out',
-            onPressed: onSignOut,
-            icon: const Icon(Icons.logout_outlined, size: 20),
-            color: AevraColors.muted,
-          ),
+          const SizedBox(width: AevraSpace.sm),
         ],
       ),
     );

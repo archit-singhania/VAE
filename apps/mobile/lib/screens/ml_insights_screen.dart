@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../state/app_state.dart';
 import '../widgets/vae_ui.dart';
+import 'advanced_analytics_screen.dart';
 
 class MlInsightsScreen extends StatefulWidget {
   const MlInsightsScreen({super.key, required this.state});
@@ -52,10 +53,17 @@ class _MlInsightsScreenState extends State<MlInsightsScreen> {
   Widget build(BuildContext context) {
     final features = (report?['features'] as List?) ?? [];
     return Scaffold(
-      appBar: AppBar(title: const Text('ML insights')),
+      backgroundColor: Colors.transparent,
       body: VaeScaffold(children: [
         const VaePageHeader('Learn from your work',
             'Ten workspace-local ML tools. Suggestions never publish or schedule automatically.'),
+        OutlinedButton.icon(
+            onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(
+                builder: (_) => AdvancedAnalyticsScreen(
+                    state: widget.state, initialDraft: draft.text))),
+            icon: const Icon(Icons.insights),
+            label: const Text('Open 3 advanced labs')),
+        const SizedBox(height: 12),
         TextField(
             controller: draft,
             maxLength: 6000,

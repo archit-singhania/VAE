@@ -10,7 +10,7 @@ const WebglScene = dynamic(() => import("./webgl-scene").then((mod) => mod.Webgl
   ssr: false,
 });
 
-export function WebglBackground() {
+export function WebglBackground({ variant = "creator" }: { variant?: "creator" | "admin" }) {
   const [ready, setReady] = useState(false);
   useEffect(() => {
     const query = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -32,5 +32,5 @@ export function WebglBackground() {
       document.removeEventListener("visibilitychange", update);
     };
   }, []);
-  return ready ? <WebglScene /> : null;
+  return ready ? <WebglScene variant={variant} /> : null;
 }

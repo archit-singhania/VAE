@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../state/app_state.dart';
+import '../api/models.dart';
+import '../widgets/caption_studio.dart';
 import '../widgets/vae_ui.dart';
 
 class MediaScreen extends StatefulWidget {
@@ -13,7 +15,7 @@ class MediaScreen extends StatefulWidget {
 class _MediaScreenState extends State<MediaScreen> {
   late final TextEditingController prompt =
       TextEditingController(text: widget.state.draftPrompt);
-  bool generating = false, uploading = false;
+  bool generating = false;
   String mode = 'image', ratio = '1:1', generatedText = '', progress = '';
   int count = 1, limit = 12;
   String? error;
@@ -54,6 +56,10 @@ class _MediaScreenState extends State<MediaScreen> {
               state.token!, state.workspace!.id, brief,
               aspectRatio: aspect);
           state.prependAssets(created);
+          if (i == outputs - 1 && created.isNotEmpty && mounted) {
+            setState(() => generating = false);
+            await pair(created.first);
+          }
         }
       }
     } catch (e) {
@@ -68,21 +74,11 @@ class _MediaScreenState extends State<MediaScreen> {
     }
   }
 
-  Future<void> upload() async {
-    final s = widget.state;
-    if (s.token == null || s.workspace == null) return;
-    setState(() {
-      uploading = true;
-      error = null;
-    });
-    try {
-      final asset = await s.client.pickAndUpload(s.token!, s.workspace!.id);
-      if (asset != null) s.prependAssets([asset]);
-    } catch (e) {
-      if (mounted) setState(() => error = e.toString());
-    } finally {
-      if (mounted) setState(() => uploading = false);
-    }
+  Future<void> pair(MediaAsset asset) async {
+    final text = await showDialog<String>(
+        context: context,
+        builder: (_) => CaptionStudio(state: widget.state, asset: asset));
+    if (text != null && mounted) setState(() {});
   }
 
   @override
@@ -164,11 +160,6 @@ class _MediaScreenState extends State<MediaScreen> {
                       mode == 'image' ? 'Generate image' : 'Generate caption',
                       busy: generating,
                       onPressed: generate),
-                  OutlinedButton.icon(
-                      onPressed: uploading ? null : upload,
-                      icon: const Icon(Icons.upload),
-                      label:
-                          Text(uploading ? 'Uploading…' : 'Upload an asset')),
                   if (generatedText.isNotEmpty) ...[
                     const SizedBox(height: 16),
                     SelectableText(generatedText),
@@ -187,13 +178,18 @@ class _MediaScreenState extends State<MediaScreen> {
             const SizedBox(height: 16),
             if (widget.state.assets.isEmpty)
               const VaeEmptyState('Your library is empty',
-                  'Describe a visual above or upload your own media.'),
-            ...widget.state.assets
-                .take(limit)
-                .map((a) => VaeAssetTile(a, onPublish: () {
-                      widget.state.selectForPublishing(a.id);
-                      widget.onPublish?.call();
-                    })),
+                  'Describe a visual above. Upload your own assets in Publish.'),
+            ...widget.state.assets.take(limit).map((a) => Column(children: [
+                  VaeAssetTile(a, onPublish: () {
+                    widget.state.selectForPublishing(a.id,
+                        caption: a.caption.isEmpty ? null : a.caption);
+                    widget.onPublish?.call();
+                  }),
+                  TextButton.icon(
+                      onPressed: () => pair(a),
+                      icon: const Icon(Icons.edit_note),
+                      label: const Text('Caption & hashtags'))
+                ])),
             if (widget.state.assets.length > limit)
               TextButton(
                   onPressed: () => setState(() => limit += 12),

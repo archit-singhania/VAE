@@ -61,6 +61,7 @@ class Settings(BaseSettings):
     groq_model: str = "llama-3.1-8b-instant"
     groq_timeout_seconds: float = Field(default=60.0, ge=1, le=600)
     media_root: str = "./media"
+    public_api_base_url: str = ""
     image_provider: str = "deterministic"
     huggingface_api_token: str | None = None
     huggingface_image_model: str = "black-forest-labs/FLUX.1-schnell"
