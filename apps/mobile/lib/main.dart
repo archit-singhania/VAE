@@ -34,11 +34,22 @@ class _AevraAppState extends State<AevraApp> {
   final AevraSound sound = AevraSound();
   final ParticlePulse pulse = ParticlePulse();
   bool darkMode = true;
+  bool _adminPortal = false;
+  bool _lastPortalWasAdmin = false;
+
+  void _syncPortalTheme() {
+    final next = state.user?.isAdmin == true;
+    if (state.user != null) _lastPortalWasAdmin = next;
+    if (next != _adminPortal && mounted) {
+      setState(() => _adminPortal = next);
+    }
+  }
 
   @override
   void initState() {
     super.initState();
     state = AppState();
+    state.addListener(_syncPortalTheme);
     state.hydrate();
     sound.hydrate();
     SharedPreferences.getInstance().then((prefs) {
@@ -57,6 +68,7 @@ class _AevraAppState extends State<AevraApp> {
 
   @override
   void dispose() {
+    state.removeListener(_syncPortalTheme);
     state.dispose();
     sound.dispose();
     pulse.dispose();
@@ -68,7 +80,9 @@ class _AevraAppState extends State<AevraApp> {
     return MaterialApp(
       title: 'VAE',
       debugShowCheckedModeBanner: false,
-      theme: darkMode ? AevraTheme.dark : AevraTheme.light,
+      theme: _adminPortal
+          ? (darkMode ? AevraTheme.adminDark : AevraTheme.adminLight)
+          : (darkMode ? AevraTheme.dark : AevraTheme.light),
       // Wrapped via `builder`, not `home`, so dialogs, bottom sheets and
       // overlay entries pushed onto the Navigator can still reach it —
       // anything under `home` alone would be invisible to those routes.
@@ -107,6 +121,7 @@ class _AevraAppState extends State<AevraApp> {
                 : AuthScreen(
                     key: const ValueKey('auth'),
                     state: state,
+                    initialAdminPortal: _lastPortalWasAdmin,
                     onToggleTheme: _toggleTheme),
           );
         },
@@ -418,7 +433,13 @@ class _MobileShellState extends State<MobileShell> {
             MlInsightsScreen(state: widget.state),
           ];
     final titles = admin
-        ? const ['Home', 'AI usage', 'Publishing', 'Analytics', 'Payments']
+        ? const [
+            'Home',
+            'AI usage',
+            'Publishing',
+            'Analytics',
+            'Payment review'
+          ]
         : const ['Home', 'Create', 'Publish', 'Analytics', 'ML insights'];
     final icons = [
       LucideIcons.brainCircuit,
@@ -428,7 +449,9 @@ class _MobileShellState extends State<MobileShell> {
       admin ? LucideIcons.shieldCheck : LucideIcons.sparkles,
     ];
     return Theme(
-      data: admin ? AevraTheme.adminDark : Theme.of(context),
+      data: admin
+          ? (widget.darkMode ? AevraTheme.adminDark : AevraTheme.adminLight)
+          : Theme.of(context),
       child: Scaffold(
         backgroundColor: Colors.transparent,
         body: Stack(children: [

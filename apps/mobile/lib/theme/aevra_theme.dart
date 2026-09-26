@@ -217,6 +217,7 @@ class AevraTheme {
   static ThemeData? _darkCache;
   static ThemeData? _lightCache;
   static ThemeData? _adminDarkCache;
+  static ThemeData? _adminLightCache;
 
   static ThemeData get dark => _darkCache ??= _buildDark();
   static ThemeData get light => _lightCache ??= _buildLight();
@@ -236,6 +237,24 @@ class AevraTheme {
         secondary: const Color(0xFF58C7AA),
         tertiary: const Color(0xFF8BB6FF),
         error: const Color(0xFFEF6678),
+      );
+
+  static ThemeData get adminLight => _adminLightCache ??= _build(
+        brightness: Brightness.light,
+        background: const Color(0xFFF4F7FC),
+        surface: const Color(0xFFFFFFFF),
+        fieldFill: const Color(0xFFF0F5FC),
+        line: const Color(0x1F315D9F),
+        lineStrong: const Color(0x40315D9F),
+        text: const Color(0xFF14233D),
+        textSoft: const Color(0xFF526582),
+        muted: const Color(0xFF647792),
+        muted2: const Color(0xFF71819B),
+        accent: const Color(0xFF4F8CFF),
+        accentInk: const Color(0xFFF7FAFF),
+        secondary: const Color(0xFF2F8E75),
+        tertiary: const Color(0xFF426FAF),
+        error: const Color(0xFFBD4054),
       );
 
   static ThemeData _buildDark() => _build(

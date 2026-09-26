@@ -250,7 +250,7 @@ class VaeBottomNav extends StatelessWidget {
             ('AI usage', LucideIcons.sparkles, 1),
             ('Publishing', LucideIcons.calendarDays, 2),
             ('Analytics', LucideIcons.brainCircuit, 3),
-            ('Payments', LucideIcons.shieldCheck, 4),
+            ('Payment review', LucideIcons.shieldCheck, 4),
           ]
         : const <(String, IconData, int)>[
             ('Home', LucideIcons.brainCircuit, 0),

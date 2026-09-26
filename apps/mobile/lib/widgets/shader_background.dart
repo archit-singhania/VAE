@@ -105,7 +105,7 @@ class _ShaderBackgroundState extends State<ShaderBackground>
   @override
   Widget build(BuildContext context) {
     if (Theme.of(context).brightness == Brightness.light) {
-      return const _LightBackground();
+      return _LightBackground(admin: widget.admin);
     }
     if (_failed) return _StaticFallback(admin: widget.admin);
     final shader = _shader;
@@ -190,28 +190,34 @@ class _StaticFallback extends StatelessWidget {
 }
 
 class _LightBackground extends StatelessWidget {
-  const _LightBackground();
+  const _LightBackground({required this.admin});
+  final bool admin;
 
   @override
-  Widget build(BuildContext context) => const DecoratedBox(
-        decoration: BoxDecoration(color: AevraLightColors.bg),
+  Widget build(BuildContext context) => DecoratedBox(
+        decoration: BoxDecoration(
+            color: admin ? const Color(0xFFF4F7FC) : AevraLightColors.bg),
         child: DecoratedBox(
           decoration: BoxDecoration(
             gradient: RadialGradient(
-              center: Alignment(-0.76, -1.15),
+              center: const Alignment(-0.76, -1.15),
               radius: 1.1,
-              colors: [Color(0x218D6B2C), Colors.transparent],
+              colors: admin
+                  ? const [Color(0x214F8CFF), Colors.transparent]
+                  : const [Color(0x218D6B2C), Colors.transparent],
             ),
           ),
           child: DecoratedBox(
             decoration: BoxDecoration(
               gradient: RadialGradient(
-                center: Alignment(0.84, 1.0),
+                center: const Alignment(0.84, 1.0),
                 radius: 1.15,
-                colors: [Color(0x1C2D5B4B), Colors.transparent],
+                colors: admin
+                    ? const [Color(0x182756AD), Colors.transparent]
+                    : const [Color(0x1C2D5B4B), Colors.transparent],
               ),
             ),
-            child: SizedBox.expand(),
+            child: const SizedBox.expand(),
           ),
         ),
       );

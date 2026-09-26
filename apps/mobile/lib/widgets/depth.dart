@@ -86,7 +86,9 @@ class GlassSurface extends StatelessWidget {
     final spec = _specs[elevation]!;
     final intensity = adaptive ? GlassScope.of(context) : 0.0;
     final sigma = spec.sigma + intensity * 5;
-    final fill = (spec.fill + intensity * 0.14).clamp(0.0, 0.95);
+    final fill = Theme.of(context).brightness == Brightness.light
+        ? 0.92
+        : (spec.fill + intensity * 0.14).clamp(0.0, 0.95);
 
     return RepaintBoundary(
       child: DecoratedBox(

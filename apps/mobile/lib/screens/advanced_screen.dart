@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../state/app_state.dart';
 import '../widgets/vae_ui.dart';
 
@@ -194,14 +195,14 @@ class _AdvancedScreenState extends State<AdvancedScreen> {
       'media' => [
           MapEntry('Generation runs', totals['generation_runs'] ?? 0),
           MapEntry('Generated assets', totals['generated_assets'] ?? 0),
-          MapEntry('Input tokens', totals['prompt_tokens'] ?? 0),
-          MapEntry('Output tokens', totals['completion_tokens'] ?? 0),
+          MapEntry('Input tokens recorded', totals['prompt_tokens'] ?? 0),
+          MapEntry('Output tokens recorded', totals['completion_tokens'] ?? 0),
         ],
       'publishing' => [
           MapEntry('Channels', totals['channels'] ?? 0),
           MapEntry('Upcoming schedules', totals['scheduled'] ?? 0),
           MapEntry('Published posts', totals['published'] ?? 0),
-          MapEntry('Failed jobs', totals['failed'] ?? 0),
+          MapEntry('Failed publish jobs', totals['failed'] ?? 0),
         ],
       'analytics' => [
           MapEntry('Measured posts', totals['measured_posts'] ?? 0),
@@ -235,83 +236,314 @@ class _AdvancedScreenState extends State<AdvancedScreen> {
         _ => 'Customer overview',
       };
 
+  String get adminDescription => switch (widget.adminSection) {
+        'media' => 'Recorded generation activity by provider and model.',
+        'publishing' =>
+          'Channel health, upcoming workload, and publishing outcomes.',
+        'analytics' =>
+          'Platform performance from the latest collected sample for each post.',
+        'payments' =>
+          'Review submitted payment references and approve customer access.',
+        _ =>
+          'Adoption, workspace usage, and social performance across customers.',
+      };
+
+  IconData get adminIcon => switch (widget.adminSection) {
+        'media' => LucideIcons.bot,
+        'publishing' => LucideIcons.clock3,
+        'analytics' => LucideIcons.chartColumn,
+        'payments' => LucideIcons.shieldCheck,
+        _ => LucideIcons.activity,
+      };
+
+  Widget _adminTable(BuildContext context, String title, String description,
+      List<String> headings, List<List<String>> rows, String emptyText) {
+    final scheme = Theme.of(context).colorScheme;
+    return VaeGlassCard(
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(title, style: Theme.of(context).textTheme.headlineSmall),
+        const SizedBox(height: 8),
+        Text(description,
+            style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12)),
+        const SizedBox(height: 18),
+        if (rows.isEmpty)
+          Text(emptyText,
+              style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12))
+        else
+          ClipRRect(
+            borderRadius: BorderRadius.circular(15),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                  border: Border.all(color: Theme.of(context).dividerColor),
+                  borderRadius: BorderRadius.circular(15)),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: DataTable(
+                  headingRowColor: WidgetStatePropertyAll(
+                      scheme.primary.withValues(alpha: .08)),
+                  columnSpacing: 22,
+                  headingTextStyle: TextStyle(
+                      fontFamily: 'Manrope',
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: scheme.onSurface),
+                  dataTextStyle: TextStyle(
+                      fontFamily: 'Manrope',
+                      fontSize: 11,
+                      color: scheme.onSurfaceVariant),
+                  columns: [
+                    for (final heading in headings)
+                      DataColumn(label: Text(heading))
+                  ],
+                  rows: [
+                    for (final row in rows)
+                      DataRow(cells: [
+                        for (final value in row) DataCell(Text(value))
+                      ])
+                  ],
+                ),
+              ),
+            ),
+          ),
+      ]),
+    );
+  }
+
   Widget adminBody(BuildContext context) {
-    final detailItems = widget.adminSection == 'payments'
-        ? const []
-        : widget.adminSection == 'media'
-            ? (overview?['models'] as List? ?? const [])
-            : (overview?['platforms'] as List? ?? const []);
+    final scheme = Theme.of(context).colorScheme;
+    final media = widget.adminSection == 'media';
+    final publishing = widget.adminSection == 'publishing';
+    final paymentReview = widget.adminSection == 'payments';
+    final models = (overview?['models'] as List? ?? const [])
+        .map((raw) => Map<String, dynamic>.from(raw as Map))
+        .toList();
+    final platforms = (overview?['platforms'] as List? ?? const [])
+        .map((raw) => Map<String, dynamic>.from(raw as Map))
+        .toList();
+    final users = (overview?['users'] as List? ?? const [])
+        .map((raw) => Map<String, dynamic>.from(raw as Map))
+        .toList();
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      VaePageHeader(adminTitle,
-          'Live operational reporting across customers and workspaces.'),
-      Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          children: adminMetrics
-              .map((entry) => SizedBox(
-                  width: 230,
-                  child: VaeMetricCard(entry.key, '${entry.value}')))
-              .toList()),
+      Container(
+        padding: const EdgeInsets.all(22),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(26),
+          border: Border.all(color: scheme.primary.withValues(alpha: .17)),
+          gradient: LinearGradient(colors: [
+            scheme.primary.withValues(alpha: .20),
+            scheme.surface.withValues(alpha: .88),
+          ]),
+          boxShadow: const [
+            BoxShadow(color: Color(0x33000000), blurRadius: 35)
+          ],
+        ),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            Icon(adminIcon, size: 14, color: scheme.primary),
+            const SizedBox(width: 7),
+            Text('VAE ADMINISTRATION',
+                style: TextStyle(
+                    color: scheme.primary,
+                    fontFamily: 'JetBrainsMono',
+                    fontSize: 10,
+                    letterSpacing: 1.4)),
+          ]),
+          const SizedBox(height: 12),
+          Text(adminTitle, style: Theme.of(context).textTheme.displaySmall),
+          const SizedBox(height: 10),
+          Text(adminDescription,
+              style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 13)),
+          const SizedBox(height: 16),
+          if (!paymentReview && overview?['generated_at'] != null)
+            Text('Updated ${overview!['generated_at']} · Operational KPIs',
+                style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 11)),
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+              onPressed: busy ? null : load,
+              icon: const Icon(LucideIcons.refreshCw, size: 15),
+              label: Text(
+                  paymentReview ? 'Refresh submissions' : 'Refresh report')),
+        ]),
+      ),
+      const SizedBox(height: 20),
+      LayoutBuilder(builder: (context, constraints) {
+        final width = (constraints.maxWidth - 12) / 2;
+        return Wrap(spacing: 12, runSpacing: 12, children: [
+          for (var i = 0; i < adminMetrics.length; i++)
+            SizedBox(
+              width: width,
+              child: VaeGlassCard(
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Align(
+                        alignment: Alignment.topRight,
+                        child: Text('${i + 1}'.padLeft(2, '0'),
+                            style: TextStyle(
+                                color: scheme.primary.withValues(alpha: .7),
+                                fontFamily: 'JetBrainsMono',
+                                fontSize: 11)),
+                      ),
+                      Text(adminMetrics[i].key,
+                          style: TextStyle(
+                              color: scheme.onSurfaceVariant, fontSize: 12)),
+                      const SizedBox(height: 18),
+                      Text('${adminMetrics[i].value}',
+                          style: Theme.of(context).textTheme.displaySmall),
+                    ]),
+              ),
+            ),
+        ]);
+      }),
       const SizedBox(height: 24),
-      if (detailItems.isNotEmpty)
+      if (paymentReview)
         VaeGlassCard(
-            child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-              Text(
-                  widget.adminSection == 'media'
-                      ? 'Provider & model activity'
-                      : 'Platform performance',
-                  style: Theme.of(context).textTheme.headlineSmall),
-              const SizedBox(height: 12),
-              ...detailItems.map((raw) {
-                final item = Map<String, dynamic>.from(raw as Map);
-                final title = widget.adminSection == 'media'
-                    ? '${item['provider'] ?? 'Provider'} · ${item['model'] ?? 'Model'}'
-                    : '${item['platform'] ?? 'Platform'}';
-                final subtitle = widget.adminSection == 'media'
-                    ? '${item['requests'] ?? 0} requests · ${item['failed'] ?? 0} failed'
-                    : '${item['channels'] ?? 0} channels · ${item['published'] ?? 0} published · ${item['engagements'] ?? 0} engagements';
-                return ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: Text(title),
-                    subtitle: Text(subtitle));
-              })
-            ])),
-      const SizedBox(height: 24),
-      if (widget.adminSection == 'payments') ...[
-        Text('Payment review',
-            style: Theme.of(context).textTheme.headlineSmall),
-        const SizedBox(height: 12),
-        if (payments.isEmpty)
-          const VaeEmptyState('No payment submissions',
-              'New manual payment reviews will appear here.'),
-        ...payments.map((p) => ListTile(
-            title: Text(p['display_name'] as String? ?? 'Account'),
-            subtitle: Text('${p['amount']} · ${p['status']}'),
-            trailing: PopupMenuButton<String>(
-                enabled: !busy,
-                onSelected: (v) => review(p, v),
-                itemBuilder: (_) => const [
-                      PopupMenuItem(value: 'approve', child: Text('Approve')),
-                      PopupMenuItem(value: 'reject', child: Text('Reject'))
-                    ]))),
-      ],
-      if (widget.adminSection != 'overview') ...[
-        Text('Customer usage',
-            style: Theme.of(context).textTheme.headlineSmall),
-        ...(overview?['users'] as List? ?? const []).map((raw) {
-          final user = Map<String, dynamic>.from(raw as Map);
-          return ExpansionTile(
-              title: Text(user['display_name'] as String? ?? 'Account'),
-              subtitle: Text(user['account_status'] as String? ?? ''),
-              children: user.entries
-                  .where((entry) => entry.value is num)
-                  .map((entry) => ListTile(
-                      title: Text(entry.key.replaceAll('_', ' ')),
-                      trailing: Text('${entry.value}')))
-                  .toList());
-        }),
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('${payments.length} submissions',
+                style: Theme.of(context).textTheme.headlineSmall),
+            const SizedBox(height: 14),
+            if (payments.isEmpty)
+              Text('No payment submissions',
+                  style: TextStyle(color: scheme.onSurfaceVariant)),
+            for (final payment in payments)
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: Icon(LucideIcons.shieldCheck, color: scheme.primary),
+                title: Text('${payment['display_name'] ?? 'Account'}'),
+                subtitle: Text(
+                    '${payment['amount']} ${payment['currency'] ?? ''} · ${payment['utr_reference'] ?? 'No payment reference'}'),
+                trailing: PopupMenuButton<String>(
+                  tooltip: 'Review payment',
+                  enabled: !busy &&
+                      payment['status'] != 'approved' &&
+                      payment['status'] != 'rejected',
+                  onSelected: (decision) => review(payment, decision),
+                  itemBuilder: (_) => const [
+                    PopupMenuItem(value: 'approve', child: Text('Approve')),
+                    PopupMenuItem(value: 'reject', child: Text('Reject')),
+                  ],
+                ),
+              ),
+          ]),
+        )
+      else ...[
+        if (media)
+          _adminTable(
+              context,
+              'Provider & model activity',
+              'Recorded campaign runs and generated media assets.',
+              const [
+                'Provider / model',
+                'Activity',
+                'Count',
+                'Failed',
+                'Recorded tokens',
+                'Metered runs'
+              ],
+              [
+                for (final item in models)
+                  [
+                    '${item['provider'] ?? ''} / ${item['model'] ?? ''}',
+                    item['kind'] == 'llm' ? 'LLM runs' : 'Media assets',
+                    '${item['requests'] ?? 0}',
+                    '${item['failed'] ?? 0}',
+                    item['kind'] == 'llm'
+                        ? '${(item['prompt_tokens'] ?? 0) + (item['completion_tokens'] ?? 0)}'
+                        : 'Not metered',
+                    item['kind'] == 'llm'
+                        ? '${item['metered_runs'] ?? 0} / ${item['requests'] ?? 0}'
+                        : '—',
+                  ],
+              ],
+              'No recorded generation activity yet.')
+        else
+          _adminTable(
+              context,
+              publishing
+                  ? 'Channels & schedules'
+                  : 'Social platform performance',
+              'Impressions are platform-reported views, not website visits.',
+              publishing
+                  ? const [
+                      'Platform',
+                      'Connected / total',
+                      'Scheduled',
+                      'Queued',
+                      'Published',
+                      'Publish failures',
+                      'Schedule failures'
+                    ]
+                  : const [
+                      'Platform',
+                      'Connected / total',
+                      'Scheduled',
+                      'Queued',
+                      'Published',
+                      'Impressions',
+                      'Engagements',
+                      'Clicks'
+                    ],
+              [
+                for (final item in platforms)
+                  [
+                    '${item['platform'] ?? ''}',
+                    '${item['connected'] ?? 0} / ${item['channels'] ?? 0}',
+                    '${item['scheduled'] ?? 0}',
+                    '${item['queued'] ?? 0}',
+                    '${item['published'] ?? 0}',
+                    if (publishing) ...[
+                      '${item['failed'] ?? 0}',
+                      '${item['schedule_failed'] ?? 0}',
+                    ] else ...[
+                      '${item['impressions'] ?? 0}',
+                      '${item['engagements'] ?? 0}',
+                      '${item['clicks'] ?? 0}',
+                    ],
+                  ],
+              ],
+              'No connected channels or platform activity yet.'),
+        const SizedBox(height: 24),
+        _adminTable(
+            context,
+            media ? 'Customer generation usage' : 'Customer usage',
+            'Workspace totals across each customer’s memberships.',
+            media
+                ? const [
+                    'Customer',
+                    'Status',
+                    'LLM runs',
+                    'Generated assets',
+                    'Recorded tokens'
+                  ]
+                : const [
+                    'Customer',
+                    'Status',
+                    'Assets',
+                    'Channels',
+                    'Scheduled',
+                    'Published',
+                    'Engagements'
+                  ],
+            [
+              for (final user in users)
+                [
+                  '${user['display_name'] ?? 'Account'}',
+                  '${user['account_status'] ?? ''}'.replaceAll('_', ' '),
+                  if (media) ...[
+                    '${user['generation_runs'] ?? 0}',
+                    '${user['generated_assets'] ?? 0}',
+                    '${(user['prompt_tokens'] ?? 0) + (user['completion_tokens'] ?? 0)}',
+                  ] else ...[
+                    '${user['assets'] ?? 0}',
+                    '${user['channels'] ?? 0}',
+                    '${user['scheduled'] ?? 0}',
+                    '${user['published'] ?? 0}',
+                    '${user['engagements'] ?? 0}',
+                  ],
+                ],
+            ],
+            'No customer usage yet.'),
       ],
     ]);
   }
