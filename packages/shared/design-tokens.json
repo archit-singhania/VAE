@@ -1,9 +1,11 @@
 {
-  "name": "VAE premium crimson",
-  "dark": {"background":"#171014","input":"#21161b","surface":"#2a1c22","raised":"#35232a","accent":"#e5485d","text":"#f7f2f4","success":"#4e9c82","error":"#ef6678","info":"#8fa7c2"},
-  "light": {"background":"#f8f3f4","input":"#fdf9fa","surface":"#ffffff","raised":"#f1e7e9","accent":"#c72f47","text":"#211418","success":"#2f7a61","error":"#b8273d","info":"#3f6183"},
+  "name": "VAE glass studio",
+  "dark": {"background":"#121016","input":"#211e24","surface":"#242127","raised":"#302b33","accent":"#e5485d","text":"#f7f4f8","success":"#4e9c82","error":"#ef6678","info":"#8fa7c2"},
+  "light": {"background":"#f3f2f6","input":"#f6f4f8","surface":"#ffffff","raised":"#eeeaf2","accent":"#c72f47","text":"#28212d","success":"#2f7a61","error":"#b8273d","info":"#3f6183"},
+  "adminDark": {"background":"#0d1420","input":"#192230","surface":"#1d2635","raised":"#28364c","accent":"#4f8cff","text":"#f4f8ff","success":"#58c7aa","error":"#ef6678","info":"#8bb6ff"},
+  "adminLight": {"background":"#f0f3f9","input":"#f4f6fa","surface":"#ffffff","raised":"#e9eff8","accent":"#2865d6","text":"#14233d","success":"#2f8e75","error":"#bd4054","info":"#426faf"},
   "fonts": {"heading":"Playfair Display","interface":"Manrope","metadata":"JetBrains Mono"},
   "spacing":[4,8,12,16,24,32,48],
-  "radius":{"control":12,"card":20,"hero":32},
-  "motionMs":{"control":160,"panel":260,"page":520}
+  "radius":{"control":24,"card":24,"hero":32},
+  "motionMs":{"control":180,"panel":360,"page":420}
 }

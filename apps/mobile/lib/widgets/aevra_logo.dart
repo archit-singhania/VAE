@@ -1,20 +1,9 @@
-import 'dart:math' as math;
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 
-import '../theme/aevra_theme.dart';
-
-/// The Aevra brand mark — vector-drawn, not an image asset, so it stays
-/// crisp at any size and always tracks the live theme tokens.
-///
-/// Geometry (Nocturne): an open aperture ring in the cool `sheen` tint with
-/// a deliberate gap at the top-right, and inside it a monoline "A" — apex,
-/// two legs, offset crossbar — in copper. The gap is the point: a closed
-/// ring reads as a generic app chip, while an interrupted one reads as an
-/// instrument dial, which is what the product is.
-///
-/// Everything is proportional to [size], so the same painter is correct at
-/// 22px in a top bar and 96px on a splash.
+/// Shared 64-unit geometry with the editable SVGs in web/public/branding.
+/// Creator / Business uses a folded V; Administration uses a vaulted gateway.
 class AevraMark extends StatelessWidget {
   const AevraMark(
       {super.key,
@@ -22,133 +11,158 @@ class AevraMark extends StatelessWidget {
       this.color,
       this.ringColor,
       this.admin = false});
-
   final double size;
-
-  /// The monogram colour. Defaults to the copper accent.
   final Color? color;
-
-  /// The aperture ring colour. Defaults to the cool specular tint.
+  // Retained for callers that tint the specular edge during theme transitions.
   final Color? ringColor;
   final bool admin;
 
   @override
-  Widget build(BuildContext context) {
-    if (color != null || ringColor != null) {
-      return SizedBox(
-        width: size,
-        height: size,
-        child: CustomPaint(
-          painter: _AevraMarkPainter(
-            color: color ?? AevraColors.accent,
-            ring: ringColor ?? AevraColors.sheen,
-          ),
-        ),
+  Widget build(BuildContext context) => Semantics(
+        label:
+            admin ? 'VAE Administration mark' : 'VAE Creator and Business mark',
+        image: true,
+        child: SizedBox.square(
+            dimension: size,
+            child: CustomPaint(
+              painter:
+                  _VaeMarkPainter(admin: admin, tint: color, edge: ringColor),
+            )),
       );
-    }
-    return Image.asset(
-      admin
-          ? 'assets/branding/vae_admin_icon_256.png'
-          : 'assets/branding/vae_creator_icon_256.png',
-      width: size,
-      height: size,
-      fit: BoxFit.contain,
-      filterQuality: FilterQuality.medium,
-    );
-  }
 }
 
-class _AevraMarkPainter extends CustomPainter {
-  _AevraMarkPainter({required this.color, required this.ring});
+class _VaeMarkPainter extends CustomPainter {
+  const _VaeMarkPainter({required this.admin, this.tint, this.edge});
+  final bool admin;
+  final Color? tint;
+  final Color? edge;
 
-  final Color color;
-  final Color ring;
+  List<Color> _colors(List<Color> originals) => tint == null
+      ? originals
+      : [
+          Color.lerp(tint, Colors.white, .55)!,
+          tint!,
+          Color.lerp(tint, Colors.black, .22)!,
+        ];
+  Paint _gradient(Offset start, Offset end, List<Color> colors,
+          [List<double> stops = const [0, .36, 1]]) =>
+      Paint()..shader = ui.Gradient.linear(start, end, _colors(colors), stops);
 
   @override
   void paint(Canvas canvas, Size size) {
-    final s = size.shortestSide;
-    final center = Offset(size.width / 2, size.height / 2);
-
-    // ---- aperture ring -------------------------------------------------
-    // Drawn as two arcs rather than one so the gap sits exactly where the
-    // accent tick lands, instead of wherever a single sweep happens to end.
-    final ringPaint = Paint()
+    canvas.save();
+    final scale = size.shortestSide / 64;
+    canvas.translate(
+        (size.width - 64 * scale) / 2, (size.height - 64 * scale) / 2);
+    canvas.scale(scale);
+    final specular = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = s * 0.055
-      ..strokeCap = StrokeCap.round
-      ..color = ring.withValues(alpha: 0.30);
-
-    final ringRect = Rect.fromCircle(center: center, radius: s * 0.43);
-    // -150° sweeping 250°, leaving a clean notch in the upper right.
-    canvas.drawArc(ringRect, _rad(-150), _rad(250), false, ringPaint);
-
-    // The tick closing the notch, in the accent — the one saturated pixel
-    // in the mark at small sizes.
-    canvas.drawArc(
-      ringRect,
-      _rad(-62),
-      _rad(26),
-      false,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = s * 0.055
-        ..strokeCap = StrokeCap.round
-        ..color = color,
-    );
-
-    // ---- the "A" monogram ---------------------------------------------
-    final strokePaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = s * 0.082
+      ..strokeWidth = 1
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round
-      ..color = color;
-
-    final apex = Offset(center.dx, size.height * 0.30);
-    final leftFoot = Offset(size.width * 0.315, size.height * 0.705);
-    final rightFoot = Offset(size.width * 0.685, size.height * 0.705);
-
-    canvas.drawPath(
-      Path()
-        ..moveTo(leftFoot.dx, leftFoot.dy)
-        ..lineTo(apex.dx, apex.dy)
-        ..lineTo(rightFoot.dx, rightFoot.dy),
-      strokePaint,
-    );
-
-    // The crossbar is deliberately short and sits low — it keeps the
-    // counter open so the glyph stays legible at 20px, where a centred
-    // full-width bar closes up into a solid triangle.
-    canvas.drawLine(
-      Offset(size.width * 0.415, size.height * 0.585),
-      Offset(size.width * 0.585, size.height * 0.585),
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = s * 0.058
-        ..strokeCap = StrokeCap.round
-        ..color = color.withValues(alpha: 0.75),
-    );
+      ..color = (edge ?? Colors.white).withValues(alpha: .5);
+    if (admin) {
+      final arch = Path()
+        ..moveTo(9, 53)
+        ..lineTo(9, 26)
+        ..cubicTo(9, 13, 19, 6, 32, 6)
+        ..cubicTo(45, 6, 55, 13, 55, 26)
+        ..lineTo(55, 53)
+        ..lineTo(44, 53)
+        ..lineTo(44, 26)
+        ..cubicTo(44, 20, 39, 17, 32, 17)
+        ..cubicTo(25, 17, 20, 20, 20, 26)
+        ..lineTo(20, 53)
+        ..close();
+      canvas.drawPath(
+          arch,
+          _gradient(
+              const Offset(13, 7),
+              const Offset(51, 54),
+              const [Color(0xFFB1D6FF), Color(0xFF599BFF), Color(0xFF2865D6)],
+              const [0, .35, 1]));
+      final fold = Path()
+        ..moveTo(24, 39)
+        ..lineTo(32, 47)
+        ..lineTo(40, 39)
+        ..lineTo(40, 51)
+        ..lineTo(32, 59)
+        ..lineTo(24, 51)
+        ..close();
+      canvas.drawPath(
+          fold,
+          Paint()
+            ..shader = ui.Gradient.linear(
+                const Offset(25, 39),
+                const Offset(39, 60),
+                tint == null
+                    ? const [Color(0xFF91BFFF), Color(0xFF3578EA)]
+                    : [Color.lerp(tint, Colors.white, .4)!, tint!]));
+      canvas.drawPath(
+          Path()
+            ..moveTo(11, 51)
+            ..lineTo(11, 26)
+            ..cubicTo(11, 15, 20, 8, 32, 8)
+            ..cubicTo(44, 8, 53, 15, 53, 26)
+            ..moveTo(26, 42)
+            ..lineTo(32, 48)
+            ..lineTo(38, 42),
+          specular);
+    } else {
+      canvas.drawPath(
+          Path()
+            ..moveTo(7, 10)
+            ..lineTo(19, 10)
+            ..lineTo(36, 43)
+            ..lineTo(29, 55)
+            ..cubicTo(27, 54, 26, 52, 25, 50)
+            ..lineTo(5, 15)
+            ..quadraticBezierTo(3, 10, 7, 10)
+            ..close(),
+          _gradient(
+              const Offset(8, 10),
+              const Offset(34, 55),
+              const [Color(0xFFFF9CAA), Color(0xFFE5485D), Color(0xFF8B1838)],
+              const [0, .38, 1]));
+      canvas.drawPath(
+          Path()
+            ..moveTo(45, 10)
+            ..lineTo(57, 10)
+            ..quadraticBezierTo(61, 10, 59, 15)
+            ..lineTo(38, 51)
+            ..quadraticBezierTo(35, 57, 29, 55)
+            ..lineTo(24, 44)
+            ..close(),
+          _gradient(const Offset(52, 10), const Offset(27, 55),
+              const [Color(0xFFFFB5BF), Color(0xFFED6175), Color(0xFFC72F47)]));
+      canvas.drawPath(
+          Path()
+            ..moveTo(9, 12)
+            ..lineTo(18, 12)
+            ..lineTo(31, 37)
+            ..moveTo(46, 12)
+            ..lineTo(56, 12)
+            ..lineTo(37, 48),
+          specular);
+    }
+    canvas.restore();
   }
 
-  static double _rad(double degrees) => degrees * math.pi / 180;
-
   @override
-  bool shouldRepaint(covariant _AevraMarkPainter old) =>
-      old.color != color || old.ring != ring;
+  bool shouldRepaint(covariant _VaeMarkPainter oldDelegate) =>
+      oldDelegate.admin != admin ||
+      oldDelegate.tint != tint ||
+      oldDelegate.edge != edge;
 }
 
-/// Mark + wordmark. The compact editorial setting makes the three letters
-/// read as a crafted identity instead of widely-spaced interface text.
 class AevraWordmark extends StatelessWidget {
-  const AevraWordmark({
-    super.key,
-    this.markSize = 26,
-    this.fontSize = 17,
-    this.color,
-    this.markColor,
-    this.admin = false,
-  });
-
+  const AevraWordmark(
+      {super.key,
+      this.markSize = 26,
+      this.fontSize = 17,
+      this.color,
+      this.markColor,
+      this.admin = false});
   final double markSize;
   final double fontSize;
   final Color? color;
@@ -156,38 +170,20 @@ class AevraWordmark extends StatelessWidget {
   final bool admin;
 
   @override
-  Widget build(BuildContext context) {
-    final light = Theme.of(context).brightness == Brightness.light;
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        AevraMark(size: markSize, admin: admin),
-        SizedBox(width: markSize * .32),
-        Text.rich(
-          TextSpan(children: [
-            TextSpan(
-                text: 'V',
-                style: TextStyle(
-                    fontWeight: FontWeight.w500,
-                    color: admin
-                        ? const Color(0xFF4F8CFF)
-                        : const Color(0xFFE5485D))),
-            TextSpan(
-                text: 'AE',
-                style: TextStyle(
-                    fontWeight: FontWeight.w500,
-                    color: light ? const Color(0xFF111318) : Colors.white)),
-          ]),
-          semanticsLabel: 'VAE',
-          style: TextStyle(
-            fontFamily: 'PlayfairDisplay',
-            fontSize: fontSize,
-            fontWeight: FontWeight.w500,
-            letterSpacing: fontSize * .015,
-            height: .92,
-          ),
-        ),
-      ],
-    );
-  }
+  Widget build(BuildContext context) => Semantics(
+        label: admin ? 'VAE Administration' : 'VAE Creator and Business',
+        excludeSemantics: true,
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          AevraMark(size: markSize, admin: admin, color: markColor),
+          SizedBox(width: markSize * .24),
+          Text('VAE',
+              style: TextStyle(
+                  fontFamily: 'Manrope',
+                  fontSize: fontSize,
+                  fontWeight: FontWeight.w700,
+                  color: color ?? Theme.of(context).colorScheme.onSurface,
+                  letterSpacing: -fontSize * .035,
+                  height: 1.1)),
+        ]),
+      );
 }

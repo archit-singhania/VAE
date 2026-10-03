@@ -1,18 +1,24 @@
 # Flutter branding assets
 
-The creator and administrator marks come from the same vector artwork used by
-the web app in `apps/web/public/brand/`. Flutter uses the matching PNGs here
-because native launch screens and app icons do not load SVGs.
+The creator / business identity is a folded crimson V. The administrator
+identity is a cobalt architectural gateway. Their editable SVG artwork lives
+in `apps/web/public/branding/`; the older `public/brand/` paths point to the
+same identity for compatibility.
 
-- `vae_creator_icon_256.png` and `vae_admin_icon_256.png` are the in-app marks.
+Flutter draws both in-app marks as vectors in `lib/widgets/aevra_logo.dart`,
+using the same 64-unit paths and gradient stops as the SVGs. Native launch
+screens and app icons use the rendered PNGs in this directory.
+
+- `vae_creator_icon_256.png` and `vae_admin_icon_256.png` are raster exports.
 - `aevra_app_icon_1024.png` is the opaque iPhone home-screen icon. Its generated
   sizes are already in `ios/Runner/Assets.xcassets/AppIcon.appiconset/`.
 - `aevra_splash_600.png` is the transparent creator mark on the iPhone launch
-  screen. It is rendered from `apps/web/public/brand/vae-creator-icon.svg`.
+  screen. It is rendered from the shared creator SVG.
   The native launch background is `#F8F3F4` in light mode and `#171014` in
   dark mode, matching the app theme.
 
-The generated iOS icon and launch screen are included in the repository. You do
-not need to regenerate them to run the app. If the vector or palette changes,
-update these source assets and run `dart run flutter_launcher_icons` and
-`dart run flutter_native_splash:create` from `apps/mobile`.
+The generated iOS and macOS icons and iOS launch artwork are included. You do
+not need to regenerate them to run the app. For future brand changes,
+`scripts/refresh_brand_assets.py` renders the SVG, PNG, icon catalog and launch
+artwork together; it requires Pillow and `rsvg-convert`. Keep the Flutter
+painter geometry in sync when changing a mark.

@@ -4,17 +4,21 @@
 
 import {
   ArrowRight,
-  BrainCircuit,
+  type BrainCircuit,
   CalendarDays,
+  ChartNoAxesCombined,
   Check,
   CircleAlert,
   Eye,
   EyeOff,
   FileText,
+  House,
   Image,
   LogOut,
   Menu,
   Moon,
+  PanelLeftClose,
+  PanelLeftOpen,
   Plus,
   RefreshCw,
   Search,
@@ -26,7 +30,7 @@ import {
   UserRound,
   X,
 } from "lucide-react";
-import { AnimatePresence, MotionConfig, motion } from "motion/react";
+import { AnimatePresence, LayoutGroup, MotionConfig, motion } from "motion/react";
 import dynamic from "next/dynamic";
 import NextImage from "next/image";
 import {
@@ -57,6 +61,7 @@ import {
 import { GrainOverlay } from "@/components/background/grain-overlay";
 import { HeroVideo } from "@/components/background/hero-video";
 import { WebglBackground } from "@/components/background/webgl-background";
+import { BrandIdentity } from "@/components/brand-identity";
 import { CaptionEditor } from "@/components/caption-editor";
 import { LandingStory } from "@/components/landing-story";
 import { MlStudio } from "@/components/ml-studio";
@@ -112,7 +117,7 @@ import {
   type User,
   type Workspace,
 } from "@/lib/api";
-import { overlayFade, variantSwap } from "@/lib/motion";
+import { GLASS_SPRING, overlayFade, variantSwap } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
 // Cursor-follow glow — writes pointer position as CSS custom properties so
@@ -206,6 +211,26 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
   const [mode, setMode] = useState<"login" | "register">("login");
   const [view, setView] = useState<View>("overview");
   const [sidebar, setSidebar] = useState(false);
+  const [compactNavigation, setCompactNavigation] = useState(false);
+  const [navCollapsed, setNavCollapsed] = useState(false);
+  useEffect(() => {
+    setNavCollapsed(window.localStorage.getItem("vae.navigation-collapsed") === "1");
+    const query = window.matchMedia("(max-width: 899px)");
+    const update = () => setCompactNavigation(query.matches);
+    update();
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  }, []);
+  const toggleNavigation = () => {
+    if (compactNavigation) {
+      setSidebar((open) => !open);
+      return;
+    }
+    setNavCollapsed((collapsed) => {
+      window.localStorage.setItem("vae.navigation-collapsed", collapsed ? "0" : "1");
+      return !collapsed;
+    });
+  };
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -305,10 +330,12 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
   const [paymentsLoaded, setPaymentsLoaded] = useState(false);
   const [paymentSubmissions, setPaymentSubmissions] = useState<PaymentSubmission[]>([]);
   const [adminOverview, setAdminOverview] = useState<AdminOverview | null>(null);
-  const [theme, setTheme] = useState<"dark" | "light">(() => {
-    if (typeof window === "undefined") return "dark";
-    return window.localStorage.getItem("vae.theme") === "light" ? "light" : "dark";
-  });
+  const [theme, setTheme] = useState<"dark" | "light">("dark");
+  const [themeLoaded, setThemeLoaded] = useState(false);
+  useLayoutEffect(() => {
+    setTheme(window.localStorage.getItem("vae.theme") === "light" ? "light" : "dark");
+    setThemeLoaded(true);
+  }, []);
 
   useEffect(() => {
     if (!notice) return;
@@ -653,10 +680,11 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
     };
   }, [adminPortal]);
   useLayoutEffect(() => {
+    if (!themeLoaded) return;
     document.documentElement.dataset.theme = theme;
     document.documentElement.style.colorScheme = theme;
     window.localStorage.setItem("vae.theme", theme);
-  }, [theme]);
+  }, [theme, themeLoaded]);
   useEffect(() => {
     window.localStorage.setItem("vae.metric-order", JSON.stringify(metricOrder));
   }, [metricOrder]);
@@ -1158,22 +1186,7 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
           <div className="hero-video-overlay" aria-hidden="true" />
           <GrainOverlay />
           <header className="landing-nav">
-            <div
-              className={cn(
-                "live-logo brand-lockup",
-                adminPortal ? "admin-brand" : "creator-brand",
-              )}
-            >
-              {/* biome-ignore lint/performance/noImgElement: static brand SVG */}
-              <img
-                src={adminPortal ? "/brand/vae-admin-icon.svg" : "/brand/vae-creator-icon.svg"}
-                alt=""
-              />
-              <span className="brand-wordmark" role="img" aria-label="VAE">
-                <b>V</b>
-                <em>AE</em>
-              </span>
-            </div>
+            <BrandIdentity audience={adminPortal ? "admin" : "creator"} />
             <div className="landing-nav-links">
               <button
                 type="button"
@@ -1264,24 +1277,10 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
             animate={{ opacity: 1, y: 0, scale: 1 }}
             transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1], delay: 0.1 }}
           >
-            <div
-              className={cn(
-                "live-auth-card-brand brand-lockup",
-                adminPortal ? "admin-brand" : "creator-brand",
-              )}
-              role="img"
-              aria-label={adminPortal ? "VAE administrator" : "VAE creator"}
-            >
-              {/* biome-ignore lint/performance/noImgElement: static brand SVG */}
-              <img
-                src={adminPortal ? "/brand/vae-admin-icon.svg" : "/brand/vae-creator-icon.svg"}
-                alt=""
-              />
-              <span className="brand-wordmark" aria-hidden="true">
-                <b>V</b>
-                <em>AE</em>
-              </span>
-            </div>
+            <BrandIdentity
+              audience={adminPortal ? "admin" : "creator"}
+              className="auth-brand-identity"
+            />
             {onboarding && paymentInfo ? (
               <div className="live-payment-card">
                 {paymentStatus?.status === "approved" ? (
@@ -1399,7 +1398,7 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
                       className={cn(mode === "register" && "active")}
                       onClick={() => setMode("register")}
                     >
-                      Creator / Business sign up
+                      Create account
                     </button>
                   </div>
                 )}
@@ -1556,17 +1555,17 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
     );
   const nav = user?.is_admin
     ? [
-        { id: "overview" as View, label: "Home", icon: BrainCircuit },
+        { id: "overview" as View, label: "Home", icon: House },
         { id: "media" as View, label: "AI usage", icon: Sparkles },
         { id: "publishing" as View, label: "Publishing", icon: CalendarDays },
-        { id: "analytics" as View, label: "Analytics", icon: BrainCircuit },
+        { id: "analytics" as View, label: "Analytics", icon: ChartNoAxesCombined },
         { id: "admin" as View, label: "Payment review", icon: ShieldCheck },
       ]
     : [
-        { id: "overview" as View, label: "Home", icon: BrainCircuit },
+        { id: "overview" as View, label: "Home", icon: House },
         { id: "media" as View, label: "Create", icon: Sparkles },
         { id: "publishing" as View, label: "Publish", icon: CalendarDays },
-        { id: "analytics" as View, label: "Analytics", icon: BrainCircuit },
+        { id: "analytics" as View, label: "Analytics", icon: ChartNoAxesCombined },
         { id: "ml" as View, label: "ML insights", icon: Sparkles },
       ];
   const overview = (
@@ -2958,7 +2957,12 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
   return (
     <MotionConfig reducedMotion="user">
       <main
-        className={cn("live-app", `view-${view}`, user?.is_admin && "admin-app")}
+        className={cn(
+          "live-app",
+          `view-${view}`,
+          user?.is_admin && "admin-app",
+          navCollapsed && "navigation-collapsed",
+        )}
         data-theme={theme}
       >
         <WebglBackground variant={user?.is_admin ? "admin" : "creator"} />
@@ -3180,68 +3184,22 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
             </motion.div>
           )}
         </AnimatePresence>
-        <aside className={cn("live-sidebar", sidebar && "open")}>
-          <div
-            className={cn(
-              "live-logo brand-lockup",
-              user?.is_admin ? "admin-brand" : "creator-brand",
-            )}
+        <LayoutGroup id="workspace-chrome">
+          <aside
+            className={cn("live-sidebar", sidebar && "open")}
+            aria-label="Workspace navigation"
           >
-            {/* biome-ignore lint/performance/noImgElement: static brand SVG */}
-            <img
-              src={user?.is_admin ? "/brand/vae-admin-icon.svg" : "/brand/vae-creator-icon.svg"}
-              alt=""
-            />
-            <span className="brand-wordmark" role="img" aria-label="VAE">
-              <b>V</b>
-              <em>AE</em>
-            </span>
-            <button onClick={() => setSidebar(false)} aria-label="Close">
-              <X size={17} />
-            </button>
-          </div>
-          <div className="live-workspace">
-            <div>
-              {user?.avatar_url ? (
-                // biome-ignore lint/performance/noImgElement: user-provided remote avatar URLs are dynamic.
-                <img src={user.avatar_url} alt="" />
-              ) : (
-                <UserRound size={18} />
-              )}
-            </div>
-            <span>
-              <b>{user?.brand_name || user?.display_name}</b>
-              <small>
-                {user?.is_admin
-                  ? "Administrator"
-                  : user?.account_type === "business"
-                    ? "Business"
-                    : "Creator"}
-              </small>
-            </span>
-          </div>
-          <nav>
-            {nav.map((item) => (
+            <div className="sidebar-identity">
+              <BrandIdentity audience={user?.is_admin ? "admin" : "creator"} />
               <button
-                className={cn(view === item.id && "active")}
-                key={item.id}
-                onClick={() => {
-                  setView(item.id);
-                  if (item.id === "admin") void loadPaymentSubmissions();
-                  setSidebar(false);
-                }}
+                className="sidebar-close"
+                onClick={() => setSidebar(false)}
+                aria-label="Close navigation"
               >
-                <item.icon size={17} />
-                <span>{item.label}</span>
+                <X size={18} />
               </button>
-            ))}
-            <button onClick={() => setPaletteOpen(true)}>
-              <Menu size={17} />
-              <span>More / Command</span>
-            </button>
-          </nav>
-          <div className="live-sidebar-foot">
-            <button className="live-user profile-trigger" onClick={() => setProfileOpen(true)}>
+            </div>
+            <div className="live-workspace">
               <div>
                 {user?.avatar_url ? (
                   // biome-ignore lint/performance/noImgElement: user-provided remote avatar URLs are dynamic.
@@ -3251,47 +3209,127 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
                 )}
               </div>
               <span>
-                <b>{user?.display_name}</b>
-                <small>{user?.email}</small>
+                <b>{user?.brand_name || user?.display_name}</b>
+                <small>
+                  {user?.is_admin
+                    ? "Administrator"
+                    : user?.account_type === "business"
+                      ? "Business workspace"
+                      : "Creator workspace"}
+                </small>
               </span>
-            </button>
-            <button onClick={() => setSignOutOpen(true)}>
-              <LogOut size={15} /> Sign out
-            </button>
-          </div>
-        </aside>
-        {sidebar && (
-          <button
-            className="live-backdrop"
-            onClick={() => setSidebar(false)}
-            aria-label="Close navigation"
-          />
-        )}
-        <nav className="creator-bottom-nav" aria-label="Primary navigation">
-          {(user?.is_admin ? nav : [nav[0], nav[2], nav[1], nav[3]]).map((item) => (
+            </div>
+            <nav aria-label="Main destinations">
+              {nav.map((item) => (
+                <button
+                  className={cn(view === item.id && "active")}
+                  key={item.id}
+                  title={item.label}
+                  aria-label={item.label}
+                  aria-current={view === item.id ? "page" : undefined}
+                  onClick={() => {
+                    setView(item.id);
+                    if (item.id === "admin") void loadPaymentSubmissions();
+                    setSidebar(false);
+                  }}
+                >
+                  {view === item.id && (
+                    <motion.i
+                      className="navigation-selection"
+                      layoutId="sidebar-selection"
+                      transition={GLASS_SPRING}
+                      aria-hidden="true"
+                    />
+                  )}
+                  <item.icon size={19} />
+                  <span>{item.label}</span>
+                </button>
+              ))}
+              <button title="More tools and commands" onClick={() => setPaletteOpen(true)}>
+                <Menu size={19} />
+                <span>More tools</span>
+                <kbd>⌘K</kbd>
+              </button>
+            </nav>
+            <div className="live-sidebar-foot">
+              <button
+                className="sidebar-collapse"
+                onClick={toggleNavigation}
+                aria-label={navCollapsed ? "Expand navigation" : "Collapse navigation"}
+                aria-expanded={!navCollapsed}
+                title={navCollapsed ? "Expand navigation" : "Collapse navigation"}
+              >
+                {navCollapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
+                <span>Compact navigation</span>
+              </button>
+              <button
+                className="live-user profile-trigger"
+                onClick={() => setProfileOpen(true)}
+                title="Edit profile"
+                aria-label="Edit profile"
+              >
+                <div>
+                  {user?.avatar_url ? (
+                    // biome-ignore lint/performance/noImgElement: user-provided remote avatar URLs are dynamic.
+                    <img src={user.avatar_url} alt="" />
+                  ) : (
+                    <UserRound size={18} />
+                  )}
+                </div>
+                <span>
+                  <b>{user?.display_name}</b>
+                  <small>{user?.email}</small>
+                </span>
+              </button>
+              <button onClick={() => setSignOutOpen(true)} title="Sign out" aria-label="Sign out">
+                <LogOut size={18} /> <span>Sign out</span>
+              </button>
+            </div>
+          </aside>
+          {sidebar && (
             <button
-              key={item.id}
-              aria-current={view === item.id ? "page" : undefined}
-              className={cn(!user?.is_admin && item.id === "media" && "create-action")}
-              onClick={() => {
-                setView(item.id);
-                if (item.id === "admin") void loadPaymentSubmissions();
-              }}
-            >
-              <item.icon size={20} />
-              <span>{item.label}</span>
-            </button>
-          ))}
-          <button className="bottom-profile" onClick={() => setProfileOpen(true)}>
-            {user?.avatar_url ? (
-              // biome-ignore lint/performance/noImgElement: user-provided remote avatar URLs are dynamic.
-              <img src={user.avatar_url} alt="" />
-            ) : (
-              <UserRound size={20} />
+              className="live-backdrop"
+              onClick={() => setSidebar(false)}
+              aria-label="Close navigation"
+            />
+          )}
+          <nav className="creator-bottom-nav" aria-label="Primary navigation">
+            {(user?.is_admin ? nav : [nav[0], nav[2], nav[1], nav[3]]).map((item) => (
+              <button
+                key={item.id}
+                aria-label={item.label}
+                aria-current={view === item.id ? "page" : undefined}
+                className={cn(!user?.is_admin && item.id === "media" && "create-action")}
+                onClick={() => {
+                  setView(item.id);
+                  if (item.id === "admin") void loadPaymentSubmissions();
+                }}
+              >
+                {view === item.id && (
+                  <motion.i
+                    className="navigation-selection"
+                    layoutId="dock-selection"
+                    transition={GLASS_SPRING}
+                    aria-hidden="true"
+                  />
+                )}
+                <item.icon size={21} />
+                <span>{item.id === "admin" ? "Review" : item.label}</span>
+              </button>
+            ))}
+            {!user?.is_admin && (
+              <button className="bottom-profile" onClick={() => setProfileOpen(true)}>
+                {user?.avatar_url ? (
+                  // biome-ignore lint/performance/noImgElement: user-provided remote avatar URLs are dynamic.
+                  <img src={user.avatar_url} alt="" />
+                ) : (
+                  <UserRound size={21} />
+                )}
+                <span>Profile</span>
+              </button>
             )}
-            <span>Edit profile</span>
-          </button>
-        </nav>
+          </nav>
+        </LayoutGroup>
         {captionAsset && workspace && (
           <div className="confirm-layer">
             <div
@@ -3380,23 +3418,39 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
         )}
         <section className="live-main" data-scrolled={scrolled}>
           <header className="live-topbar">
-            <button onClick={() => setPaletteOpen(true)} aria-label="Open account and command menu">
-              <Menu size={19} />
+            <button
+              className="navigation-trigger chrome-icon"
+              onClick={toggleNavigation}
+              aria-label="Toggle navigation"
+              aria-expanded={compactNavigation ? sidebar : !navCollapsed}
+            >
+              <Menu size={20} />
             </button>
-            <span>
-              <i /> {nav.find((item) => item.id === view)?.label ?? "Workspace"}
-            </span>
-            <div>
-              <button className="live-command-trigger" onClick={() => setPaletteOpen(true)}>
-                <Search size={14} /> <span>Search</span> <kbd>⌘K</kbd>
+            <div className="workspace-location">
+              <small>{user?.is_admin ? "Administration" : "Your workspace"}</small>
+              <strong>{nav.find((item) => item.id === view)?.label ?? "Workspace"}</strong>
+            </div>
+            <div className="workspace-toolbar">
+              <button
+                className="live-command-trigger"
+                onClick={() => setPaletteOpen(true)}
+                aria-label="Search workspace"
+              >
+                <Search size={17} /> <span>Search workspace</span> <kbd>⌘K</kbd>
               </button>
               <SoundToggle enabled={soundEnabled} onChange={setSoundEnabled} />
-              <button className="live-theme-toggle" onClick={toggleTheme}>
-                {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
-                {theme === "dark" ? "Light" : "Dark"}
+              <button
+                className="live-theme-toggle chrome-icon"
+                onClick={toggleTheme}
+                title={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
+                aria-label={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
+              >
+                {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
               </button>
               <button
-                className="live-refresh"
+                className="live-refresh chrome-icon"
+                title="Refresh workspace"
+                aria-label="Refresh workspace"
                 onClick={() => {
                   if (token) {
                     if (user?.is_admin && view === "admin") void loadPaymentSubmissions();
@@ -3404,23 +3458,37 @@ export function LiveWorkspace({ adminPortal = false }: { adminPortal?: boolean }
                   }
                 }}
               >
-                <RefreshCw size={15} /> Refresh
+                <RefreshCw size={17} />
               </button>
               {user?.is_admin ? (
                 <Button
                   size="sm"
+                  className="toolbar-primary"
                   onClick={() => {
                     setView("admin");
                     void loadPaymentSubmissions();
                   }}
                 >
-                  <ShieldCheck size={14} /> Payment review
+                  <ShieldCheck size={16} /> <span>Review payments</span>
                 </Button>
               ) : (
-                <Button size="sm" onClick={() => setView("media")}>
-                  <Plus size={14} /> Create media
+                <Button size="sm" className="toolbar-primary" onClick={() => setView("media")}>
+                  <Plus size={17} /> <span>Create</span>
                 </Button>
               )}
+              <button
+                className="toolbar-profile chrome-icon"
+                onClick={() => setProfileOpen(true)}
+                title="Edit profile"
+                aria-label="Edit profile"
+              >
+                {user?.avatar_url ? (
+                  // biome-ignore lint/performance/noImgElement: user-provided remote avatar URLs are dynamic.
+                  <img src={user.avatar_url} alt="" />
+                ) : (
+                  <UserRound size={19} />
+                )}
+              </button>
             </div>
           </header>
           <div

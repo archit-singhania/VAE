@@ -8,8 +8,8 @@ import '../widgets/depth.dart';
 import '../widgets/landing_video.dart';
 import '../widgets/shader_background.dart';
 
-/// The mobile counterpart of the web app's `.live-auth` screen — same
-/// shader background + glass auth card, same login/register fields.
+/// Brand-aligned account entry with a portrait media background and a focused
+/// form that adapts from compact phones to a wider two-column composition.
 class AuthScreen extends StatefulWidget {
   const AuthScreen({
     super.key,
@@ -92,7 +92,7 @@ class _AuthScreenState extends State<AuthScreen> {
       data: _adminPortal
           ? (dark ? AevraTheme.adminDark : AevraTheme.adminLight)
           : Theme.of(context),
-      child: Builder(builder: _buildPortal),
+      child: LayoutBuilder(builder: _buildPortal),
     );
   }
 
@@ -100,7 +100,9 @@ class _AuthScreenState extends State<AuthScreen> {
     final target = _formKey.currentContext;
     if (target != null) {
       Scrollable.ensureVisible(target,
-          duration: const Duration(milliseconds: 360),
+          duration: MediaQuery.disableAnimationsOf(context)
+              ? Duration.zero
+              : const Duration(milliseconds: 420),
           curve: Curves.easeOutCubic);
     }
   }
@@ -112,442 +114,487 @@ class _AuthScreenState extends State<AuthScreen> {
       widget.state.error = null;
     });
     if (_scrollController.hasClients) {
-      _scrollController.animateTo(0,
-          duration: const Duration(milliseconds: 350),
-          curve: Curves.easeOutCubic);
+      if (MediaQuery.disableAnimationsOf(context)) {
+        _scrollController.jumpTo(0);
+      } else {
+        _scrollController.animateTo(0,
+            duration: const Duration(milliseconds: 420),
+            curve: Curves.easeOutCubic);
+      }
     }
   }
 
-  Widget _buildPortal(BuildContext context) {
-    final accent = Theme.of(context).colorScheme.primary;
-    final compact = MediaQuery.sizeOf(context).width < 600;
-    final light = Theme.of(context).brightness == Brightness.light;
+  Widget _buildPortal(BuildContext context, BoxConstraints constraints) {
+    final colors = Theme.of(context).colorScheme;
+    final width = constraints.maxWidth;
+    final compact = width < 700;
+    final narrow = width < 360;
     return Scaffold(
-      appBar: AppBar(
-          centerTitle: false,
-          titleSpacing: 16,
-          backgroundColor:
-              light ? const Color(0xFFF4F3F3) : const Color(0xFF171014),
-          title: AevraWordmark(markSize: 28, admin: _adminPortal),
-          actions: [
-            IconButton(
-                onPressed: widget.onToggleTheme,
-                tooltip: 'Switch light / dark mode',
-                style: IconButton.styleFrom(
-                    backgroundColor: Theme.of(context)
-                        .colorScheme
-                        .surface
-                        .withValues(alpha: .7),
-                    side: BorderSide(color: Theme.of(context).dividerColor)),
-                icon: Icon(Theme.of(context).brightness == Brightness.dark
-                    ? LucideIcons.sun
-                    : LucideIcons.moon)),
-            const SizedBox(width: 6),
-            OutlinedButton(
-                onPressed: () {
-                  setState(() => isLogin = true);
-                  WidgetsBinding.instance
-                      .addPostFrameCallback((_) => _showForm());
-                },
-                style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 13),
-                    backgroundColor: _adminPortal ? accent : null,
-                    foregroundColor: _adminPortal
-                        ? Theme.of(context).colorScheme.onPrimary
-                        : null,
-                    shape: const StadiumBorder()),
-                child: const Text('Sign in')),
-            if (!_adminPortal)
-              Padding(
-                padding: const EdgeInsets.only(right: 10),
-                child: FilledButton(
-                    onPressed: () {
-                      setState(() => isLogin = false);
-                      WidgetsBinding.instance
-                          .addPostFrameCallback((_) => _showForm());
-                    },
-                    style: FilledButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 13),
-                        shape: const StadiumBorder()),
-                    child: const Text('Get started')),
-              ),
-          ]),
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: Stack(
-        children: [
-          Positioned.fill(
-              child: RepaintBoundary(
-                  child: Theme(
-            data: _adminPortal ? AevraTheme.adminDark : AevraTheme.dark,
-            child: ShaderBackground(admin: _adminPortal),
-          ))),
-          // The original MOV artwork is optional and never blocks the first
-          // frame. LandingVideo fades in only after local codec support is
-          // confirmed; ShaderBackground remains the free fallback.
-          Positioned.fill(child: LandingVideo(admin: _adminPortal)),
-          Positioned.fill(
-            child: IgnorePointer(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: _adminPortal
-                        ? const [
-                            Color(0xC6070F1E),
-                            Color(0x85081428),
-                            Color(0xAF070F1E)
-                          ]
-                        : const [
-                            Color(0xC6050508),
-                            Color(0x85070508),
-                            Color(0xA7050508)
-                          ],
+      body: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: RadialGradient(
+            center: const Alignment(-1, -.8),
+            radius: 1.3,
+            colors: [
+              colors.primary.withValues(alpha: .075),
+              Colors.transparent
+            ],
+          ),
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              Padding(
+                padding: EdgeInsets.fromLTRB(
+                    compact ? 16 : 32, 12, compact ? 16 : 32, 0),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 1180),
+                    child: GlassChrome(
+                      radius: 30,
+                      padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Align(
+                              alignment: Alignment.centerLeft,
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                alignment: Alignment.centerLeft,
+                                child: AevraWordmark(
+                                    markSize: 32,
+                                    fontSize: 19,
+                                    admin: _adminPortal),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          IconButton(
+                            onPressed: widget.onToggleTheme,
+                            tooltip: 'Switch light / dark mode',
+                            icon: Icon(
+                                Theme.of(context).brightness == Brightness.light
+                                    ? LucideIcons.moon
+                                    : LucideIcons.sun,
+                                size: 18),
+                          ),
+                          IconButton(
+                            onPressed: _switchPortal,
+                            tooltip: _adminPortal
+                                ? 'Switch to creator and business portal'
+                                : 'Switch to administrator portal',
+                            icon: Icon(
+                                _adminPortal
+                                    ? LucideIcons.sparkles
+                                    : LucideIcons.shieldCheck,
+                                size: 18),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              Expanded(
+                child: AnimatedBuilder(
+                  animation: widget.state,
+                  builder: (context, _) => SingleChildScrollView(
+                    controller: _scrollController,
+                    keyboardDismissBehavior:
+                        ScrollViewKeyboardDismissBehavior.onDrag,
+                    padding: EdgeInsets.fromLTRB(narrow ? 16 : 24,
+                        compact ? 20 : 36, narrow ? 16 : 24, 32),
+                    child: _AuthLayout(
+                      hero: _buildHero(context, compact: compact, width: width),
+                      form: _buildForm(context, narrow: narrow),
+                      footer: Padding(
+                        padding: const EdgeInsets.only(top: 60),
+                        child: _LandingStory(admin: _adminPortal),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _openEntry({required bool register}) {
+    setState(() => isLogin = _adminPortal || !register);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _showForm());
+  }
+
+  Widget _buildHero(BuildContext context,
+      {required bool compact, required double width}) {
+    final colors = Theme.of(context).colorScheme;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(32),
+        boxShadow: [
+          BoxShadow(
+            color: colors.primary.withValues(alpha: .10),
+            blurRadius: 44,
+            spreadRadius: -18,
+            offset: const Offset(0, 22),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(32),
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: Theme(
+                data: _adminPortal ? AevraTheme.adminDark : AevraTheme.dark,
+                child: ShaderBackground(admin: _adminPortal),
+              ),
+            ),
+            Positioned.fill(
+                child: LandingVideo(admin: _adminPortal, portrait: compact)),
+            // The middle of the frame is clear. Only copy receives a local
+            // scrim, so the film retains its original colour in either theme.
+            Positioned.fill(
+              child: IgnorePointer(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      stops: const [0, .35, .60, 1],
+                      colors: [
+                        const Color(0x19000000),
+                        Colors.transparent,
+                        const Color(0x26000000),
+                        const Color(0xED07090E),
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-          SafeArea(
-            child: AnimatedBuilder(
-              animation: widget.state,
-              builder: (context, _) {
-                return SingleChildScrollView(
-                  controller: _scrollController,
-                  padding: EdgeInsets.fromLTRB(
-                      compact ? 24 : AevraSpace.lg,
-                      compact ? 34 : AevraSpace.xxl,
-                      compact ? 24 : AevraSpace.lg,
-                      AevraSpace.xl),
-                  child: _AuthLayout(
+            Padding(
+              padding: EdgeInsets.all(width < 360 ? 22 : 28),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Theme(
+                    data: _adminPortal ? AevraTheme.adminDark : AevraTheme.dark,
+                    child: GlassChrome(
+                      radius: 24,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 10),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                              _adminPortal
+                                  ? LucideIcons.shieldCheck
+                                  : LucideIcons.sparkles,
+                              size: 14,
+                              color: Colors.white),
+                          const SizedBox(width: 8),
+                          Flexible(
+                            child: Text(
+                              _adminPortal
+                                  ? 'VAE ADMINISTRATION'
+                                  : 'CREATOR & BUSINESS',
+                              style: AevraType.eyebrow(color: Colors.white)
+                                  .copyWith(fontSize: 9, letterSpacing: 1.4),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: compact ? 172 : 218),
+                  Text(
+                    _adminPortal
+                        ? 'A clear view of\nyour operations.'
+                        : 'Your ideas.\nBeautifully made.',
+                    style: AevraType.display(
+                      compact ? (width < 360 ? 34 : 40) : 48,
+                      color: const Color(0xFFF8F7F5),
+                      height: 1.08,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 440),
+                    child: Text(
+                      _adminPortal
+                          ? 'Useful signals. Thoughtful decisions. One clear place to run the platform.'
+                          : 'A beautifully connected space to create, publish, and grow your next idea.',
+                      style: const TextStyle(
+                          fontSize: 13, height: 1.6, color: Color(0xFFE0E2E7)),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 8,
+                    crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
-                      if (!compact) ...[
-                        AevraWordmark(
-                            markSize: 30, fontSize: 17, admin: _adminPortal),
-                        const SizedBox(height: AevraSpace.xxl),
-                      ],
-                      Text(
-                          _adminPortal
-                              ? 'VAE ADMINISTRATION'
-                              : 'YOUR CREATIVE WORKSPACE',
-                          style: AevraType.eyebrow(
-                              color: light ? Colors.white : accent)),
-                      const SizedBox(height: AevraSpace.sm),
-                      Text(
-                        _adminPortal
-                            ? 'A clear view of\nyour operations.'
-                            : 'Your ideas.\nBeautifully made.',
-                        style: Theme.of(context)
-                            .textTheme
-                            .displayMedium
-                            ?.copyWith(color: Colors.white),
-                      ),
-                      const SizedBox(height: AevraSpace.md),
-                      Text(
-                        _adminPortal
-                            ? 'Monitor customer adoption, generation usage, publishing health, and payment approvals.'
-                            : 'A quiet space to create media, connect your channels, and share what matters.',
-                        style: TextStyle(
-                            fontSize: 13.5,
-                            height: 1.6,
-                            color: const Color(0xFFD4D0D3)),
-                      ),
-                      if (!compact) const SizedBox(height: AevraSpace.lg),
-                      // Match the web hero's Lucide check rail and proof tiles.
-                      if (!compact)
-                        ...(_adminPortal
-                                ? [
-                                    'Customer KPIs.',
-                                    'Usage insights.',
-                                    'Payment review.'
-                                  ]
-                                : [
-                                    'Create media.',
-                                    'Connect channels.',
-                                    'Publish on schedule.'
-                                  ])
-                            .map(
-                          (point) => Padding(
-                            padding:
-                                const EdgeInsets.only(bottom: AevraSpace.xs),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Icon(LucideIcons.check,
-                                    size: 15,
-                                    color: light ? Colors.white : accent),
-                                const SizedBox(width: AevraSpace.xs),
-                                Expanded(
-                                  child: Text(
-                                    point,
-                                    style: TextStyle(
-                                        fontSize: 12,
-                                        color: const Color(0xFFD4D0D3)),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
+                      FilledButton(
+                        onPressed: () => _openEntry(register: !_adminPortal),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: const Color(0xFFF7F7FA),
+                          foregroundColor: const Color(0xFF15141A),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 22, vertical: 15),
+                          shape: const StadiumBorder(),
                         ),
-                      SizedBox(height: compact ? 22 : AevraSpace.lg),
-                      if (compact)
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(18),
-                          child: DecoratedBox(
-                            decoration: BoxDecoration(
-                                border: Border.all(
-                                    color: Theme.of(context).dividerColor),
-                                borderRadius: BorderRadius.circular(18)),
-                            child: Column(children: [
-                              _ProofTile(
-                                  'One workspace',
-                                  _adminPortal
-                                      ? 'Complete operational control'
-                                      : 'From idea to published post',
-                                  grouped: true),
-                              Divider(
-                                  height: 1,
-                                  color: Theme.of(context).dividerColor),
-                              _ProofTile(
-                                  _adminPortal ? 'Live clarity' : 'AI, refined',
-                                  _adminPortal
-                                      ? 'Signals that support decisions'
-                                      : 'Creative control stays with you',
-                                  grouped: true),
-                            ]),
-                          ),
-                        )
-                      else
-                        Row(children: [
-                          Expanded(
-                            child: _ProofTile(
-                                'One workspace',
-                                _adminPortal
-                                    ? 'Complete operational control'
-                                    : 'From idea to published post'),
-                          ),
-                          const SizedBox(width: AevraSpace.xs),
-                          Expanded(
-                            child: _ProofTile(
-                                _adminPortal ? 'Live clarity' : 'AI, refined',
-                                _adminPortal
-                                    ? 'Signals that support decisions'
-                                    : 'Creative control stays with you'),
-                          ),
-                        ]),
-                      const SizedBox(height: AevraSpace.xl),
-                      // The one surface on this screen, so it gets the top
-                      // tier — but no tilt. A tap-down tilt recogniser here
-                      // would enter the gesture arena against every TextField
-                      // inside it, which risks taps not reliably focusing a
-                      // field. Depth on a form isn't worth that.
-                      GlassSurface(
-                        key: _formKey,
-                        elevation: GlassElevation.lifted,
-                        radius: 26,
-                        padding: const EdgeInsets.all(AevraSpace.lg),
-                        borderColor: accent.withValues(alpha: .45),
-                        adaptive: false,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        child: Wrap(
+                          spacing: 10,
+                          runSpacing: 6,
+                          alignment: WrapAlignment.center,
+                          crossAxisAlignment: WrapCrossAlignment.center,
                           children: [
-                            AevraWordmark(
-                                markSize: 32,
-                                fontSize: 20,
-                                admin: _adminPortal),
-                            const SizedBox(height: AevraSpace.md),
-                            Divider(color: Theme.of(context).dividerColor),
-                            const SizedBox(height: AevraSpace.sm),
-                            if (!_adminPortal)
-                              Row(
-                                children: [
-                                  _Tab(
-                                      label: 'Sign in',
-                                      active: isLogin,
-                                      onTap: () =>
-                                          setState(() => isLogin = true)),
-                                  const SizedBox(width: AevraSpace.lg),
-                                  _Tab(
-                                      label: 'Creator / Business sign up',
-                                      active: !isLogin,
-                                      onTap: () =>
-                                          setState(() => isLogin = false)),
-                                ],
-                              ),
-                            const SizedBox(height: AevraSpace.lg),
-                            Text(
-                              _adminPortal
-                                  ? 'Administrator sign in'
-                                  : isLogin
-                                      ? 'Welcome back'
-                                      : 'Create your VAE account',
-                              style: Theme.of(context).textTheme.headlineSmall,
-                            ),
-                            const SizedBox(height: AevraSpace.xs),
-                            Text(
-                              _adminPortal
-                                  ? 'Secure access to customer operations.'
-                                  : isLogin
-                                      ? 'Your creator workspace starts here.'
-                                      : 'Create, publish, and understand in one place.',
-                              style: TextStyle(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onSurfaceVariant,
-                                  fontSize: 12),
-                            ),
-                            const SizedBox(height: AevraSpace.md),
-                            if (widget.state.error != null) ...[
-                              _ErrorBanner(message: widget.state.error!),
-                              const SizedBox(height: AevraSpace.sm),
-                            ],
-                            if (!isLogin &&
-                                widget.state.paymentPending &&
-                                widget.state.paymentInfo != null) ...[
-                              Text('Payment verification',
-                                  style: AevraType.eyebrow()),
-                              const SizedBox(height: AevraSpace.sm),
-                              Text(
-                                  'Scan with GPay, Paytm, BHIM, or any UPI app.',
-                                  style: TextStyle(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onSurfaceVariant)),
-                              if (widget.state.paymentInfo!.qrUrl.isNotEmpty)
-                                Image.network(widget.state.paymentInfo!.qrUrl,
-                                    width: 160, height: 160),
-                              Text(
-                                  '${widget.state.paymentInfo!.amount} ${widget.state.paymentInfo!.currency}'),
-                              Text(widget.state.paymentInfo!.upiId),
-                              _Field(
-                                  label: 'UTR / transaction reference',
-                                  controller: _utr),
-                              const SizedBox(height: AevraSpace.sm),
-                              SizedBox(
-                                  width: double.infinity,
-                                  child: FilledButton(
-                                      onPressed: widget.state.loading
-                                          ? null
-                                          : () => widget.state
-                                              .submitPayment(_utr.text.trim()),
-                                      child:
-                                          const Text('Submit payment proof'))),
-                              const SizedBox(height: AevraSpace.md),
-                            ] else if (!isLogin) ...[
-                              _Field(label: 'Your name', controller: _name),
-                              const SizedBox(height: AevraSpace.sm),
-                              _Field(
-                                  label: 'Product or brand name',
-                                  controller: _org),
-                              const SizedBox(height: AevraSpace.sm),
-                              DropdownButtonFormField<String>(
-                                initialValue: _accountType,
-                                decoration: const InputDecoration(
-                                    labelText: 'Account type'),
-                                items: const [
-                                  DropdownMenuItem(
-                                      value: 'creator', child: Text('Creator')),
-                                  DropdownMenuItem(
-                                      value: 'business',
-                                      child: Text('Business')),
-                                ],
-                                onChanged: (value) => setState(
-                                    () => _accountType = value ?? 'creator'),
-                              ),
-                              const SizedBox(height: AevraSpace.sm),
-                            ],
-                            _Field(
-                                label: 'Email',
-                                controller: _email,
-                                keyboardType: TextInputType.emailAddress),
-                            const SizedBox(height: AevraSpace.sm),
-                            _Field(
-                                label: 'Password',
-                                controller: _password,
-                                obscure: true),
-                            const SizedBox(height: AevraSpace.lg),
-                            SizedBox(
-                              width: double.infinity,
-                              child: FilledButton(
-                                onPressed:
-                                    widget.state.loading ? null : _submit,
-                                child: widget.state.loading
-                                    ? const SizedBox(
-                                        width: 18,
-                                        height: 18,
-                                        child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                            color: AevraColors.accentInk),
-                                      )
-                                    : Text(_adminPortal
-                                        ? 'Sign in as administrator'
-                                        : isLogin
-                                            ? 'Sign in'
-                                            : 'Get started'),
-                              ),
-                            ),
+                            Text(_adminPortal
+                                ? 'Enter admin portal'
+                                : 'Get started'),
+                            const Icon(LucideIcons.arrowUpRight, size: 17),
                           ],
                         ),
                       ),
-                      const SizedBox(height: 12),
-                      Center(
-                        child: TextButton.icon(
-                          onPressed: _switchPortal,
-                          icon: Icon(
-                              _adminPortal
-                                  ? LucideIcons.sparkles
-                                  : LucideIcons.shieldCheck,
-                              size: 15),
-                          label: Text(_adminPortal
-                              ? 'Creator sign in'
-                              : 'Administrator sign in'),
+                      if (!_adminPortal)
+                        TextButton(
+                          onPressed: () => _openEntry(register: false),
+                          style: TextButton.styleFrom(
+                              foregroundColor: Colors.white),
+                          child: const Text('I have an account'),
                         ),
-                      ),
-                      const SizedBox(height: 42),
-                      _LandingStory(admin: _adminPortal),
                     ],
                   ),
-                );
-              },
+                ],
+              ),
             ),
-          ),
-        ],
+            Positioned.fill(
+              child: IgnorePointer(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(32),
+                    border:
+                        Border.all(color: Colors.white.withValues(alpha: .18)),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
-}
 
-class _ProofTile extends StatelessWidget {
-  const _ProofTile(this.title, this.subtitle, {this.grouped = false});
-
-  final String title;
-  final String subtitle;
-  final bool grouped;
-
-  @override
-  Widget build(BuildContext context) => Container(
-        padding: EdgeInsets.symmetric(
-            horizontal: grouped ? 20 : AevraSpace.sm,
-            vertical: grouped ? 18 : AevraSpace.sm),
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface.withValues(
-              alpha:
-                  Theme.of(context).brightness == Brightness.light ? .88 : .72),
-          border: grouped
-              ? null
-              : Border.all(color: Theme.of(context).dividerColor),
-          borderRadius: grouped ? null : BorderRadius.circular(AevraRadius.lg),
+  Widget _buildForm(BuildContext context, {required bool narrow}) {
+    final colors = Theme.of(context).colorScheme;
+    return Column(
+      children: [
+        // No tap/tilt recogniser here: fields must retain their focus gestures.
+        GlassChrome(
+          key: _formKey,
+          dense: true,
+          radius: 28,
+          padding: EdgeInsets.all(narrow ? 20 : 26),
+          borderColor: colors.primary.withValues(alpha: .22),
+          child: AutofillGroup(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (!_adminPortal) ...[
+                  Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: colors.onSurface.withValues(alpha: .045),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: Theme.of(context).dividerColor),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                            child: _Tab(
+                                label: 'Sign in',
+                                active: isLogin,
+                                onTap: () => setState(() => isLogin = true))),
+                        const SizedBox(width: 4),
+                        Expanded(
+                            child: _Tab(
+                                label: 'Create account',
+                                active: !isLogin,
+                                onTap: () => setState(() => isLogin = false))),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 28),
+                ] else ...[
+                  Icon(LucideIcons.shieldCheck,
+                      color: colors.primary, size: 26),
+                  const SizedBox(height: 20),
+                ],
+                Text(
+                  _adminPortal
+                      ? 'Administrator sign in'
+                      : isLogin
+                          ? 'Welcome back.'
+                          : 'Make room for your ideas.',
+                  style: AevraType.display(29,
+                      color: colors.onSurface, height: 1.12),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  _adminPortal
+                      ? 'Secure access to customer operations.'
+                      : isLogin
+                          ? 'Your next creation starts here.'
+                          : 'Create, publish, and understand in one place.',
+                  style: TextStyle(
+                      color: colors.onSurfaceVariant,
+                      fontSize: 13,
+                      height: 1.6),
+                ),
+                const SizedBox(height: 26),
+                if (widget.state.error != null) ...[
+                  _ErrorBanner(message: widget.state.error!),
+                  const SizedBox(height: 16),
+                ],
+                if (!isLogin &&
+                    widget.state.paymentPending &&
+                    widget.state.paymentInfo != null) ...[
+                  Text('Payment verification',
+                      style: AevraType.eyebrow(color: colors.primary)),
+                  const SizedBox(height: 12),
+                  Text('Scan with GPay, Paytm, BHIM, or any UPI app.',
+                      style: TextStyle(
+                          color: colors.onSurfaceVariant, height: 1.5)),
+                  if (widget.state.paymentInfo!.qrUrl.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      child: Image.network(widget.state.paymentInfo!.qrUrl,
+                          width: 160, height: 160),
+                    ),
+                  Text(
+                      '${widget.state.paymentInfo!.amount} ${widget.state.paymentInfo!.currency}',
+                      style: Theme.of(context).textTheme.titleMedium),
+                  const SizedBox(height: 6),
+                  SelectableText(widget.state.paymentInfo!.upiId),
+                  const SizedBox(height: 20),
+                  _Field(
+                      label: 'UTR / transaction reference',
+                      controller: _utr,
+                      icon: LucideIcons.receipt),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton(
+                      onPressed: widget.state.loading
+                          ? null
+                          : () => widget.state.submitPayment(_utr.text.trim()),
+                      child: const Text('Submit payment proof'),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                ] else if (!isLogin) ...[
+                  _Field(
+                      label: 'Your name',
+                      controller: _name,
+                      icon: LucideIcons.userRound,
+                      autofillHints: const [AutofillHints.name]),
+                  const SizedBox(height: 18),
+                  _Field(
+                      label: 'Product or brand name',
+                      controller: _org,
+                      icon: LucideIcons.building2),
+                  const SizedBox(height: 18),
+                  Text('Account type', style: _fieldLabel(context)),
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField<String>(
+                    initialValue: _accountType,
+                    isExpanded: true,
+                    decoration: const InputDecoration(
+                        prefixIcon:
+                            Icon(LucideIcons.briefcaseBusiness, size: 18)),
+                    items: const [
+                      DropdownMenuItem(
+                          value: 'creator', child: Text('Creator')),
+                      DropdownMenuItem(
+                          value: 'business', child: Text('Business')),
+                    ],
+                    onChanged: (value) =>
+                        setState(() => _accountType = value ?? 'creator'),
+                  ),
+                  const SizedBox(height: 18),
+                ],
+                _Field(
+                  label: 'Email address',
+                  hint: 'you@example.com',
+                  controller: _email,
+                  icon: LucideIcons.mail,
+                  keyboardType: TextInputType.emailAddress,
+                  autofillHints: const [AutofillHints.email],
+                ),
+                const SizedBox(height: 18),
+                _Field(
+                  label: 'Password',
+                  hint:
+                      isLogin ? 'Enter your password' : 'At least 8 characters',
+                  controller: _password,
+                  icon: LucideIcons.lockKeyhole,
+                  obscure: true,
+                  autofillHints: [
+                    isLogin ? AutofillHints.password : AutofillHints.newPassword
+                  ],
+                  onSubmitted: widget.state.loading ? null : _submit,
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: widget.state.loading ? null : _submit,
+                    child: widget.state.loading
+                        ? SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2, color: colors.onPrimary))
+                        : Wrap(
+                            alignment: WrapAlignment.center,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            spacing: 10,
+                            runSpacing: 6,
+                            children: [
+                              Text(
+                                  _adminPortal
+                                      ? 'Sign in as administrator'
+                                      : isLogin
+                                          ? 'Enter your workspace'
+                                          : 'Create account',
+                                  textAlign: TextAlign.center),
+                              const Icon(LucideIcons.arrowRight, size: 17),
+                            ],
+                          ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(title, style: Theme.of(context).textTheme.titleSmall),
-          const SizedBox(height: AevraSpace.xxs),
-          Text(subtitle,
-              style: TextStyle(
-                  fontSize: 10.5,
-                  height: 1.45,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant)),
-        ]),
-      );
+        const SizedBox(height: 16),
+        TextButton.icon(
+          onPressed: _switchPortal,
+          style: TextButton.styleFrom(foregroundColor: colors.onSurfaceVariant),
+          icon: Icon(
+              _adminPortal ? LucideIcons.sparkles : LucideIcons.shieldCheck,
+              size: 15),
+          label: Text(
+              _adminPortal ? 'Creator workspace' : 'Administrator access',
+              textAlign: TextAlign.center),
+        ),
+      ],
+    );
+  }
 }
 
 class _LandingStory extends StatelessWidget {
@@ -603,37 +650,62 @@ class _LandingStory extends StatelessWidget {
           admin
               ? 'A considered view.\nEvery operation, in context.'
               : 'One thoughtful space.\nEvery part of your creative day.',
-          style: Theme.of(context).textTheme.displaySmall),
+          style: AevraType.display(30, color: colors.onSurface, height: 1.15)),
       const SizedBox(height: 14),
       Text(
           admin
               ? 'Understand customer adoption, publishing health and payment review from one focused operations workspace.'
               : 'Create with intention. Pair the right words and visuals. Find a rhythm your audience can look forward to.',
-          style: TextStyle(color: colors.onSurfaceVariant, height: 1.5)),
+          style: TextStyle(color: colors.onSurfaceVariant, height: 1.65)),
       const SizedBox(height: 24),
-      for (var i = 0; i < cards.length; i++) ...[
-        GlassSurface(
-          padding: const EdgeInsets.all(22),
-          child:
-              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Row(children: [
-              Icon(cards[i].$1, color: colors.primary, size: 24),
-              const Spacer(),
-              Text('${i + 1}'.padLeft(2, '0'),
-                  style: TextStyle(
-                      color: colors.primary,
-                      fontFamily: 'JetBrainsMono',
-                      fontSize: 11)),
-            ]),
-            const SizedBox(height: 20),
-            Text(cards[i].$2, style: Theme.of(context).textTheme.headlineSmall),
-            const SizedBox(height: 8),
-            Text(cards[i].$3,
-                style: TextStyle(color: colors.onSurfaceVariant, height: 1.5)),
-          ]),
-        ),
-        const SizedBox(height: 14),
-      ],
+      LayoutBuilder(builder: (context, constraints) {
+        final scaled = MediaQuery.textScalerOf(context).scale(14) / 14;
+        final columns = constraints.maxWidth >= 900 && scaled < 1.4 ? 3 : 1;
+        final cardWidth = (constraints.maxWidth - (columns - 1) * 16) / columns;
+        return Wrap(
+          spacing: 16,
+          runSpacing: 16,
+          children: [
+            for (var i = 0; i < cards.length; i++)
+              SizedBox(
+                width: cardWidth,
+                child: GlassSurface(
+                  radius: 24,
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: colors.primary.withValues(alpha: .08),
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: Icon(cards[i].$1,
+                              color: colors.primary, size: 20),
+                        ),
+                        const Spacer(),
+                        Text('${i + 1}'.padLeft(2, '0'),
+                            style: TextStyle(
+                                color: colors.onSurfaceVariant,
+                                fontFamily: 'JetBrainsMono',
+                                fontSize: 10)),
+                      ]),
+                      const SizedBox(height: 24),
+                      Text(cards[i].$2,
+                          style: Theme.of(context).textTheme.headlineSmall),
+                      const SizedBox(height: 10),
+                      Text(cards[i].$3,
+                          style: TextStyle(
+                              color: colors.onSurfaceVariant, height: 1.6)),
+                    ],
+                  ),
+                ),
+              ),
+          ],
+        );
+      }),
       const SizedBox(height: 12),
       GlassSurface(
         padding: const EdgeInsets.all(22),
@@ -682,22 +754,31 @@ class _Tab extends StatelessWidget {
         onPressed: onTap,
         style: TextButton.styleFrom(
             minimumSize: const Size(44, 44),
-            foregroundColor: active
-                ? Theme.of(context).colorScheme.primary
-                : Theme.of(context).colorScheme.onSurfaceVariant),
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Text(label),
-          const SizedBox(height: 4),
-          Container(
-            height: 2,
-            width: 32,
-            color: active
-                ? Theme.of(context).colorScheme.primary
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+            backgroundColor: active
+                ? Theme.of(context).colorScheme.surface
                 : Colors.transparent,
-          ),
-        ]),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            side: active
+                ? BorderSide(color: Theme.of(context).dividerColor)
+                : BorderSide.none,
+            foregroundColor: active
+                ? Theme.of(context).colorScheme.onSurface
+                : Theme.of(context).colorScheme.onSurfaceVariant),
+        child: Text(label,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+                fontSize: 12,
+                fontWeight: active ? FontWeight.w700 : FontWeight.w500)),
       ));
 }
+
+TextStyle _fieldLabel(BuildContext context) => TextStyle(
+      fontSize: 12,
+      fontWeight: FontWeight.w600,
+      color: Theme.of(context).colorScheme.onSurface,
+    );
 
 class _Field extends StatefulWidget {
   const _Field({
@@ -705,12 +786,20 @@ class _Field extends StatefulWidget {
     required this.controller,
     this.obscure = false,
     this.keyboardType,
+    this.icon,
+    this.hint,
+    this.autofillHints,
+    this.onSubmitted,
   });
 
   final String label;
   final TextEditingController controller;
   final bool obscure;
   final TextInputType? keyboardType;
+  final IconData? icon;
+  final String? hint;
+  final Iterable<String>? autofillHints;
+  final VoidCallback? onSubmitted;
 
   @override
   State<_Field> createState() => _FieldState();
@@ -727,20 +816,30 @@ class _FieldState extends State<_Field> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(widget.label.toUpperCase(),
-            style: AevraType.eyebrow(
-                color: Theme.of(context).colorScheme.onSurfaceVariant)),
+        Text(widget.label, style: _fieldLabel(context)),
         const SizedBox(height: AevraSpace.xs),
         TextField(
           controller: widget.controller,
           obscureText: hidden,
           keyboardType: widget.keyboardType,
+          autofillHints: widget.autofillHints,
+          autocorrect: !widget.obscure &&
+              widget.keyboardType != TextInputType.emailAddress,
+          enableSuggestions: !widget.obscure,
+          textInputAction: widget.onSubmitted == null
+              ? TextInputAction.next
+              : TextInputAction.done,
+          onSubmitted:
+              widget.onSubmitted == null ? null : (_) => widget.onSubmitted!(),
           decoration: InputDecoration(
-            labelText: widget.label,
+            hintText: widget.hint,
+            prefixIcon:
+                widget.icon == null ? null : Icon(widget.icon, size: 18),
             suffixIcon: widget.obscure
                 ? IconButton(
                     tooltip: hidden ? 'Show password' : 'Hide password',
-                    icon: Icon(hidden ? LucideIcons.eye : LucideIcons.eyeOff),
+                    icon: Icon(hidden ? LucideIcons.eye : LucideIcons.eyeOff,
+                        size: 18),
                     onPressed: () => setState(() => hidden = !hidden),
                   )
                 : null,
@@ -788,25 +887,36 @@ class _ErrorBanner extends StatelessWidget {
 }
 
 class _AuthLayout extends StatelessWidget {
-  const _AuthLayout({required this.children});
-  final List<Widget> children;
+  const _AuthLayout(
+      {required this.hero, required this.form, required this.footer});
+  final Widget hero;
+  final Widget form;
+  final Widget footer;
   @override
   Widget build(BuildContext context) => Center(
           child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 1200),
+        constraints: const BoxConstraints(maxWidth: 1180),
         child: LayoutBuilder(
-            builder: (context, box) => box.maxWidth >= 800
-                ? Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Expanded(
-                        child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children:
-                                children.sublist(0, children.length - 1))),
-                    const SizedBox(width: 48),
-                    Expanded(child: children.last),
-                  ])
-                : Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: children)),
+          builder: (context, box) => Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (box.maxWidth >= 880)
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(child: hero),
+                    const SizedBox(width: 36),
+                    Expanded(child: form),
+                  ],
+                )
+              else ...[
+                hero,
+                const SizedBox(height: 24),
+                form,
+              ],
+              footer,
+            ],
+          ),
+        ),
       ));
 }

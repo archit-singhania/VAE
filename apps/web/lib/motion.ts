@@ -5,6 +5,8 @@ import type { Variants } from "motion/react";
 // linear/ease. Typed as a plain tuple (not via `Transition["ease"]`) because
 // framer-motion's `Transition` is a union and `ease` isn't present on every
 // member of it, so indexing the union for the type doesn't work.
+export const GLASS_SPRING = { type: "spring", stiffness: 380, damping: 32, mass: 0.9 } as const;
+
 export const EASE = [0.16, 1, 0.3, 1] as const;
 
 // The single orchestrated page-load sequence: heading, composer, the
@@ -39,12 +41,13 @@ export const overlayFade: Variants = {
 // Dialog entrance — a small scale + rise so opening reads as material
 // arriving, not just appearing.
 export const dialogPop: Variants = {
-  hidden: { opacity: 0, scale: 0.96, y: 10 },
+  hidden: { opacity: 0, scale: 0.965, y: 18, filter: "blur(4px)" },
   show: {
     opacity: 1,
     scale: 1,
     y: 0,
-    transition: { duration: 0.32, ease: EASE },
+    filter: "blur(0px)",
+    transition: GLASS_SPRING,
   },
   exit: {
     opacity: 0,
@@ -57,7 +60,13 @@ export const dialogPop: Variants = {
 // Variant preview swap inside the review dialog — content answers the
 // person's click on a different variant.
 export const variantSwap: Variants = {
-  hidden: { opacity: 0, x: 8 },
-  show: { opacity: 1, x: 0, transition: { duration: 0.28, ease: EASE } },
-  exit: { opacity: 0, x: -8, transition: { duration: 0.16, ease: EASE } },
+  hidden: { opacity: 0, y: 10, scale: 1.006, filter: "blur(3px)" },
+  show: { opacity: 1, y: 0, scale: 1, filter: "blur(0px)", transition: GLASS_SPRING },
+  exit: {
+    opacity: 0,
+    y: -4,
+    scale: 0.998,
+    filter: "blur(2px)",
+    transition: { duration: 0.12, ease: EASE },
+  },
 };

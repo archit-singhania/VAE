@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart' show CupertinoPageTransitionsBuilder;
 import 'design_tokens.dart';
 
 /// ---------------------------------------------------------------------
@@ -43,8 +44,8 @@ class AevraColors {
   // ---- Type --------------------------------------------------------
   /// Porcelain, not white. A trace of warmth stops dark UI reading clinical.
   static const text = VaeTokens.darkText;
-  static const textSoft = Color(0xFFB6BAC4);
-  static const muted = Color(0xFF878D9A);
+  static const textSoft = Color(0xFFC2BCC7);
+  static const muted = Color(0xFFAAA2B2);
   static const muted2 = Color(0xFF95998F);
 
   // ---- Signal ------------------------------------------------------
@@ -94,13 +95,11 @@ class AevraLightColors {
   static const lineStrong = Color(0x331A1C21);
 
   static const text = VaeTokens.lightText;
-  static const textSoft = Color(0xFF4A505C);
-  static const muted = Color(0xFF6A7180);
+  static const textSoft = Color(0xFF62586E);
+  static const muted = Color(0xFF72687E);
   static const muted2 = Color(0xFF62665E);
 
-  // The web app's final creator palette uses the same crimson in both
-  // themes; its lighter token is retained for legacy CSS only.
-  static const accent = VaeTokens.darkAccent;
+  static const accent = Color(0xFFC72F47);
   static const accentStrong = Color(0xFFFF6378);
   static const accentInk = Color(0xFFFFF8F9);
 
@@ -119,7 +118,7 @@ class AevraRadius {
   static const double xs = 6;
   static const double sm = 12;
   static const double md = 20;
-  static const double lg = 18;
+  static const double lg = 24;
   static const double xl = 32;
   static const double pill = 999;
 }
@@ -223,16 +222,16 @@ class AevraTheme {
   static ThemeData get light => _lightCache ??= _buildLight();
   static ThemeData get adminDark => _adminDarkCache ??= _build(
         brightness: Brightness.dark,
-        background: const Color(0xFF080E1A),
-        surface: const Color(0xFF111C30),
-        fieldFill: const Color(0xFF0D1728),
+        background: VaeTokens.adminDarkBackground,
+        surface: VaeTokens.adminDarkSurface,
+        fieldFill: VaeTokens.adminDarkInput,
         line: const Color(0x24709FFF),
         lineStrong: const Color(0x52709FFF),
-        text: const Color(0xFFF4F8FF),
+        text: VaeTokens.adminDarkText,
         textSoft: const Color(0xFF94A5C2),
         muted: const Color(0xFF94A5C2),
         muted2: const Color(0xFF7D8DA8),
-        accent: const Color(0xFF4F8CFF),
+        accent: VaeTokens.adminDarkAccent,
         accentInk: const Color(0xFFF7FAFF),
         secondary: const Color(0xFF58C7AA),
         tertiary: const Color(0xFF8BB6FF),
@@ -241,16 +240,16 @@ class AevraTheme {
 
   static ThemeData get adminLight => _adminLightCache ??= _build(
         brightness: Brightness.light,
-        background: const Color(0xFFF4F7FC),
-        surface: const Color(0xFFFFFFFF),
-        fieldFill: const Color(0xFFF0F5FC),
+        background: VaeTokens.adminLightBackground,
+        surface: VaeTokens.adminLightSurface,
+        fieldFill: VaeTokens.adminLightInput,
         line: const Color(0x1F315D9F),
         lineStrong: const Color(0x40315D9F),
-        text: const Color(0xFF14233D),
+        text: VaeTokens.adminLightText,
         textSoft: const Color(0xFF526582),
         muted: const Color(0xFF647792),
         muted2: const Color(0xFF71819B),
-        accent: const Color(0xFF4F8CFF),
+        accent: VaeTokens.adminLightAccent,
         accentInk: const Color(0xFFF7FAFF),
         secondary: const Color(0xFF2F8E75),
         tertiary: const Color(0xFF426FAF),
@@ -313,6 +312,9 @@ class AevraTheme {
     required Color tertiary,
     required Color error,
   }) {
+    // Keep the bright brand accent for small details; a deeper tone gives
+    // white button labels sufficient contrast in both portal palettes.
+    final buttonFill = Color.alphaBlend(const Color(0x33000000), accent);
     final base = ThemeData(
       brightness: brightness,
       scaffoldBackgroundColor: background,
@@ -340,13 +342,30 @@ class AevraTheme {
     );
 
     return base.copyWith(
+      pageTransitionsTheme: const PageTransitionsTheme(builders: {
+        TargetPlatform.iOS: AevraPageTransitionsBuilder(),
+        TargetPlatform.macOS: AevraPageTransitionsBuilder(),
+        TargetPlatform.android: AevraPageTransitionsBuilder(),
+        TargetPlatform.windows: AevraPageTransitionsBuilder(),
+        TargetPlatform.linux: AevraPageTransitionsBuilder(),
+      }),
       textTheme: textTheme.copyWith(
         displayLarge: AevraType.display(44, color: text),
-        displayMedium: AevraType.display(36, color: text),
-        displaySmall: AevraType.display(30, color: text),
+        displayMedium: AevraType.display(38, color: text),
+        displaySmall: AevraType.display(32, color: text),
         headlineMedium: AevraType.display(26, color: text),
-        headlineSmall: AevraType.display(22, color: text),
-        titleLarge: AevraType.display(19, color: text),
+        headlineSmall: textTheme.headlineSmall?.copyWith(
+          fontSize: 19,
+          fontWeight: FontWeight.w600,
+          letterSpacing: -.4,
+          height: 1.25,
+        ),
+        titleLarge: textTheme.titleLarge?.copyWith(
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+          letterSpacing: -.3,
+          height: 1.3,
+        ),
         titleMedium: textTheme.titleMedium?.copyWith(
           fontSize: 14.5,
           fontWeight: FontWeight.w600,
@@ -397,6 +416,7 @@ class AevraTheme {
         elevation: 0,
         scrolledUnderElevation: 0,
         surfaceTintColor: Colors.transparent,
+        toolbarHeight: 64,
       ),
 
       cardTheme: CardThemeData(
@@ -415,34 +435,36 @@ class AevraTheme {
         fillColor: fieldFill,
         isDense: true,
         contentPadding:
-            const EdgeInsets.symmetric(horizontal: 13, vertical: 13),
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         hintStyle: TextStyle(color: muted2, fontSize: 13),
         labelStyle: TextStyle(color: muted, fontSize: 12),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AevraRadius.sm),
+          borderRadius: BorderRadius.circular(18),
           borderSide: BorderSide(color: line),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AevraRadius.sm),
+          borderRadius: BorderRadius.circular(18),
           borderSide: BorderSide(color: line),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AevraRadius.sm),
+          borderRadius: BorderRadius.circular(18),
           borderSide: BorderSide(color: accent, width: 1.4),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AevraRadius.sm),
+          borderRadius: BorderRadius.circular(18),
           borderSide: BorderSide(color: error.withValues(alpha: 0.6)),
         ),
         focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AevraRadius.sm),
+          borderRadius: BorderRadius.circular(18),
           borderSide: BorderSide(color: error, width: 1.4),
         ),
       ),
 
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          backgroundColor: accent,
+          elevation: 0,
+          minimumSize: const Size(48, 48),
+          backgroundColor: buttonFill,
           foregroundColor: accentInk,
           disabledBackgroundColor: accent.withValues(alpha: 0.3),
           disabledForegroundColor: accentInk.withValues(alpha: 0.5),
@@ -452,25 +474,26 @@ class AevraTheme {
               fontSize: 13,
               fontWeight: FontWeight.w700,
               letterSpacing: 0.1),
-          shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AevraRadius.sm)),
+          shape: const StadiumBorder(),
         ),
       ),
 
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
+          minimumSize: const Size(48, 48),
           foregroundColor: text,
           side: BorderSide(color: lineStrong),
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
           textStyle: const TextStyle(
               fontFamily: 'Manrope', fontSize: 13, fontWeight: FontWeight.w600),
-          shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AevraRadius.sm)),
+          shape: const StadiumBorder(),
         ),
       ),
 
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
+          shape: const StadiumBorder(),
+          minimumSize: const Size(44, 44),
           foregroundColor: muted,
           textStyle: const TextStyle(
               fontFamily: 'Manrope',
@@ -492,6 +515,12 @@ class AevraTheme {
         backgroundColor: surface,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
+        titleTextStyle: AevraType.display(28, color: text),
+        contentTextStyle: textTheme.bodyMedium?.copyWith(
+          color: textSoft,
+          fontSize: 14,
+          height: 1.6,
+        ),
         shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AevraRadius.xl)),
       ),
@@ -503,6 +532,14 @@ class AevraTheme {
         shape: RoundedRectangleBorder(
           borderRadius:
               BorderRadius.vertical(top: Radius.circular(AevraRadius.xl)),
+        ),
+      ),
+
+      iconButtonTheme: IconButtonThemeData(
+        style: IconButton.styleFrom(
+          minimumSize: const Size(44, 44),
+          shape: const CircleBorder(),
+          foregroundColor: textSoft,
         ),
       ),
 
@@ -567,6 +604,17 @@ class AevraTheme {
       listTileTheme: ListTileThemeData(
         iconColor: muted,
         textColor: text,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        titleTextStyle: textTheme.titleMedium?.copyWith(
+          fontSize: 13.5,
+          fontWeight: FontWeight.w600,
+          color: text,
+        ),
+        subtitleTextStyle: textTheme.bodySmall?.copyWith(
+          fontSize: 12,
+          height: 1.5,
+          color: textSoft,
+        ),
         shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AevraRadius.sm)),
       ),
@@ -579,6 +627,33 @@ class AevraTheme {
         ),
         textStyle: TextStyle(fontFamily: 'Manrope', fontSize: 11, color: text),
       ),
+    );
+  }
+}
+
+/// Native interactive slide and parallax on iOS; the same quiet motion is
+/// shared on desktop. Accessibility settings remove the transition.
+class AevraPageTransitionsBuilder extends PageTransitionsBuilder {
+  const AevraPageTransitionsBuilder();
+
+  @override
+  Widget buildTransitions<T>(
+      PageRoute<T> route,
+      BuildContext context,
+      Animation<double> animation,
+      Animation<double> secondaryAnimation,
+      Widget child) {
+    final media = MediaQuery.maybeOf(context);
+    if (media?.disableAnimations == true ||
+        media?.accessibleNavigation == true) {
+      return child;
+    }
+    return const CupertinoPageTransitionsBuilder().buildTransitions(
+      route,
+      context,
+      animation,
+      secondaryAnimation,
+      child,
     );
   }
 }

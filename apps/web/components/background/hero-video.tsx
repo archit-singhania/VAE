@@ -2,16 +2,24 @@
 
 import { useEffect, useRef, useState } from "react";
 
-/**
- * The landing hero uses the original `.MOV` artwork when the browser can
- * decode it, with the same layered CSS visual kept underneath as a graceful
- * fallback for browsers that do not support QuickTime containers.
- */
+/** The same artwork is framed as a landscape canvas or a natural portrait reel. */
 export function HeroVideo() {
   const [motionEnabled, setMotionEnabled] = useState(false);
+  const [portrait, setPortrait] = useState(false);
   const [videoReady, setVideoReady] = useState(false);
-
   const video = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    const query = window.matchMedia("(max-width: 700px)");
+    const update = () => {
+      setPortrait(query.matches);
+      setVideoReady(false);
+    };
+    update();
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  }, []);
+
   useEffect(() => {
     const query = window.matchMedia("(prefers-reduced-motion: reduce)");
     const update = () => {
@@ -29,6 +37,10 @@ export function HeroVideo() {
     };
   }, []);
 
+  useEffect(() => {
+    if (motionEnabled) void video.current?.play().catch(() => undefined);
+  }, [motionEnabled]);
+
   return (
     <div className={`hero-video-stage ${videoReady ? "has-video" : ""}`} aria-hidden="true">
       <div className={`hero-visual ${motionEnabled ? "is-animated" : ""}`}>
@@ -38,6 +50,7 @@ export function HeroVideo() {
         <span className="hero-visual-grid" />
       </div>
       <video
+        key={portrait ? "portrait" : "landscape"}
         ref={video}
         className="hero-video"
         autoPlay={motionEnabled}
@@ -45,13 +58,15 @@ export function HeroVideo() {
         loop
         playsInline
         preload="metadata"
-        onCanPlay={() => setVideoReady(true)}
+        poster={portrait ? "/video_loop_portrait-poster.jpg" : "/video_loop-poster.jpg"}
+        onLoadedData={() => setVideoReady(true)}
+        onCanPlay={() => {
+          setVideoReady(true);
+          if (motionEnabled) void video.current?.play().catch(() => undefined);
+        }}
         onError={() => setVideoReady(false)}
       >
-        {/* Leave the MIME type unspecified: Chromium can decode this MOV on
-            some installations even though `video/quicktime` advertises no
-            support, and the original landing page relied on that behavior. */}
-        <source src="/video_loop.MOV" />
+        <source src={portrait ? "/video_loop_portrait.mp4" : "/video_loop.mp4"} type="video/mp4" />
       </video>
     </div>
   );

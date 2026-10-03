@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -16,6 +14,7 @@ import 'state/app_state.dart';
 import 'theme/aevra_theme.dart';
 import 'widgets/advanced_ui.dart';
 import 'widgets/aevra_logo.dart';
+import 'widgets/depth.dart';
 import 'widgets/shader_background.dart';
 import 'widgets/vae_profile_sheet.dart';
 import 'widgets/vae_ui.dart';
@@ -95,7 +94,9 @@ class _AevraAppState extends State<AevraApp> {
             return const _BootScreen();
           }
           return AnimatedSwitcher(
-            duration: const Duration(milliseconds: 420),
+            duration: reduceMotion(context)
+                ? Duration.zero
+                : const Duration(milliseconds: 420),
             switchInCurve: Curves.easeOutCubic,
             switchOutCurve: Curves.easeInCubic,
             transitionBuilder: (child, animation) => FadeTransition(
@@ -188,6 +189,7 @@ class MobileShell extends StatefulWidget {
 
 class _MobileShellState extends State<MobileShell> {
   int index = 0;
+  bool _railCollapsed = false;
   final GlobalKey _themeButtonKey = GlobalKey();
   OverlayEntry? _wipeEntry;
   bool _tourChecked = false;
@@ -354,6 +356,16 @@ class _MobileShellState extends State<MobileShell> {
         context: context,
         isScrollControlled: true,
         useSafeArea: true,
+        barrierColor: Colors.black.withValues(alpha: .32),
+        constraints: const BoxConstraints(maxWidth: 600),
+        sheetAnimationStyle: AnimationStyle(
+          duration: reduceMotion(context)
+              ? Duration.zero
+              : const Duration(milliseconds: 400),
+          reverseDuration: reduceMotion(context)
+              ? Duration.zero
+              : const Duration(milliseconds: 300),
+        ),
         builder: (context) =>
             VaeProfileSheet(state: widget.state, onSignOut: _confirmSignOut));
   }
@@ -365,6 +377,7 @@ class _MobileShellState extends State<MobileShell> {
   }
 
   void _go(int next) {
+    if (next == index) return;
     HapticFeedback.selectionClick();
     setState(() => index = next);
   }
@@ -376,7 +389,9 @@ class _MobileShellState extends State<MobileShell> {
       barrierDismissible: true,
       barrierLabel: 'Sign out',
       barrierColor: Colors.black54,
-      transitionDuration: const Duration(milliseconds: 220),
+      transitionDuration: reduceMotion(context)
+          ? Duration.zero
+          : const Duration(milliseconds: 260),
       pageBuilder: (dialogContext, _, __) => AlertDialog(
         title: const Text('Sign out of VAE?'),
         content: const Text(
@@ -407,7 +422,7 @@ class _MobileShellState extends State<MobileShell> {
 
   @override
   Widget build(BuildContext context) {
-    final wide = MediaQuery.sizeOf(context).width >= 720;
+    final wide = MediaQuery.sizeOf(context).width >= 900;
     final admin = widget.state.user?.isAdmin == true;
     final pages = admin
         ? [
@@ -442,27 +457,33 @@ class _MobileShellState extends State<MobileShell> {
           ]
         : const ['Home', 'Create', 'Publish', 'Analytics', 'ML insights'];
     final icons = [
-      LucideIcons.brainCircuit,
+      LucideIcons.layoutDashboard,
       LucideIcons.sparkles,
       LucideIcons.calendarDays,
-      LucideIcons.brainCircuit,
+      LucideIcons.chartNoAxesCombined,
       admin ? LucideIcons.shieldCheck : LucideIcons.sparkles,
     ];
+    final shellTheme = admin
+        ? (widget.darkMode ? AevraTheme.adminDark : AevraTheme.adminLight)
+        : Theme.of(context);
     return Theme(
-      data: admin
-          ? (widget.darkMode ? AevraTheme.adminDark : AevraTheme.adminLight)
-          : Theme.of(context),
+      data: shellTheme,
       child: Scaffold(
-        backgroundColor: Colors.transparent,
+        backgroundColor: shellTheme.scaffoldBackgroundColor,
         body: Stack(children: [
-          Positioned.fill(
-              child: RepaintBoundary(child: ShaderBackground(admin: admin))),
+          Positioned.fill(child: RepaintBoundary(child: _WorkspaceBackdrop())),
           SafeArea(
               child: Column(children: [
             _TopBar(
                 title: titles[index],
                 state: widget.state,
                 sound: widget.sound,
+                wide: wide,
+                darkMode: widget.darkMode,
+                themeButtonKey: _themeButtonKey,
+                onToggleTheme: _toggleThemeWithWipe,
+                onRefresh: () => widget.state.load(),
+                onPrimaryAction: () => _go(admin ? 4 : 1),
                 onOpenPalette: _openCommandPalette,
                 onOpenProfile: _openProfile),
             if (widget.state.loading)
@@ -478,20 +499,36 @@ class _MobileShellState extends State<MobileShell> {
             Expanded(
                 child: Row(children: [
               if (wide)
-                NavigationRail(
-                    selectedIndex: index,
-                    onDestinationSelected: _go,
-                    labelType: NavigationRailLabelType.all,
-                    destinations: [
-                      for (var i = 0; i < 5; i++)
-                        NavigationRailDestination(
-                            icon: Icon(icons[i]), label: Text(titles[i]))
-                    ]),
+                _WorkspaceRail(
+                  index: index,
+                  titles: titles,
+                  icons: icons,
+                  admin: admin,
+                  collapsed: _railCollapsed ||
+                      MediaQuery.textScalerOf(context).scale(14) > 20,
+                  onCollapse: () =>
+                      setState(() => _railCollapsed = !_railCollapsed),
+                  onSelected: _go,
+                  onCommands: _openCommandPalette,
+                  onProfile: _openProfile,
+                ),
               Expanded(
                   child: AnimatedSwitcher(
-                duration: MediaQuery.disableAnimationsOf(context)
+                duration: reduceMotion(context)
                     ? Duration.zero
-                    : const Duration(milliseconds: 260),
+                    : const Duration(milliseconds: 320),
+                switchInCurve: Curves.easeOutCubic,
+                switchOutCurve: Curves.easeInCubic,
+                transitionBuilder: (child, animation) => FadeTransition(
+                  opacity: animation,
+                  child: SlideTransition(
+                    position: Tween<Offset>(
+                      begin: const Offset(0, .014),
+                      end: Offset.zero,
+                    ).animate(animation),
+                    child: child,
+                  ),
+                ),
                 child: KeyedSubtree(key: ValueKey(index), child: pages[index]),
               )),
             ])),
@@ -510,12 +547,44 @@ class _MobileShellState extends State<MobileShell> {
   }
 }
 
-/// Custom glass top bar — the mobile equivalent of the web app's `.topbar`.
+/// A quiet canvas keeps the working screens readable and avoids running the
+/// landing page's animated shader behind lists, charts and form controls.
+class _WorkspaceBackdrop extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return DecoratedBox(
+      decoration: BoxDecoration(color: theme.scaffoldBackgroundColor),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: RadialGradient(
+            center: const Alignment(.8, -1),
+            radius: 1.35,
+            colors: [
+              theme.colorScheme.primary.withValues(
+                  alpha: theme.brightness == Brightness.dark ? .065 : .035),
+              Colors.transparent,
+            ],
+          ),
+        ),
+        child: const SizedBox.expand(),
+      ),
+    );
+  }
+}
+
+/// One floating control plane keeps the chrome separate from page content.
 class _TopBar extends StatelessWidget {
   const _TopBar({
     required this.title,
     required this.state,
     required this.sound,
+    required this.wide,
+    required this.darkMode,
+    required this.themeButtonKey,
+    required this.onToggleTheme,
+    required this.onRefresh,
+    required this.onPrimaryAction,
     required this.onOpenPalette,
     required this.onOpenProfile,
   });
@@ -523,81 +592,231 @@ class _TopBar extends StatelessWidget {
   final String title;
   final AppState state;
   final AevraSound sound;
-  final VoidCallback onOpenPalette;
-  final VoidCallback onOpenProfile;
+  final bool wide, darkMode;
+  final GlobalKey themeButtonKey;
+  final VoidCallback onToggleTheme, onRefresh, onPrimaryAction;
+  final VoidCallback onOpenPalette, onOpenProfile;
 
   @override
   Widget build(BuildContext context) {
-    // A rule under the bar rather than a filled surface: the shader
-    // background is the app's main visual asset, and a second opaque strip
-    // above the content would cut it off at the top of every screen.
-    return ClipRect(
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-        child: Container(
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface.withValues(alpha: .86),
-            border: Border(
-                bottom: BorderSide(color: Theme.of(context).dividerColor)),
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final admin = state.user?.isAdmin == true;
+    final compact = MediaQuery.sizeOf(context).width < 380 ||
+        MediaQuery.textScalerOf(context).scale(14) > 19;
+    Widget control(String tooltip, IconData icon, VoidCallback action,
+            {Key? key}) =>
+        IconButton(
+          key: key,
+          tooltip: tooltip,
+          onPressed: action,
+          icon: Icon(icon, size: 19),
+          style: IconButton.styleFrom(
+            minimumSize: const Size(44, 44),
+            backgroundColor: colors.onSurface.withValues(alpha: .045),
           ),
-          padding:
-              const EdgeInsets.fromLTRB(AevraSpace.lg, 10, AevraSpace.xs, 10),
-          child: Row(
-            children: [
-              AevraWordmark(
-                  markSize: 30,
-                  fontSize: 20,
-                  admin: state.user?.isAdmin == true),
-              const SizedBox(width: AevraSpace.sm),
-              Flexible(
-                child: Text(
-                  title.toUpperCase(),
-                  overflow: TextOverflow.ellipsis,
-                  style: AevraType.eyebrow(
-                      color: Theme.of(context).colorScheme.onSurface),
-                ),
-              ),
-              const Spacer(),
-              // #6 — the AI orb now reflects real request state instead of
-              // idling forever: it spins while the workspace is loading.
-              AnimatedBuilder(
-                animation: state,
-                builder: (context, _) => AiOrb(
-                  size: 24,
-                  state: state.loading ? AiOrbState.thinking : AiOrbState.idle,
-                ),
-              ),
-              const SizedBox(width: AevraSpace.xxs),
-              IconButton(
-                tooltip: 'Commands',
-                onPressed: onOpenPalette,
-                icon: const Icon(LucideIcons.search, size: 20),
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-              Semantics(
-                button: true,
-                label: 'Open profile',
-                child: InkWell(
-                  onTap: onOpenProfile,
-                  customBorder: const CircleBorder(),
-                  child: CircleAvatar(
-                    radius: 17,
-                    backgroundColor: Theme.of(context)
-                        .colorScheme
-                        .primary
-                        .withValues(alpha: .14),
-                    backgroundImage: state.user?.avatarUrl == null
-                        ? null
-                        : NetworkImage(state.user!.avatarUrl!),
-                    child: state.user?.avatarUrl == null
-                        ? const Icon(LucideIcons.userRound, size: 18)
-                        : null,
+        );
+    return Padding(
+      padding: EdgeInsets.fromLTRB(wide ? 16 : 12, 8, wide ? 16 : 12, 8),
+      child: GlassChrome(
+        radius: 30,
+        padding: EdgeInsets.fromLTRB(wide ? 20 : 14, 10, 10, 10),
+        child: Row(children: [
+          Expanded(
+            child: wide
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(admin ? 'Administration' : 'Your workspace',
+                          style: theme.textTheme.bodySmall),
+                      const SizedBox(height: 3),
+                      Text(title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.titleLarge),
+                    ],
+                  )
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (compact)
+                        AevraMark(size: 30, admin: admin)
+                      else
+                        AevraWordmark(markSize: 28, fontSize: 21, admin: admin),
+                      if (!compact) ...[
+                        const SizedBox(height: 6),
+                        Text(title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.bodySmall
+                                ?.copyWith(fontSize: 10.5)),
+                      ],
+                    ],
                   ),
+          ),
+          const SizedBox(width: 8),
+          control('Commands', LucideIcons.search, onOpenPalette),
+          const SizedBox(width: 6),
+          if (wide) ...[
+            control('Refresh workspace', LucideIcons.refreshCw, onRefresh),
+            const SizedBox(width: 6),
+          ],
+          control(darkMode ? 'Use light theme' : 'Use dark theme',
+              darkMode ? LucideIcons.sun : LucideIcons.moon, onToggleTheme,
+              key: themeButtonKey),
+          if (wide) ...[
+            const SizedBox(width: 10),
+            FilledButton.icon(
+              onPressed: onPrimaryAction,
+              icon: Icon(admin ? LucideIcons.shieldCheck : LucideIcons.plus,
+                  size: 17),
+              label: Text(admin ? 'Review payments' : 'Create'),
+            ),
+          ],
+          const SizedBox(width: 6),
+          IconButton(
+            tooltip: 'Open profile',
+            onPressed: onOpenProfile,
+            style: IconButton.styleFrom(
+              minimumSize: const Size(44, 44),
+              backgroundColor: colors.primary.withValues(alpha: .12),
+            ),
+            icon: state.user?.avatarUrl == null
+                ? Icon(LucideIcons.userRound, size: 18, color: colors.primary)
+                : ClipOval(
+                    child: Image.network(state.user!.avatarUrl!,
+                        width: 26,
+                        height: 26,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, error, stack) => Icon(
+                            LucideIcons.userRound,
+                            size: 18,
+                            color: colors.primary)),
+                  ),
+          ),
+        ]),
+      ),
+    );
+  }
+}
+
+class _WorkspaceRail extends StatelessWidget {
+  const _WorkspaceRail({
+    required this.index,
+    required this.titles,
+    required this.icons,
+    required this.admin,
+    required this.collapsed,
+    required this.onCollapse,
+    required this.onSelected,
+    required this.onCommands,
+    required this.onProfile,
+  });
+
+  final int index;
+  final List<String> titles;
+  final List<IconData> icons;
+  final bool admin, collapsed;
+  final VoidCallback onCollapse, onCommands, onProfile;
+  final ValueChanged<int> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    Widget item(String title, IconData icon, VoidCallback action,
+        {bool selected = false}) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 6),
+        child: Semantics(
+          selected: selected,
+          button: true,
+          child: Tooltip(
+            message: title,
+            child: InkWell(
+              onTap: action,
+              borderRadius: BorderRadius.circular(24),
+              child: AnimatedContainer(
+                duration: reduceMotion(context)
+                    ? Duration.zero
+                    : const Duration(milliseconds: 280),
+                curve: Curves.easeOutCubic,
+                constraints: const BoxConstraints(minHeight: 48),
+                padding: EdgeInsets.symmetric(horizontal: collapsed ? 8 : 14),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(24),
+                  color: selected
+                      ? colors.primary.withValues(alpha: .14)
+                      : Colors.transparent,
+                  border: Border.all(
+                      color: selected
+                          ? colors.primary.withValues(alpha: .18)
+                          : Colors.transparent),
+                ),
+                child: Row(
+                  mainAxisAlignment: collapsed
+                      ? MainAxisAlignment.center
+                      : MainAxisAlignment.start,
+                  children: [
+                    Icon(icon,
+                        size: 20,
+                        color: selected
+                            ? colors.primary
+                            : colors.onSurfaceVariant),
+                    if (!collapsed) ...[
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              color: selected
+                                  ? colors.onSurface
+                                  : colors.onSurfaceVariant,
+                              fontWeight:
+                                  selected ? FontWeight.w700 : FontWeight.w500,
+                            )),
+                      ),
+                    ],
+                  ],
                 ),
               ),
-              const SizedBox(width: AevraSpace.sm),
-            ],
+            ),
           ),
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 0, 16),
+      child: SizedBox(
+        width: collapsed ? 84 : 224,
+        child: GlassChrome(
+          radius: 32,
+          padding: const EdgeInsets.all(12),
+          child: Column(children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(0, 8, 0, 24),
+              child: collapsed
+                  ? AevraMark(size: 34, admin: admin)
+                  : AevraWordmark(markSize: 34, fontSize: 25, admin: admin),
+            ),
+            for (var i = 0; i < titles.length; i++)
+              item(titles[i], icons[i], () => onSelected(i),
+                  selected: index == i),
+            const Spacer(),
+            Divider(color: theme.dividerColor),
+            const SizedBox(height: 12),
+            item('Commands', LucideIcons.search, onCommands),
+            item('Profile', LucideIcons.userRound, onProfile),
+            item(
+                collapsed ? 'Expand sidebar' : 'Collapse sidebar',
+                collapsed
+                    ? LucideIcons.panelLeftOpen
+                    : LucideIcons.panelLeftClose,
+                onCollapse),
+          ]),
         ),
       ),
     );

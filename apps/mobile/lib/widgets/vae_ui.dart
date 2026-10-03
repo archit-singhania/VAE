@@ -4,27 +4,52 @@ import 'package:flutter/material.dart';
 import '../api/models.dart';
 import '../theme/aevra_theme.dart';
 import 'depth.dart';
+import 'advanced_ui.dart';
 
 class VaePageHeader extends StatelessWidget {
   const VaePageHeader(this.title, this.subtitle, {super.key});
   final String title, subtitle;
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(bottom: 24),
+        padding: const EdgeInsets.only(top: 8, bottom: 28),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Container(
+            width: 28,
+            height: 3,
+            margin: const EdgeInsets.only(bottom: 18),
+            decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primary,
+                borderRadius: BorderRadius.circular(3)),
+          ),
           Text(title, style: Theme.of(context).textTheme.displaySmall),
-          const SizedBox(height: 8),
-          Text(subtitle),
+          const SizedBox(height: 10),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 520),
+            child: Text(subtitle,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant)),
+          ),
         ]),
       );
 }
 
 class VaeGlassCard extends StatelessWidget {
-  const VaeGlassCard({super.key, required this.child});
+  const VaeGlassCard({
+    super.key,
+    required this.child,
+    this.padding = const EdgeInsets.all(24),
+    this.radius = 24,
+    this.elevation = GlassElevation.raised,
+  });
   final Widget child;
+  final EdgeInsetsGeometry padding;
+  final double radius;
+  final GlassElevation elevation;
   @override
   Widget build(BuildContext context) => GlassSurface(
-        padding: const EdgeInsets.all(24),
+        padding: padding,
+        radius: radius,
+        elevation: elevation,
         child: child,
       );
 }
@@ -36,25 +61,46 @@ class VaeMetricCard extends StatelessWidget {
   final IconData? icon;
   final String? hint;
   @override
-  Widget build(BuildContext context) => VaeGlassCard(
-          child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (icon != null) ...[
-            Icon(icon, size: 18, color: Theme.of(context).colorScheme.primary),
-            const SizedBox(height: 10),
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return VaeGlassCard(
+        padding: const EdgeInsets.all(18),
+        radius: 22,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (icon != null)
+              Container(
+                width: 34,
+                height: 34,
+                margin: const EdgeInsets.only(bottom: 18),
+                decoration: BoxDecoration(
+                  color: colors.primary.withValues(alpha: .08),
+                  borderRadius: BorderRadius.circular(11),
+                  border:
+                      Border.all(color: colors.primary.withValues(alpha: .12)),
+                ),
+                child: Icon(icon, size: 16, color: colors.primary),
+              ),
+            Text(label,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: colors.onSurfaceVariant,
+                    fontWeight: FontWeight.w600)),
+            const SizedBox(height: 12),
+            Text(value, style: AevraType.metric(34, color: colors.onSurface)),
+            if (hint != null) ...[
+              const SizedBox(height: 18),
+              Divider(color: Theme.of(context).dividerColor),
+              const SizedBox(height: 10),
+              Text(hint!,
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodySmall
+                      ?.copyWith(fontSize: 10.5)),
+            ],
           ],
-          Text(label, style: Theme.of(context).textTheme.bodySmall),
-          const SizedBox(height: 5),
-          Text(value,
-              style: AevraType.metric(28,
-                  color: Theme.of(context).colorScheme.onSurface)),
-          if (hint != null) ...[
-            const SizedBox(height: 5),
-            Text(hint!, style: Theme.of(context).textTheme.bodySmall),
-          ],
-        ],
-      ));
+        ));
+  }
 }
 
 class VaeEmptyState extends StatelessWidget {
@@ -64,13 +110,32 @@ class VaeEmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) => VaeGlassCard(
           child: Column(children: [
-        Icon(LucideIcons.sparkles,
-            color: Theme.of(context).colorScheme.primary),
-        const SizedBox(height: 16),
+        Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Theme.of(context)
+                    .colorScheme
+                    .primary
+                    .withValues(alpha: .07),
+                border: Border.all(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .primary
+                        .withValues(alpha: .12))),
+            child: Icon(LucideIcons.sparkles,
+                size: 23, color: Theme.of(context).colorScheme.primary)),
+        const SizedBox(height: 20),
         Text(title, style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: 8),
-        Text(body, textAlign: TextAlign.center),
-        if (action != null) ...[const SizedBox(height: 16), action!],
+        ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 340),
+            child: Text(body,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant))),
+        if (action != null) ...[const SizedBox(height: 24), action!],
       ]));
 }
 
@@ -93,20 +158,47 @@ class VaeStatusPill extends StatelessWidget {
   const VaeStatusPill(this.status, {super.key});
   final String status;
   @override
-  Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            color:
-                Theme.of(context).colorScheme.primary.withValues(alpha: .12)),
-        child: Text(status.replaceAll('_', ' '),
-            style: TextStyle(
-                fontFamily: 'JetBrainsMono',
-                fontSize: 11,
-                color: status == 'failed'
-                    ? Theme.of(context).colorScheme.error
-                    : Theme.of(context).colorScheme.onSurface)),
-      );
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final color = switch (status.toLowerCase()) {
+      'failed' || 'rejected' || 'error' || 'disconnected' => colors.error,
+      'ready' ||
+      'connected' ||
+      'published' ||
+      'approved' ||
+      'completed' =>
+        colors.secondary,
+      'pending' ||
+      'under_review' ||
+      'processing' ||
+      'queued' =>
+        Theme.of(context).brightness == Brightness.dark
+            ? AevraColors.amber
+            : AevraLightColors.amber,
+      _ => colors.primary,
+    };
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(30),
+          border: Border.all(color: color.withValues(alpha: .18)),
+          color: color.withValues(alpha: .08)),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Container(
+            width: 4,
+            height: 4,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+        const SizedBox(width: 6),
+        Flexible(
+            child: Text(status.replaceAll('_', ' '),
+                style: TextStyle(
+                    fontFamily: 'Manrope',
+                    fontWeight: FontWeight.w600,
+                    fontSize: 10.5,
+                    color: color))),
+      ]),
+    );
+  }
 }
 
 class VaeAssetTile extends StatelessWidget {
@@ -128,10 +220,9 @@ class VaeAssetTile extends StatelessWidget {
                       onTap: () =>
                           Navigator.of(context).push(PageRouteBuilder<void>(
                             opaque: false,
-                            transitionDuration:
-                                MediaQuery.disableAnimationsOf(context)
-                                    ? Duration.zero
-                                    : const Duration(milliseconds: 260),
+                            transitionDuration: reduceMotion(context)
+                                ? Duration.zero
+                                : const Duration(milliseconds: 260),
                             pageBuilder:
                                 (context, animation, secondaryAnimation) =>
                                     Scaffold(
@@ -213,7 +304,12 @@ class VaeScaffold extends StatelessWidget {
   final List<Widget> children;
   @override
   Widget build(BuildContext context) => ListView(
-        padding: const EdgeInsets.all(AevraSpace.gutter),
+        padding: EdgeInsets.fromLTRB(
+          MediaQuery.sizeOf(context).width >= 900 ? 28 : AevraSpace.gutter,
+          16,
+          MediaQuery.sizeOf(context).width >= 900 ? 28 : AevraSpace.gutter,
+          24,
+        ),
         children: [
           Center(
               child: ConstrainedBox(
@@ -226,13 +322,14 @@ class VaeScaffold extends StatelessWidget {
 }
 
 class VaeBottomNav extends StatelessWidget {
-  const VaeBottomNav(
-      {super.key,
-      required this.index,
-      required this.onSelected,
-      required this.onProfile,
-      this.avatarUrl,
-      this.admin = false});
+  const VaeBottomNav({
+    super.key,
+    required this.index,
+    required this.onSelected,
+    required this.onProfile,
+    this.avatarUrl,
+    this.admin = false,
+  });
   final int index;
   final ValueChanged<int> onSelected;
   final VoidCallback onProfile;
@@ -242,100 +339,187 @@ class VaeBottomNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    // Match the web app's phone rail: Home, Publish, Create, Analytics,
-    // Profile. The desktop/admin rail still exposes the full page list.
     final destinations = admin
         ? const <(String, IconData, int)>[
-            ('Home', LucideIcons.brainCircuit, 0),
+            ('Home', LucideIcons.layoutDashboard, 0),
             ('AI usage', LucideIcons.sparkles, 1),
             ('Publishing', LucideIcons.calendarDays, 2),
-            ('Analytics', LucideIcons.brainCircuit, 3),
-            ('Payment review', LucideIcons.shieldCheck, 4),
+            ('Analytics', LucideIcons.chartNoAxesCombined, 3),
+            ('Review', LucideIcons.shieldCheck, 4),
           ]
         : const <(String, IconData, int)>[
-            ('Home', LucideIcons.brainCircuit, 0),
+            ('Home', LucideIcons.layoutDashboard, 0),
             ('Publish', LucideIcons.calendarDays, 2),
             ('Create', LucideIcons.sparkles, 1),
-            ('Analytics', LucideIcons.brainCircuit, 3),
+            ('Analytics', LucideIcons.chartNoAxesCombined, 3),
+            ('Profile', LucideIcons.userRound, -1),
           ];
-
-    Widget item(String label, IconData icon, VoidCallback onTap,
-        {bool selected = false, bool primary = false, Widget? leading}) {
-      final foreground = primary
-          ? colors.onPrimary
-          : selected
-              ? colors.primary
-              : colors.onSurfaceVariant;
-      return Expanded(
-        child: Semantics(
-          button: true,
-          selected: selected,
-          label: label,
-          child: InkWell(
-            onTap: onTap,
-            borderRadius: BorderRadius.circular(AevraRadius.sm),
-            child: Container(
-              constraints: const BoxConstraints(minHeight: 52),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(AevraRadius.sm),
-                color: primary
-                    ? colors.primary
-                    : selected
-                        ? colors.primary.withValues(alpha: .10)
-                        : Colors.transparent,
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 6),
-              child: Column(mainAxisSize: MainAxisSize.min, children: [
-                leading ?? Icon(icon, size: 20, color: foreground),
-                const SizedBox(height: 4),
-                Text(label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                        fontFamily: 'Manrope',
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
-                        color: foreground)),
-              ]),
-            ),
+    final slot =
+        destinations.indexWhere((destination) => destination.$3 == index);
+    final tall = MediaQuery.textScalerOf(context).scale(10) > 15;
+    return SafeArea(
+      top: false,
+      minimum: const EdgeInsets.fromLTRB(12, 8, 12, 10),
+      child: Center(
+        heightFactor: 1,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 520),
+          child: GlassChrome(
+            radius: 34,
+            padding: const EdgeInsets.all(6),
+            child: LayoutBuilder(builder: (context, constraints) {
+              final itemWidth = constraints.maxWidth / destinations.length;
+              return SizedBox(
+                height: tall ? 72 : 64,
+                child: Stack(children: [
+                  if (slot >= 0)
+                    AnimatedPositioned(
+                      duration: reduceMotion(context)
+                          ? Duration.zero
+                          : const Duration(milliseconds: 360),
+                      curve: Curves.easeOutCubic,
+                      left: slot * itemWidth,
+                      top: 0,
+                      bottom: 0,
+                      width: itemWidth,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: colors.primary.withValues(alpha: .13),
+                          borderRadius: BorderRadius.circular(28),
+                          border: Border.all(
+                              color: colors.primary.withValues(alpha: .15)),
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              colors.primary.withValues(alpha: .18),
+                              colors.primary.withValues(alpha: .08),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  Row(children: [
+                    for (final (label, icon, page) in destinations)
+                      Expanded(
+                        child: _GlassNavControl(
+                          label: label,
+                          icon: icon,
+                          selected: index == page,
+                          primary: !admin && page == 1,
+                          onTap: page < 0 ? onProfile : () => onSelected(page),
+                          avatarUrl: page < 0 ? avatarUrl : null,
+                        ),
+                      ),
+                  ]),
+                ]),
+              );
+            }),
           ),
         ),
-      );
-    }
+      ),
+    );
+  }
+}
 
-    return ClipRect(
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-        child: Container(
-          decoration: BoxDecoration(
-            color: colors.surface.withValues(alpha: .94),
-            border:
-                Border(top: BorderSide(color: Theme.of(context).dividerColor)),
-          ),
-          child: SafeArea(
-            top: false,
+class _GlassNavControl extends StatefulWidget {
+  const _GlassNavControl({
+    required this.label,
+    required this.icon,
+    required this.selected,
+    required this.primary,
+    required this.onTap,
+    this.avatarUrl,
+  });
+  final String label;
+  final IconData icon;
+  final bool selected, primary;
+  final VoidCallback onTap;
+  final String? avatarUrl;
+
+  @override
+  State<_GlassNavControl> createState() => _GlassNavControlState();
+}
+
+class _GlassNavControlState extends State<_GlassNavControl> {
+  bool pressed = false;
+  void _press(bool value) {
+    if (pressed != value) setState(() => pressed = value);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final foreground =
+        widget.selected ? colors.primary : colors.onSurfaceVariant;
+    final label = widget.label == 'Review' ? 'Payment review' : widget.label;
+    return Semantics(
+      button: true,
+      selected: widget.selected,
+      label: label,
+      onTap: widget.onTap,
+      excludeSemantics: true,
+      child: Tooltip(
+        message: label,
+        child: InkWell(
+          onTap: widget.onTap,
+          onTapDown: (_) => _press(true),
+          onTapUp: (_) => _press(false),
+          onTapCancel: () => _press(false),
+          borderRadius: BorderRadius.circular(28),
+          child: AnimatedScale(
+            scale: pressed && !reduceMotion(context) ? .94 : 1,
+            duration: reduceMotion(context)
+                ? Duration.zero
+                : const Duration(milliseconds: 180),
+            curve: Curves.easeOutCubic,
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
-              child: Row(children: [
-                for (final (label, icon, page) in destinations)
-                  item(label, icon, () => onSelected(page),
-                      selected: index == page, primary: !admin && page == 1),
-                item('Edit profile', LucideIcons.userRound, onProfile,
-                    leading: avatarUrl == null
-                        ? null
-                        : ClipOval(
-                            child: Image.network(
-                              avatarUrl!,
-                              width: 20,
-                              height: 20,
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, error, stack) => Icon(
-                                  LucideIcons.userRound,
-                                  size: 20,
-                                  color: colors.onSurfaceVariant),
+              padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 6),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 32,
+                    height: 28,
+                    decoration: widget.primary
+                        ? BoxDecoration(
+                            color: colors.primary,
+                            borderRadius: BorderRadius.circular(14),
+                          )
+                        : null,
+                    child: Center(
+                      child: widget.avatarUrl == null
+                          ? Icon(widget.icon,
+                              size: 19,
+                              color: widget.primary
+                                  ? colors.onPrimary
+                                  : foreground)
+                          : ClipOval(
+                              child: Image.network(widget.avatarUrl!,
+                                  width: 22,
+                                  height: 22,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, error, stack) => Icon(
+                                      widget.icon,
+                                      size: 19,
+                                      color: foreground)),
                             ),
-                          )),
-              ]),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(widget.label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontFamily: 'Manrope',
+                        fontSize: 10,
+                        height: 1.1,
+                        fontWeight:
+                            widget.selected ? FontWeight.w700 : FontWeight.w600,
+                        color: foreground,
+                      )),
+                ],
+              ),
             ),
           ),
         ),

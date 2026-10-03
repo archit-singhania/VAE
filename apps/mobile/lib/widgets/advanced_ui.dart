@@ -14,7 +14,8 @@ import 'aevra_logo.dart';
 /// way `prefers-reduced-motion` does on web.
 /// ---------------------------------------------------------------------
 bool reduceMotion(BuildContext context) =>
-    MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    MediaQuery.maybeOf(context)?.disableAnimations == true ||
+    MediaQuery.maybeOf(context)?.accessibleNavigation == true;
 
 /// ---------------------------------------------------------------------
 /// #4 — Skeleton shimmer. Mirrors web's `.live-skeleton` gradient sweep.

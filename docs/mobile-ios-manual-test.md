@@ -4,6 +4,10 @@ This guide runs the Flutter app as a native Mac app, in an iOS Simulator, and
 on a real iPhone. The local API uses SQLite, so Docker and Android Studio are
 not needed.
 
+For the current glass UI makeover, build status, and a copy-and-paste USB
+installation command for your connected iPhone, see
+[`glass-ui-review.md`](glass-ui-review.md).
+
 ## What is installed on this Mac
 
 - Flutter 3.44.1 and Dart 3.12.1
@@ -52,13 +56,19 @@ export AEVRA_IMAGE_PROVIDER=deterministic
 export AEVRA_OLLAMA_MODEL=qwen3:1.7b
 ./.venv/bin/python -m alembic upgrade head
 ./.venv/bin/python -m aevra_api.seed
-./.venv/bin/python -m uvicorn aevra_api.main:app --reload --app-dir apps/api --host 0.0.0.0 --port 8000
+./.venv/bin/python -m uvicorn aevra_api.main:app --reload --app-dir apps/api --host 127.0.0.1 --port 8000
 ```
 
 The first install downloads the Python packages. Keep this Terminal window open
 while you use the app. The last command should say that Uvicorn is listening on
 port `8000`. Check the API in a browser at [http://localhost:8000/health](http://localhost:8000/health);
 the response should include `"status":"ok"`.
+
+This server is for the Mac, web preview, and iOS Simulator. The physical iPhone
+uses a second server bound specifically to the Mac's Wi-Fi IP, as described in
+section 5. If dependencies and the database are already set up, reuse them:
+you only need the environment settings and final server command to restart
+the API. Do not recreate or reseed the database for each test session.
 
 The local database is `aevra.db` in the repository root. The seed command
 creates this demo administrator and a starter brand:
@@ -127,14 +137,20 @@ is the app's default API address. If you selected a different simulator, replace
 ## 5. Run on a physical iPhone
 
 An iPhone needs to be connected to the Mac for Xcode signing and installation.
+This checkout has already produced a signed iOS build using bundle ID
+`com.archit.vae`. The wireless installation attempt timed out; USB installation
+and physical-device visual verification are the next steps.
 
 1. Connect the unlocked iPhone to the Mac with a USB cable. Tap **Trust** on the
    iPhone and confirm the trust prompt on the Mac.
-2. In Xcode, open `apps/mobile/ios/Runner.xcworkspace`. Select the **Runner**
-   project, then the **Runner** target, then **Signing & Capabilities**.
-3. Turn on **Automatically manage signing**, choose your Apple account's team,
-   and set a unique **Bundle Identifier** such as `com.yourname.vae.dev`.
-   Xcode can add a free Personal Team from **Xcode → Settings → Accounts**.
+2. The existing signing settings can be reused on this Mac. If installation
+   reports a signing problem, open `apps/mobile/ios/Runner.xcworkspace` in
+   Xcode. Select the **Runner** project, then the **Runner** target, then
+   **Signing & Capabilities**.
+3. For a signing problem, turn on **Automatically manage signing** and choose
+   your Apple account's team. Keep the existing bundle identifier unless Xcode
+   specifically requires a unique one. Xcode can add a free Personal Team from
+   **Xcode → Settings → Accounts**.
 4. If the iPhone asks, enable **Settings → Privacy & Security → Developer Mode**
    and restart it. Unlock it again after restart.
 5. Keep the iPhone and Mac on the same Wi-Fi network. In a Terminal window on
@@ -146,19 +162,45 @@ An iPhone needs to be connected to the Mac for Xcode signing and installation.
 
    If this prints nothing, open **System Settings → Wi-Fi → Details** for the
    connected network and use the IP address shown there.
-6. In the mobile app Terminal, list devices and run on the iPhone. Replace
+6. The current Mac Wi-Fi address is `192.168.1.8`. You approved API access on
+   this local Wi-Fi interface. If its API server has stopped, start it in a
+   separate Terminal window:
+
+   ```sh
+   cd "/Users/architsinghania/Documents/VAE"
+   AEVRA_DATABASE_URL=sqlite:///./aevra.db AEVRA_ENABLE_REDIS_RATE_LIMIT=0 AEVRA_EMBEDDING_PROVIDER=hashing AEVRA_IMAGE_PROVIDER=deterministic AEVRA_OLLAMA_MODEL=qwen3:1.7b ./.venv/bin/python -m uvicorn aevra_api.main:app --app-dir apps/api --host 192.168.1.8 --port 8000
+   ```
+
+   Replace `192.168.1.8` with the address from step 5 if it has changed. Keep
+   this Terminal open. The loopback API from section 2 can stay running for the
+   web and Simulator. If the Wi-Fi server reports that its address is already
+   in use, check its health before starting another copy. On the iPhone, open
+   Safari at `http://192.168.1.8:8000/health` (using the new IP if necessary).
+   Expect JSON containing `"status":"ok"` before opening VAE.
+7. In the mobile app Terminal, list devices and run on the iPhone. Replace
    `MAC_IP` with the address from the previous step and `PHONE_DEVICE_ID` with
    the iPhone ID shown by `flutter devices`:
 
    ```sh
-   flutter devices
-   flutter run -d PHONE_DEVICE_ID --dart-define=API_BASE_URL=http://MAC_IP:8000/api/v1
+   cd "/Users/architsinghania/Documents/VAE/apps/mobile"
+   /opt/homebrew/share/flutter/bin/flutter devices
+   /opt/homebrew/share/flutter/bin/flutter run -d PHONE_DEVICE_ID --dart-define=API_BASE_URL=http://MAC_IP:8000/api/v1
    ```
 
-7. When iOS asks whether VAE may access the local network, tap **Allow**. The
+   For your currently detected iPhone and Mac address, use:
+
+   ```sh
+   /opt/homebrew/share/flutter/bin/flutter run -d 00008101-000D44113480001E --dart-define=API_BASE_URL=http://192.168.1.8:8000/api/v1
+   ```
+
+8. When iOS asks whether VAE may access the local network, tap **Allow**. The
    API server must still be running in the other Terminal window. If macOS asks
    whether Python may accept incoming connections, allow it on your private
    network.
+9. If iOS reports an untrusted developer, open **Settings → General → VPN &
+   Device Management** and trust the developer account shown for VAE, provided
+   it is your own development account. Keep Terminal open while testing: press
+   `r` for Dart hot reload, `R` for a restart, or `q` to stop the Flutter run.
 
 For example, if the Mac address is `192.168.1.20`, use
 `--dart-define=API_BASE_URL=http://192.168.1.20:8000/api/v1`. Do not use
@@ -173,8 +215,9 @@ Start with the demo email and password above.
    submit. On the first successful sign-in, step through the welcome tour and
    tap its final button. The iOS app stays signed in after relaunch. The macOS
    Debug app asks you to
-   sign in again after restart. Use the top-right sign-out button to return to
-   the login screen.
+   sign in again after restart. Open **Profile** from the top-right avatar or
+   **Commands** from the search icon, then choose **Sign out** to return to the
+   login screen.
 2. **Home:** check the greeting and the media, channel, schedule, and engagement
    cards. On a fresh local database, most counts start at zero. Tap **Create
    media** and **Publish** to visit those tabs. Tap **Campaigns** to open the
@@ -220,21 +263,40 @@ Start with the demo email and password above.
 
 ### Visual checks on Mac and iPhone
 
-- The creator theme uses a deep plum background (`#171014`) in dark mode and
-  warm paper (`#F8F3F4`) in light mode. Its action color is crimson (`#E5485D`).
-  The administrator accent is cobalt blue (`#4F8CFF`).
-- The VAE mark should appear in the app icon and launch screen. Controls and
-  navigation use the same Lucide icon family as the web workspace.
-- On a narrow iPhone screen, the bottom bar shows **Home**, **Publish**, a
-  prominent crimson **Create** button, **Analytics**, and **Profile**. The
-  administrator sees **Home**, **AI usage**, **Publishing**, **Analytics**,
-  **Payments**, and **Profile**.
+- The four color sets are shared with the web workspace:
+
+  | Portal / theme | Background | Action accent |
+  | --- | --- | --- |
+  | Creator / Business, Dark | `#121016` | `#E5485D` |
+  | Creator / Business, Light | `#F3F2F6` | `#C72F47` |
+  | Admin, Dark | `#0D1420` | `#4F8CFF` |
+  | Admin, Light | `#F0F3F9` | `#2865D6` |
+
+  Glass controls blend these colors with the artwork behind them, so a
+  screenshot's translucent pixels will vary with their background.
+- Creator / Business uses a folded crimson V; Admin uses a cobalt gateway
+  with a folded inner V. The wordmark and interface use Manrope. The native
+  app icon and launch artwork use the new branding. Reinstall the app to
+  refresh them; hot reload does not replace native assets. Controls and
+  navigation use the Lucide icon family shared with web.
+- On a narrow iPhone screen, the floating glass dock shows **Home**, **Publish**,
+  **Create**, **Analytics**, and **Profile** for Creator / Business. Admin shows
+  **Home**, **AI usage**, **Publishing**, **Analytics**, and **Review**; **Review**
+  opens Payment review. Admin Profile is in the top-right avatar and Commands.
+  Tap each item and expect the selected capsule to follow. At desktop widths,
+  a floating sidebar replaces the dock; collapse it and expand it again.
 - Home opens with a greeting and action buttons, then metric cards, upcoming
   work, recent media, and next actions. A new local database can show zero
   metrics and empty states; these are expected until content exists.
 - Switch between dark and light mode and visit Home, Create, Publish, Analytics,
-  and Profile. Text, icons, sheets, and status labels should stay readable in
-  both themes. The landing video is intentionally outside the UI comparison.
+  and Profile. In Admin, also check AI usage, Publishing, and Payment review.
+  Text, icons, sheets, and status labels should stay readable in both themes.
+- On both landing portals, the film should stay visible in Light and Dark.
+  Phones use the natural portrait edit, with a clear viewing area above the
+  copy; wider layouts use the landscape film. A real poster appears while
+  video initializes. With **Settings → Accessibility → Motion → Reduce Motion**
+  enabled, a still frame is expected. The same film artwork is used on web and
+  Flutter.
 
 ## Common fixes
 

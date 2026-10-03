@@ -341,12 +341,13 @@ class _AdvancedScreenState extends State<AdvancedScreen> {
           Row(children: [
             Icon(adminIcon, size: 14, color: scheme.primary),
             const SizedBox(width: 7),
-            Text('VAE ADMINISTRATION',
-                style: TextStyle(
-                    color: scheme.primary,
-                    fontFamily: 'JetBrainsMono',
-                    fontSize: 10,
-                    letterSpacing: 1.4)),
+            Flexible(
+                child: Text('VAE ADMINISTRATION',
+                    style: TextStyle(
+                        color: scheme.primary,
+                        fontFamily: 'JetBrainsMono',
+                        fontSize: 10,
+                        letterSpacing: 1.4))),
           ]),
           const SizedBox(height: 12),
           Text(adminTitle, style: Theme.of(context).textTheme.displaySmall),
@@ -367,31 +368,19 @@ class _AdvancedScreenState extends State<AdvancedScreen> {
       ),
       const SizedBox(height: 20),
       LayoutBuilder(builder: (context, constraints) {
-        final width = (constraints.maxWidth - 12) / 2;
+        final scale = MediaQuery.textScalerOf(context).scale(14) / 14;
+        final columns = constraints.maxWidth > 760 && scale < 1.4
+            ? 4
+            : constraints.maxWidth < 300 && scale > 1.25 || scale > 1.8
+                ? 1
+                : 2;
+        final width = (constraints.maxWidth - (columns - 1) * 12) / columns;
+        final metrics = adminMetrics;
         return Wrap(spacing: 12, runSpacing: 12, children: [
-          for (var i = 0; i < adminMetrics.length; i++)
+          for (var i = 0; i < metrics.length; i++)
             SizedBox(
               width: width,
-              child: VaeGlassCard(
-                child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Align(
-                        alignment: Alignment.topRight,
-                        child: Text('${i + 1}'.padLeft(2, '0'),
-                            style: TextStyle(
-                                color: scheme.primary.withValues(alpha: .7),
-                                fontFamily: 'JetBrainsMono',
-                                fontSize: 11)),
-                      ),
-                      Text(adminMetrics[i].key,
-                          style: TextStyle(
-                              color: scheme.onSurfaceVariant, fontSize: 12)),
-                      const SizedBox(height: 18),
-                      Text('${adminMetrics[i].value}',
-                          style: Theme.of(context).textTheme.displaySmall),
-                    ]),
-              ),
+              child: VaeMetricCard(metrics[i].key, '${metrics[i].value}'),
             ),
         ]);
       }),

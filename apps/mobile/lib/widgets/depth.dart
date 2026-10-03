@@ -15,52 +15,43 @@ import 'advanced_ui.dart';
 
 enum GlassElevation { flat, raised, floating, lifted }
 
-/// Per-tier constants, mirroring the CSS custom properties. Blur values
-/// are sigma, not CSS px: Flutter's `ImageFilter.blur` takes a Gaussian
-/// sigma, and CSS `blur(Npx)` is roughly sigma = N/2, so these are the
-/// web numbers halved rather than copied.
+/// Per-tier density and shadow, mirroring the web content planes.
 class _GlassSpec {
-  const _GlassSpec(this.sigma, this.fill, this.shadow);
-  final double sigma;
+  const _GlassSpec(this.fill, this.shadow);
   final double fill;
   final List<BoxShadow> shadow;
 }
 
 const _specs = <GlassElevation, _GlassSpec>{
-  GlassElevation.flat: _GlassSpec(5, 0.30, []),
-  GlassElevation.raised: _GlassSpec(9, 0.46, [
-    BoxShadow(color: Color(0x6E000000), blurRadius: 3, offset: Offset(0, 1)),
+  GlassElevation.flat: _GlassSpec(0.76, []),
+  GlassElevation.raised: _GlassSpec(0.81, [
+    BoxShadow(color: Color(0x18000000), blurRadius: 2, offset: Offset(0, 1)),
     BoxShadow(
-        color: Color(0x8C000000),
-        blurRadius: 28,
-        spreadRadius: -14,
-        offset: Offset(0, 10)),
+        color: Color(0x30000000),
+        blurRadius: 24,
+        spreadRadius: -12,
+        offset: Offset(0, 8)),
   ]),
-  GlassElevation.floating: _GlassSpec(14, 0.60, [
-    BoxShadow(color: Color(0x78000000), blurRadius: 5, offset: Offset(0, 2)),
+  GlassElevation.floating: _GlassSpec(0.84, [
+    BoxShadow(color: Color(0x28000000), blurRadius: 5, offset: Offset(0, 2)),
     BoxShadow(
-        color: Color(0xB8000000),
+        color: Color(0x48000000),
         blurRadius: 54,
         spreadRadius: -20,
         offset: Offset(0, 20)),
   ]),
-  GlassElevation.lifted: _GlassSpec(20, 0.74, [
-    BoxShadow(color: Color(0x85000000), blurRadius: 7, offset: Offset(0, 3)),
+  GlassElevation.lifted: _GlassSpec(0.88, [
+    BoxShadow(color: Color(0x35000000), blurRadius: 7, offset: Offset(0, 3)),
     BoxShadow(
-        color: Color(0xD6000000),
+        color: Color(0x65000000),
         blurRadius: 92,
         spreadRadius: -26,
         offset: Offset(0, 38)),
   ]),
 };
 
-/// A tiered frosted surface.
-///
-/// Performance note: every one of these is a `BackdropFilter`, which forces
-/// a saveLayer and reads back the whole area beneath it. Nesting them
-/// multiplies that cost, so a [GlassSurface] should never contain another
-/// one — use a plain `Container` for inner rows and let the outer surface
-/// provide the frost.
+/// Readable content plane. Frost is reserved for elevated chrome so lists
+/// and grids do not each incur a backdrop read while they scroll.
 class GlassSurface extends StatelessWidget {
   const GlassSurface({
     super.key,
@@ -85,31 +76,39 @@ class GlassSurface extends StatelessWidget {
   Widget build(BuildContext context) {
     final spec = _specs[elevation]!;
     final intensity = adaptive ? GlassScope.of(context) : 0.0;
-    final sigma = spec.sigma + intensity * 5;
-    final fill = Theme.of(context).brightness == Brightness.light
-        ? 0.92
-        : (spec.fill + intensity * 0.14).clamp(0.0, 0.95);
+    final light = Theme.of(context).brightness == Brightness.light;
+    final highContrast = MediaQuery.maybeOf(context)?.highContrast ?? false;
+    final fill = highContrast
+        ? 1.0
+        : light
+            ? 0.92
+            : (spec.fill + .09 + intensity * .1).clamp(0.0, 0.97);
 
     return RepaintBoundary(
       child: DecoratedBox(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(radius),
-          boxShadow: spec.shadow,
+          boxShadow: light
+              ? [
+                  BoxShadow(
+                      color: const Color(0xFF35232A).withValues(alpha: .045),
+                      blurRadius: 24,
+                      offset: const Offset(0, 8)),
+                ]
+              : spec.shadow,
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(radius),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: sigma, sigmaY: sigma),
-            child: Container(
-              padding: padding,
+          child: Container(
+            decoration: BoxDecoration(
+              color:
+                  Theme.of(context).colorScheme.surface.withValues(alpha: fill),
+              borderRadius: BorderRadius.circular(radius),
+              border: Border.all(
+                  color: borderColor ?? Theme.of(context).dividerColor),
+            ),
+            child: DecoratedBox(
               decoration: BoxDecoration(
-                color: Theme.of(context)
-                    .colorScheme
-                    .surface
-                    .withValues(alpha: fill),
-                borderRadius: BorderRadius.circular(radius),
-                border: Border.all(
-                    color: borderColor ?? Theme.of(context).dividerColor),
                 // The catching edge, matching web's `.glass::before` hairline.
                 // Tinted with the cool `sheen` token rather than the warm
                 // accent: a specular highlight is reflected light, and
@@ -125,9 +124,92 @@ class GlassSurface extends StatelessWidget {
                   stops: const [0.0, 0.38, 1.0],
                 ),
               ),
-              child: child,
+              child: Padding(padding: padding, child: child),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Translucent control plane for navigation, toolbars and floating sheets.
+/// Keep one filter per chrome region rather than blurring every control.
+class GlassChrome extends StatelessWidget {
+  const GlassChrome({
+    super.key,
+    required this.child,
+    this.padding = const EdgeInsets.all(8),
+    this.radius = 28,
+    this.borderColor,
+    this.dense = false,
+  });
+
+  final Widget child;
+  final EdgeInsetsGeometry padding;
+  final double radius;
+  final Color? borderColor;
+  final bool dense;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final light = theme.brightness == Brightness.light;
+    final highContrast = MediaQuery.maybeOf(context)?.highContrast ?? false;
+    final fill = highContrast
+        ? 1.0
+        : (light ? (dense ? .90 : .74) : (dense ? .90 : .72));
+    final content = Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface.withValues(alpha: fill),
+        borderRadius: BorderRadius.circular(radius),
+        border: Border.all(
+          color: borderColor ??
+              (highContrast
+                  ? theme.colorScheme.onSurface.withValues(alpha: .5)
+                  : theme.colorScheme.onSurface
+                      .withValues(alpha: light ? .10 : .13)),
+        ),
+      ),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: highContrast
+              ? null
+              : LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Colors.white.withValues(alpha: light ? .32 : .11),
+                    Colors.transparent,
+                    Colors.white.withValues(alpha: light ? .07 : .025),
+                  ],
+                  stops: const [0, .5, 1],
+                ),
+        ),
+        child: Padding(padding: padding, child: child),
+      ),
+    );
+    return RepaintBoundary(
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(radius),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: light ? .065 : .23),
+              blurRadius: 30,
+              spreadRadius: -8,
+              offset: const Offset(0, 12),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(radius),
+          child: highContrast
+              ? content
+              : BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                  child: content,
+                ),
         ),
       ),
     );

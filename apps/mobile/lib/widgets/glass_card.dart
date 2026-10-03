@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import '../theme/aevra_theme.dart';
 import 'depth.dart';
+import 'advanced_ui.dart';
 
 /// The mobile counterpart of the web app's `.panel`.
 ///
 /// This is now a thin alias over [GlassSurface] at the `raised` tier. Keeping
 /// the old name means the four screens didn't need touching, but there is
-/// only one frosted-surface implementation in the app rather than two that
-/// drift apart.
+/// content surfaces keep consistent density and elevation across screens.
 class GlassCard extends StatelessWidget {
   const GlassCard({
     super.key,
@@ -63,7 +63,9 @@ class ScoreRing extends StatelessWidget {
       height: size,
       child: TweenAnimationBuilder<double>(
         tween: Tween(begin: 0, end: (value / 100).clamp(0.0, 1.0)),
-        duration: const Duration(milliseconds: 820),
+        duration: reduceMotion(context)
+            ? Duration.zero
+            : const Duration(milliseconds: 820),
         curve: Curves.easeOutCubic,
         builder: (context, progress, _) => Stack(
           alignment: Alignment.center,
